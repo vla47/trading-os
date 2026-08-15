@@ -115,9 +115,13 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     <div class="marketStat">◷ <b id="clock">--:--</b></div>
     <div class="marketStat">▣ <b id="today">---</b></div>
     <div class="userMenu">
-      <select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
-      <button id="userMenuBtn" class="userMenuBtn" title="User menu">☰</button>
-      <div id="userMenu" class="topDropdown hidden" aria-hidden="true"></div>
+      <button id="userMenuBtn" class="userMenuBtn" title="Settings">⚙</button>
+      <div id="userMenu" class="topDropdown hidden" aria-hidden="true">
+        <div style="margin-bottom:8px">
+          <label for="theme" class="sub" style="display:block;margin-bottom:6px">Theme</label>
+          <select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
+        </div>
+      </div>
     </div>
     <span id="status" class="status">No trades loaded · Demo uses current IBKR YTD realized trades</span>
   </div>
