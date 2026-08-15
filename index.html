@@ -74,8 +74,11 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 @media(max-width:650px){.sidebar{display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.four{grid-template-columns:1fr}.watchgrid{grid-template-columns:1fr}.topbar{padding:0 12px}.main{padding:10px}}
 /* User menu dropdown in top-right */
 .userMenu{position:relative}
-.userMenuBtn{width:36px;height:36px;padding:0;border-radius:8px;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+.userMenuBtn{width:44px;height:44px;padding:0;border-radius:10px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-size:20px;display:grid;place-items:center}
 .topDropdown{position:absolute;right:0;top:46px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;z-index:60;width:300px;box-shadow:var(--shadow)}
+.sidebar{position:sticky}
+.collapseBtn{position:absolute;right:-18px;top:18px;z-index:80;border-radius:8px}
+.sidebar.collapsed .sideBottom [aria-label="Settings"]{display:none}
 .topDropdown .dataMenu{padding:0}
 </style>
 </head>
@@ -89,6 +92,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
       </svg>
     </div>
     <div class="brandText"><h1>Trading OS</h1><div class="sub">Performance analytics,<br>trading coach and watchlist.</div></div>
+    <button class="collapseBtn" id="collapseBtn" title="Collapse sidebar" aria-label="Toggle sidebar">‹</button>
   </div>
   <div class="sidebarNav">
     <button class="sideBtn tab active" data-page="dashboard"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 21V12h6v9"/></svg></span><span class="sideLabel">Dashboard</span></button>
@@ -105,7 +109,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     </div>
   </div>
   <div class="sideBottom">
-    <button class="sideBtn" aria-label="Settings"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.21 4.1A2 2 0 016.94 1.27l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V1a2 2 0 014 0v.09c.14.61.63 1.1 1.24 1.24.68.16 1.36-.09 1.82-.33l.06-.06A2 2 0 0118.73 4.1l-.06.06a1.65 1.65 0 00-.33 1.82V8c.64.17 1.14.7 1.24 1.34.08.53-.12 1.05-.48 1.42z"/></svg></span><span class="sideLabel">Settings</span></button>
+    <button class="sideBtn" aria-label="Settings"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11.05 2.927c.3-.921 1.603-.921 1.902 0a1 1 0 00.95.693c.69 0 1.3.477 1.45 1.144.09.414.48.714.9.714.92 0 1.66.74 1.66 1.66 0 .42.3.81.714.9.667.15 1.144.76 1.144 1.45 0 .35.274.64.631.694.92.13.92 1.433 0 1.562-.357.054-.631.344-.631.694 0 .69-.477 1.3-1.144 1.45-.414.09-.714.48-.714.9 0 .92-.74 1.66-1.66 1.66-.42 0-.81.3-.9.714-.15.667-.76 1.144-1.45 1.144-.32 0-.63.23-.95.693-.3.921-1.603.921-1.902 0a1 1 0 00-.95-.693c-.69 0-1.3-.477-1.45-1.144-.09-.414-.48-.714-.9-.714-.92 0-1.66-.74-1.66-1.66 0-.42-.3-.81-.714-.9-.667-.15-1.144-.76-1.144-1.45 0-.35-.274-.64-.631-.694-.92-.13-.92-1.433 0-1.562.357-.054.631-.344.631-.694V11.34c0-.69.477-1.3 1.144-1.45.414-.09.714-.48.714-.9V8.835c0-.92.74-1.66 1.66-1.66h.155c.42 0 .81-.3.9-.714.15-.667.76-1.144 1.45-1.144h.155a1 1 0 00.948-.691zM12 8a4 4 0 100 8 4 4 0 000-8z"/></svg></span><span class="sideLabel">Settings</span></button>
     <button class="sideBtn" id="collapseBottom"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7"/></svg></span><span class="sideLabel">Collapse</span></button>
   </div>
 </aside>
@@ -113,7 +117,6 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 <div class="content">
 <header class="topbar">
   <div class="topLeft">
-    <button class="collapseBtn" id="collapseBtn" title="Collapse sidebar">‹</button>
     <div class="pageTitle" id="pageTitle">Dashboard</div>
   </div>
   <div class="topRight">
@@ -122,7 +125,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     <div class="marketStat">▣ <b id="today">---</b></div>
     <div class="userMenu">
       <button id="userMenuBtn" class="userMenuBtn" title="Settings" aria-haspopup="true" aria-expanded="false">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.21 4.1A2 2 0 016.94 1.27l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V1a2 2 0 014 0v.09c.14.61.63 1.1 1.24 1.24.68.16 1.36-.09 1.82-.33l.06-.06A2 2 0 0118.73 4.1l-.06.06a1.65 1.65 0 00-.33 1.82V8c.64.17 1.14.7 1.24 1.34.08.53-.12 1.05-.48 1.42z"/></svg>
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11.05 2.927c.3-.921 1.603-.921 1.902 0a1 1 0 00.95.693c.69 0 1.3.477 1.45 1.144.09.414.48.714.9.714.92 0 1.66.74 1.66 1.66 0 .42.3.81.714.9.667.15 1.144.76 1.144 1.45 0 .35.274.64.631.694.92.13.92 1.433 0 1.562-.357.054-.631.344-.631.694 0 .69-.477 1.3-1.144 1.45-.414.09-.714.48-.714.9 0 .92-.74 1.66-1.66 1.66-.42 0-.81.3-.9.714-.15.667-.76 1.144-1.45 1.144-.32 0-.63.23-.95.693-.3.921-1.603.921-1.902 0a1 1 0 00-.95-.693c-.69 0-1.3-.477-1.45-1.144-.09-.414-.48-.714-.9-.714-.92 0-1.66-.74-1.66-1.66 0-.42-.3-.81-.714-.9-.667-.15-1.144-.76-1.144-1.45 0-.35-.274-.64-.631-.694-.92-.13-.92-1.433 0-1.562.357-.054.631-.344.631-.694V11.34c0-.69.477-1.3 1.144-1.45.414-.09.714-.48.714-.9V8.835c0-.92.74-1.66 1.66-1.66h.155c.42 0 .81-.3.9-.714.15-.667.76-1.144 1.45-1.144h.155a1 1 0 00.948-.691zM12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
       </button>
       <div id="userMenu" class="topDropdown hidden" aria-hidden="true" role="menu">
         <div style="margin-bottom:8px">
