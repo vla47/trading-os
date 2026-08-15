@@ -109,10 +109,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
         </div>
         <div class="flex gap-2 mt-2">
           <label for="file" class="sub cursor-pointer bg-transparent px-2 py-1 rounded-md hover:bg-gray-100">＋ Add / Import CSV</label>
-          <button id="demo" class="px-3 py-1 rounded-md bg-indigo-600 text-white">Load IBKR demo</button>
         </div>
         <div class="dataMenu mt-3" id="dataMenu">
           <button id="clearData" class="w-full text-left px-2 py-1 rounded-md">Clear all trades</button>
+          <button id="demo" class="w-full text-left px-2 py-1 rounded-md">Load demo data</button>
           <button id="dataQualityJump" class="w-full text-left px-2 py-1 rounded-md">Data Quality</button>
           <select id="importMode" class="w-full mt-2 rounded-md border px-2 py-1"><option value="auto">Import: Auto</option><option value="binance">Import: Binance Spot</option><option value="generic">Import: Generic CSV</option></select>
           <label for="file" style="display:none">Add trades CSV</label>
@@ -406,6 +406,24 @@ function mergeTrades(incoming){
  saveTrades();
  return {added,duplicates};
 }
+
+function renderEmptyDashboard(){
+  // KPIs placeholders
+  const card=(label,val,cls="neutral",hint="")=>`<div class="card sortableCard"><div class="metricTop"><div class="label">${label}</div></div><div class="value ${cls}">${val}</div><div class="hint">${esc(hint)}</div></div>`;
+  const perf=[card('Net P/L','0','neutral'),card('Expectancy / Trade','—'),card('Profit Factor','—'),card('Win Rate','—')].join("");
+  const risk=[card('Avg Win','—'),card('Avg Loss','—'),card('Max Drawdown','0'),card('Profit Concentration','—'),card('Avg Holding Time','—'),card('Averaging Down','—'),card('Best Symbol','—'),card('Worst Symbol','—')].join("");
+  if($('kpis')) $('kpis').innerHTML=`<div class="metricGroupTitle">TRADING PERFORMANCE</div><div class="metricGroup performanceGroup">${perf}</div><div class="metricGroupTitle">RISK, BEHAVIOR &amp; ATTRIBUTION</div><div class="metricGroup riskGroup">${risk}</div>`;
+  if($('quality')) $('quality').innerHTML=`<table><tr><td>Avg winner</td><td class="good">—</td></tr><tr><td>Avg loser</td><td class="bad">—</td></tr><tr><td>Payoff ratio</td><td>—</td></tr></table>`;
+  if($('consistency')) $('consistency').innerHTML=`<table><tr><td>Trading days</td><td>0</td></tr><tr><td>Profitable days</td><td>0</td></tr><tr><td>Loss days</td><td>0</td></tr><tr><td>Profit-day rate</td><td>—</td></tr></table>`;
+  if($('risk')) $('risk').innerHTML=`<table><tr><td>Best trade</td><td class="good">—</td></tr><tr><td>Worst trade</td><td class="bad">—</td></tr></table>`;
+  if($('fees')) $('fees').innerHTML=`<table><tr><td>Estimated fees</td><td>—</td></tr><tr><td>Fee basis</td><td>—</td></tr><tr><td>Executions</td><td>0</td></tr></table>`;
+  if($('symbols')) $('symbols').innerHTML=`<div class="empty">No closed trades.</div>`;
+  if($('trades')) $('trades').innerHTML=`<div class="empty">No closed trades.</div>`;
+  if($('dataQuality')) $('dataQuality').innerHTML=`<div class="sub">No data loaded.</div>`;
+  // clear canvases
+  ['equity','drawdown'].forEach(id=>{const c=$(id); if(c && c.getContext){const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);}});
+  if($('app')) $('app').classList.remove('hidden'); if($('empty')) $('empty').classList.add('hidden');
+}
 if($("file")) $("file").onchange=async e=>{
  const files=[...e.target.files];
  if(!files.length)return;
@@ -443,11 +461,13 @@ if($("file")) $("file").onchange=async e=>{
  e.target.value="";
 };
 if($("clearData")) $("clearData").onclick=()=>{
- if(!trades.length)return;
+ if(!trades.length) return;
  if(confirm("Clear all imported trades and reset the dashboard?")){
-  trades=[];if($("app"))$("app").classList.add("hidden");if($("empty"))$("empty").classList.remove("hidden");
-  if($("status"))$("status").textContent="All trade data cleared"; if($("file"))$("file").value="";
-  try{localStorage.removeItem('tradingOS.trades');}catch(e){}
+  trades=[]; try{localStorage.removeItem('tradingOS.trades');}catch(e){}
+  saveTrades();
+  renderEmptyDashboard();
+  if($("status"))$("status").textContent="All trade data cleared";
+  if($("file")) $("file").value="";
  }
 };
 const IBKR_DEMO_DATA=[{"symbol":"SPCX","side":"SELL","qty":100.0,"price":169.83,"pnl":62.63005,"fee":2.36995,"date":"2026-06-12T16:56:16Z","entry":169.18,"entryDate":"2026-06-12T16:55:32Z","holdingDays":0.000509},{"symbol":"SPCX","side":"SELL","qty":90.0,"price":171.45,"pnl":117.914042,"fee":2.235958,"date":"2026-06-12T17:37:18Z","entry":170.115,"entryDate":"2026-06-12T17:31:43Z","holdingDays":0.003877},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":171.45,"pnl":13.212671,"fee":0.137329,"date":"2026-06-12T17:37:18Z","entry":170.115,"entryDate":"2026-06-12T17:31:43Z","holdingDays":0.003877},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":170.35,"pnl":5.662898,"fee":2.037102,"date":"2026-06-15T13:35:01Z","entry":169.58,"entryDate":"2026-06-15T11:13:09Z","holdingDays":0.098519},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":174.49,"pnl":5.562045,"fee":2.037955,"date":"2026-06-15T14:16:43Z","entry":173.73,"entryDate":"2026-06-15T13:53:39Z","holdingDays":0.016019},{"symbol":"SPCX","side":"SELL","qty":1.0,"price":201.46,"pnl":26.140649,"fee":2.004351,"date":"2026-06-16T12:57:39Z","entry":173.315,"entryDate":"2026-06-15T14:50:45Z","holdingDays":0.921458},{"symbol":"SPCX","side":"SELL","qty":1.0,"price":211.275,"pnl":-0.609553,"fee":2.004553,"date":"2026-06-16T15:56:06Z","entry":209.88,"entryDate":"2026-06-16T14:39:51Z","holdingDays":0.052951},{"symbol":"NVDA","side":"SELL","qty":11.0,"price":192.18,"pnl":-27.315759,"fee":3.045759,"date":"2026-06-29T14:11:00Z","entry":194.386364,"entryDate":"2026-06-25T04:01:36Z","holdingDays":4.423194},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":294.275,"pnl":121.487369,"fee":2.062631,"date":"2026-07-01T19:27:07Z","entry":281.92,"entryDate":"2026-06-30T12:58:37Z","holdingDays":1.269792},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.83,"pnl":46.134989,"fee":2.065011,"date":"2026-07-02T14:31:21Z","entry":301.01,"entryDate":"2026-07-02T13:42:11Z","holdingDays":0.034144},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.95,"pnl":2.634964,"fee":1.165036,"date":"2026-07-02T14:42:56Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.003889},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.99,"pnl":3.034956,"fee":1.165044,"date":"2026-07-02T14:43:55Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.004572},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.99,"pnl":4.034956,"fee":0.165044,"date":"2026-07-02T14:43:55Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.004572},{"symbol":"AAPL","side":"SELL","qty":30.0,"price":306.3,"pnl":20.404677,"fee":1.495323,"date":"2026-07-02T14:44:32Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.005},{"symbol":"AAPL","side":"SELL","qty":22.0,"price":306.16,"pnl":11.616826,"fee":1.363174,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":6.0,"price":306.16,"pnl":3.440953,"fee":0.099047,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":12.0,"price":306.13,"pnl":6.521913,"fee":0.198087,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":20.0,"price":307.925,"pnl":47.569115,"fee":2.130885,"date":"2026-07-02T16:39:38Z","entry":305.44,"entryDate":"2026-07-02T14:50:57Z","holdingDays":0.075475},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":315.32,"pnl":24.633034,"fee":2.066966,"date":"2026-07-10T20:00:49Z","entry":312.65,"entryDate":"2026-07-06T15:05:05Z","holdingDays":4.20537},{"symbol":"NVDA","side":"SELL","qty":10.0,"price":205.021,"pnl":-29.134244,"fee":2.044244,"date":"2026-07-20T14:19:29Z","entry":207.73,"entryDate":"2026-07-16T14:04:40Z","holdingDays":4.010289},{"symbol":"INTC","side":"SELL","qty":40.0,"price":97.355,"pnl":444.661739,"fee":3.088261,"date":"2026-08-04T13:48:17Z","entry":86.16125,"entryDate":"2026-07-28T15:52:06Z","holdingDays":6.914016},{"symbol":"AAPL","side":"SELL","qty":1.0,"price":310.61,"pnl":4.3334,"fee":1.1066,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":7.0,"price":310.61,"pnl":37.333803,"fee":0.746197,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":1.0,"price":310.62,"pnl":5.3434,"fee":0.1066,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":6.0,"price":310.61,"pnl":34.825403,"fee":0.639597,"date":"2026-08-05T11:28:34Z","entry":304.699167,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690174},{"symbol":"AAPL","side":"SELL","qty":5.0,"price":310.61,"pnl":29.492002,"fee":0.532998,"date":"2026-08-05T11:28:34Z","entry":304.605,"entryDate":"2026-08-04T13:49:42Z","holdingDays":0.901991},{"symbol":"AVGO","side":"SELL","qty":15.0,"price":428.48,"pnl":703.464585,"fee":3.135415,"date":"2026-08-10T13:26:26Z","entry":381.373333,"entryDate":"2026-07-27T14:16:23Z","holdingDays":13.965312},{"symbol":"TSLA","side":"SELL","qty":15.0,"price":327.2,"pnl":-443.17412,"fee":4.10412,"date":"2026-08-10T13:28:19Z","entry":356.471333,"entryDate":"2026-07-22T12:39:44Z","holdingDays":19.033738},{"symbol":"NVDA","side":"SELL","qty":52.0,"price":223.08,"pnl":1198.930585,"fee":6.249415,"date":"2026-08-10T13:28:45Z","entry":199.903462,"entryDate":"2026-07-27T14:36:47Z","holdingDays":13.952755},{"symbol":"GOOGL","side":"SELL","qty":40.0,"price":354.75,"pnl":918.499646,"fee":3.300354,"date":"2026-08-10T13:32:00Z","entry":331.705,"entryDate":"2026-07-24T09:34:42Z","holdingDays":17.164792}];
