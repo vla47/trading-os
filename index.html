@@ -49,8 +49,11 @@ input[type=file]{display:none}
 .content{min-width:0;flex:1}
 .topbar{height:68px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:16px}
 .topLeft{display:flex;align-items:center;gap:12px}.collapseBtn{width:36px;height:36px;padding:0;font-size:19px}
-.pageTitle{font-size:18px;font-weight:800}.topRight{display:flex;align-items:center;gap:15px;white-space:nowrap}
-.marketStat{color:var(--muted);font-size:12px}.marketStat b{color:var(--text);font-weight:650}
+.pageTitle{font-size:20px;font-weight:800}
+.pageTitle .sub{font-size:13px}
+.topRight{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.marketStat{color:var(--muted);font-size:13px}
+.marketStat b{color:var(--text);font-weight:700}
 .main{padding:12px 18px 28px;max-width:1700px;margin:auto}
 .importStatus{display:flex;justify-content:flex-end;min-height:18px;margin-bottom:4px}
 #dashboard{width:100%}
@@ -72,8 +75,34 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 .watchToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .dataQualityText{font-size:12px;line-height:1.45}
 @media(max-width:1250px){.grid{grid-template-columns:repeat(6,minmax(0,1fr))}.riskGroup{grid-template-columns:repeat(4,minmax(0,1fr))}.three{grid-template-columns:1fr 1fr}.four{grid-template-columns:1fr 1fr}.watchgrid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.diagnosticsCards{grid-template-columns:repeat(2,minmax(0,1fr))}.riskGroup,.performanceGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar{width:72px;flex-basis:72px}.brandText,.sideLabel,.dataMenu,.dataHead .chev{display:none}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.two,.three{grid-template-columns:1fr}.topRight .marketStat{display:none}}
-@media(max-width:650px){.sidebar{display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.four{grid-template-columns:1fr}.watchgrid{grid-template-columns:1fr}.topbar{padding:0 12px}.main{padding:10px}}
+@media(max-width:900px){
+  .diagnosticsCards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .riskGroup,.performanceGroup{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sidebar{width:72px;flex-basis:72px}
+  .brandText,.sideLabel,.dataMenu,.dataHead .chev{display:none}
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .two,.three{grid-template-columns:1fr}
+  .topRight .marketStat{font-size:12px}
+  .topbar{padding:10px 14px}
+}
+@media(max-width:650px){
+  .sidebar{display:none}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .four{grid-template-columns:1fr}
+  .watchgrid{grid-template-columns:1fr}
+  .topbar{padding:8px 12px;flex-wrap:wrap;align-items:center}
+  .topLeft{min-width:0;flex:1;overflow:hidden}
+  .pageTitle{font-size:18px}
+  .topRight{flex:0;display:flex;gap:8px}
+  .main{padding:10px}
+}
+
+@media(max-width:480px){
+  .pageTitle{font-size:16px}
+  .pageTitle .sub{font-size:12px}
+  .marketStat{font-size:11px}
+  .userMenuBtn{width:40px;height:40px}
+}
 /* User menu dropdown in top-right */
 .userMenu{position:relative}
 .userMenuBtn{width:44px;height:44px;padding:0;border-radius:10px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-size:20px;display:grid;place-items:center}
