@@ -89,6 +89,9 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 <div class="content">
 <header class="topbar">
   <div class="topLeft">
+    <div class="brandMark" style="width:40px;height:40px;border-radius:8px;background:var(--panel2);display:grid;place-items:center;color:var(--accent);margin-right:8px" aria-hidden="true">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17l10-10M7 7h10v10" /></svg>
+    </div>
     <div class="pageTitle" id="pageTitle"><div style="font-weight:800">Trading OS</div><div class="sub" style="font-size:12px">Performance analytics, trading coach and watchlist.</div></div>
   </div>
   <div class="topRight">
@@ -514,8 +517,8 @@ try{
 
 function updateClock(){
  const d=new Date();
- $("clock").textContent=d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
- $("today").textContent=d.toLocaleDateString([], {month:"short",day:"numeric",year:"numeric"});
+ if($("clock")) $("clock").textContent=d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+ if($("today")) $("today").textContent=d.toLocaleDateString([], {month:"short",day:"numeric",year:"numeric"});
 }
 updateClock();setInterval(updateClock,1000);
 
@@ -523,7 +526,7 @@ async function loadWeather(){
  try{
   const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia");
   const j=await r.json();
-  if(j.current&&Number.isFinite(j.current.temperature_2m)) $("weatherTemp").textContent=Math.round(j.current.temperature_2m)+"°C";
+  if($("weatherTemp") && j.current&&Number.isFinite(j.current.temperature_2m)) $("weatherTemp").textContent=Math.round(j.current.temperature_2m)+"°C";
  }catch(e){ $("weatherTemp").textContent="--°C"; }
 }
 loadWeather();
