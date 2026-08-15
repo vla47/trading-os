@@ -81,13 +81,17 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 <div class="layout">
 <aside class="sidebar" id="sidebar">
   <div class="brand">
-    <div class="brandMark">↗</div>
+    <div class="brandMark" aria-hidden="true">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17l10-10M7 7h10v10" />
+      </svg>
+    </div>
     <div class="brandText"><h1>Trading OS</h1><div class="sub">Performance analytics,<br>trading coach and watchlist.</div></div>
   </div>
   <div class="sidebarNav">
-    <button class="sideBtn tab active" data-page="dashboard"><span class="sideIcon">⌂</span><span class="sideLabel">Dashboard</span></button>
-    <button class="sideBtn tab" data-page="watchlist"><span class="sideIcon">☆</span><span class="sideLabel">Watchlist</span></button>
-    <button class="sideBtn dataHead" id="dataToggle"><span class="sideIcon">⇩</span><span class="sideLabel">Data &amp; Import</span><span class="chev" id="dataChevron">⌃</span></button>
+    <button class="sideBtn tab active" data-page="dashboard"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 21V12h6v9"/></svg></span><span class="sideLabel">Dashboard</span></button>
+    <button class="sideBtn tab" data-page="watchlist"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span><span class="sideLabel">Watchlist</span></button>
+    <button class="sideBtn dataHead" id="dataToggle"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v12M8 11l4 4 4-4"/></svg></span><span class="sideLabel">Data &amp; Import</span><span class="chev" id="dataChevron">⌃</span></button>
     <div class="dataMenu" id="dataMenu">
       <label for="file">＋ Add / Import CSV</label>
       <button id="demo">Load IBKR demo</button>
@@ -99,8 +103,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     </div>
   </div>
   <div class="sideBottom">
-    <button class="sideBtn"><span class="sideIcon">⚙</span><span class="sideLabel">Settings</span></button>
-    <button class="sideBtn" id="collapseBottom"><span class="sideIcon">‹</span><span class="sideLabel">Collapse</span></button>
+    <button class="sideBtn" aria-label="Settings"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.21 4.1A2 2 0 016.94 1.27l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V1a2 2 0 014 0v.09c.14.61.63 1.1 1.24 1.24.68.16 1.36-.09 1.82-.33l.06-.06A2 2 0 0118.73 4.1l-.06.06a1.65 1.65 0 00-.33 1.82V8c.64.17 1.14.7 1.24 1.34.08.53-.12 1.05-.48 1.42z"/></svg></span><span class="sideLabel">Settings</span></button>
+    <button class="sideBtn" id="collapseBottom"><span class="sideIcon" aria-hidden="true"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7"/></svg></span><span class="sideLabel">Collapse</span></button>
   </div>
 </aside>
 
@@ -115,11 +119,17 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     <div class="marketStat">◷ <b id="clock">--:--</b></div>
     <div class="marketStat">▣ <b id="today">---</b></div>
     <div class="userMenu">
-      <button id="userMenuBtn" class="userMenuBtn" title="Settings">⚙</button>
-      <div id="userMenu" class="topDropdown hidden" aria-hidden="true">
+      <button id="userMenuBtn" class="userMenuBtn" title="Settings" aria-haspopup="true" aria-expanded="false">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.21 4.1A2 2 0 016.94 1.27l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V1a2 2 0 014 0v.09c.14.61.63 1.1 1.24 1.24.68.16 1.36-.09 1.82-.33l.06-.06A2 2 0 0118.73 4.1l-.06.06a1.65 1.65 0 00-.33 1.82V8c.64.17 1.14.7 1.24 1.34.08.53-.12 1.05-.48 1.42z"/></svg>
+      </button>
+      <div id="userMenu" class="topDropdown hidden" aria-hidden="true" role="menu">
         <div style="margin-bottom:8px">
           <label for="theme" class="sub" style="display:block;margin-bottom:6px">Theme</label>
-          <select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
+          <select id="theme" class="w-full rounded-md border px-2 py-1"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <label for="file" class="sub cursor-pointer bg-transparent px-2 py-1 rounded-md hover:bg-gray-100">＋ Add / Import CSV</label>
+          <button id="demo" class="px-3 py-1 rounded-md bg-indigo-600 text-white">Load IBKR demo</button>
         </div>
       </div>
     </div>
@@ -490,8 +500,36 @@ try{
   const userBtn = document.getElementById('userMenuBtn');
   if(userBtn && userMenuDropdown){
     const wrapper = document.querySelector('.userMenu');
-    userBtn.addEventListener('click', e=>{ e.stopPropagation(); const isHidden = userMenuDropdown.classList.contains('hidden'); userMenuDropdown.classList.toggle('hidden', !isHidden); userMenuDropdown.setAttribute('aria-hidden', String(!isHidden)); });
-    document.addEventListener('click', e=>{ if(!document.querySelector('.userMenu').contains(e.target)){ userMenuDropdown.classList.add('hidden'); userMenuDropdown.setAttribute('aria-hidden','true'); } });
+    // Toggle with click
+    userBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const isHidden = userMenuDropdown.classList.contains('hidden');
+      userMenuDropdown.classList.toggle('hidden', !isHidden);
+      userMenuDropdown.setAttribute('aria-hidden', String(!isHidden));
+      userBtn.setAttribute('aria-expanded', String(!isHidden));
+      // focus first focusable element when opening
+      if(isHidden){
+        const first = userMenuDropdown.querySelector('button, [href], input, select, textarea');
+        if(first) first.focus();
+      }
+    });
+    // Keyboard: Enter/Space to toggle
+    userBtn.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); userBtn.click(); } });
+    // Close on outside click
+    document.addEventListener('click', e=>{ if(!wrapper.contains(e.target)){ userMenuDropdown.classList.add('hidden'); userMenuDropdown.setAttribute('aria-hidden','true'); userBtn.setAttribute('aria-expanded','false'); } });
+    // Close on Escape
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ userMenuDropdown.classList.add('hidden'); userMenuDropdown.setAttribute('aria-hidden','true'); userBtn.setAttribute('aria-expanded','false'); userBtn.focus(); } });
+    // Manage tabbing — close when tabbing out
+    userMenuDropdown.addEventListener('keydown', e=>{
+      if(e.key==='Tab'){
+        // if shift+tab from first, or tab from last, close
+        const focusable=[...userMenuDropdown.querySelectorAll('button, [href], input, select, textarea')];
+        if(!focusable.length) return;
+        const first=focusable[0], last=focusable[focusable.length-1];
+        if(e.shiftKey && document.activeElement===first){ userMenuDropdown.classList.add('hidden'); userMenuDropdown.setAttribute('aria-hidden','true'); userBtn.setAttribute('aria-expanded','false'); }
+        else if(!e.shiftKey && document.activeElement===last){ userMenuDropdown.classList.add('hidden'); userMenuDropdown.setAttribute('aria-hidden','true'); userBtn.setAttribute('aria-expanded','false'); }
+      }
+    });
   }
 }catch(e){console.error(e)}
 
