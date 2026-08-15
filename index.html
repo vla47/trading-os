@@ -106,10 +106,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 
 /* Improved mobile stacking: keep header centered and avoid overlap */
 @media(max-width:420px){
-  /* Use a row layout: settings left, title right */
+  /* Use a row layout: title left, settings right on very small screens */
   .topbar{flex-direction:row;align-items:center;justify-content:space-between;gap:6px;padding:8px;padding-top:calc(8px + env(safe-area-inset-top));z-index:60}
-  .topRight{order:1;display:flex;align-items:center;gap:8px;justify-content:flex-start}
-  .topLeft{order:2;display:flex;flex-direction:column;align-items:flex-end;min-width:0;text-align:right}
+  .topLeft{order:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left}
+  .topRight{order:2;display:flex;align-items:center;gap:8px;justify-content:flex-end}
   .pageTitle{font-size:18px;margin:0;white-space:normal;overflow:visible;word-break:break-word}
   .pageTitle .sub{display:none}
   .brandMark{margin-right:0;margin-bottom:0}
@@ -117,8 +117,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
   .marketStat{display:none}
   .userMenu{position:relative}
   .userMenuBtn{width:40px;height:40px}
-  /* Anchor dropdown to the left under the settings button */
-  .topDropdown{position:fixed;top:calc(8px + env(safe-area-inset-top) + 48px);left:8px;right:auto;width:calc(100% - 32px);max-width:420px}
+  /* Anchor dropdown to the right under the settings button */
+  .topDropdown{position:fixed;top:calc(8px + env(safe-area-inset-top) + 48px);right:8px;left:auto;width:calc(100% - 32px);max-width:420px}
   .main{padding-top:8px}
   .kpis{width:100%}
 }
