@@ -119,6 +119,14 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
   .main{padding-top:8px}
   .kpis{width:100%}
 }
+
+/* Make KPI/group headings subtler on mobile and let cards fill width */
+@media(max-width:480px){
+  .metricGroupTitle{display:none}
+  .performanceGroup,.riskGroup{grid-template-columns:1fr !important}
+  .panel h2{font-size:15px;margin-bottom:6px}
+  .collapseHint{display:none}
+}
 /* User menu dropdown in top-right */
 .userMenu{position:relative}
 .userMenuBtn{width:44px;height:44px;padding:0;border-radius:10px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-size:20px;display:grid;place-items:center}
