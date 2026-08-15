@@ -106,7 +106,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
 
 /* Improved mobile stacking: keep header centered and avoid overlap */
 @media(max-width:420px){
-  .topbar{flex-direction:column;align-items:center;gap:6px;padding:8px}
+  .topbar{flex-direction:column;align-items:center;gap:6px;padding:8px;padding-top:calc(8px + env(safe-area-inset-top));z-index:60}
   .topLeft{order:1;display:flex;flex-direction:column;align-items:center;min-width:0;text-align:center}
   .pageTitle{font-size:18px;margin:0;white-space:normal;overflow:visible;word-break:break-word}
   .pageTitle .sub{display:none}
@@ -117,6 +117,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
   .userMenu{position:relative}
   .userMenuBtn{width:40px;height:40px}
   .topDropdown{right:8px;left:auto}
+  /* On very small screens make dropdown fixed so it is not clipped */
+  .topDropdown{position:fixed;top:calc(8px + env(safe-area-inset-top) + 48px);right:8px;width:calc(100% - 32px);max-width:420px}
   .main{padding-top:8px}
   .kpis{width:100%}
 }
