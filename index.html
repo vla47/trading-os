@@ -197,6 +197,8 @@ function parseCSV(text){
  }
  row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
  if(!rows.length)return [];
+  <!-- Tailwind Play CDN - lightweight for static pages (see https://tailwindcss.com/docs/installation/play-cdn) -->
+  <script src="https://cdn.tailwindcss.com"></script>
  const headers=rows.shift().map((x,i)=>String(x).replace(/^\uFEFF/,"").replace(/^\s+|\s+$/g,"").replace(/^"|"$/g,"")||`Column ${i+1}`);
  return {headers, rows:rows.map(r=>Object.fromEntries(headers.map((h,i)=>[h,(r[i]??"").trim()])))};
 }
