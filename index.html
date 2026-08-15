@@ -111,6 +111,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
   .topLeft{order:1;display:flex;align-items:center;min-width:0;text-align:left}
   /* hide the brand mark on small screens to keep header tidy */
   .brandMark{display:none}
+  /* More breathing room for KPI/risk cards on mobile */
+  .metricGroup{gap:12px}
+  .performanceGroup,.riskGroup{grid-template-columns:1fr !important}
+  .card{padding:12px}
   .topRight{order:2;display:flex;align-items:center;gap:8px;justify-content:flex-end}
   .pageTitle{font-size:18px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pageTitle .sub{display:none}
