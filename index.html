@@ -159,9 +159,6 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px
     <div class="marketStat">◷ <b id="clock">--:--</b></div>
     <div class="marketStat">▣ <b id="today">---</b></div>
     <div class="userMenu">
-      <button id="demoMobile" class="userMenuBtn demoMobile" title="Load demo data">
-        ▶
-      </button>
       <button id="userMenuBtn" class="userMenuBtn" title="Settings" aria-haspopup="true" aria-expanded="false">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.007 7.007 0 00-1.65-.96L14.5 2h-5l-.38 2.79c-.59.23-1.13.54-1.65.96l-2.39-.96a.5.5 0 00-.6.22L1.58 8.48a.5.5 0 00.12.64L3.73 10.7c-.04.31-.06.63-.06.94s.02.63.06.94L1.58 14.16a.5.5 0 00-.12.64l1.92 3.32c.14.24.44.34.69.22l2.39-.96c.52.42 1.06.73 1.65.96L9.5 22h5l.38-2.79c.59-.23 1.13-.54 1.65-.96l2.39.96c.25.1.55.02.69-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
       </button>
@@ -544,7 +541,7 @@ if($("demo")) $("demo").onclick=()=>{
   calc();
   if($("status")) $("status").textContent=`IBKR trade demo loaded · ${trades.length} reconstructed closed trades`;
 };
-if($("demoMobile")) $("demoMobile").onclick=()=>{ if($("demo")) $("demo").click(); };
+// demoMobile removed; use 'Load demo data' inside the settings menu on mobile
 if($("theme")){
   $("theme").onchange=e=>{document.documentElement.dataset.theme=e.target.value;localStorage.setItem("theme",e.target.value)};
   $("theme").value=localStorage.getItem("theme")||"light";document.documentElement.dataset.theme=$("theme").value;
