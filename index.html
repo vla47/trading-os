@@ -178,6 +178,12 @@ function saveTrades(){try{localStorage.setItem('tradingOS.trades',JSON.stringify
 function loadSavedTrades(){try{const s=localStorage.getItem('tradingOS.trades');return s?JSON.parse(s):[]}catch(e){return []}}
 let trades=loadSavedTrades();
 if(trades.length){try{calc();$("status").textContent=`Loaded ${trades.length} saved rows`;$("app").classList.remove("hidden");$("empty").classList.add("hidden");}catch(e){}}
+if(trades.length){
+  try{calc(); if($("status")) $("status").textContent=`Loaded ${trades.length} saved rows`; if($("app"))$("app").classList.remove("hidden"); if($("empty"))$("empty").classList.add("hidden"); }catch(e){}
+}else{
+  // No saved trades: render placeholders but keep dashboard visible
+  try{ renderEmptyDashboard(); if($("app"))$("app").classList.remove("hidden"); if($("empty"))$("empty").classList.add("hidden"); }catch(e){}
+}
 const num=x=>{if(x==null||x==="")return null;let s=String(x).trim().replace(/\s/g,"").replace(/[$€£]/g,"").replace(/,/g,"");if(s.startsWith("(")&&s.endsWith(")"))s="-"+s.slice(1,-1);let n=Number(s.replace(/%$/,""));return Number.isFinite(n)?n:null};
 function parseCSV(text){
  text=text.replace(/^\uFEFF/,"").replace(/\u0000/g,"");
