@@ -527,7 +527,7 @@ async function loadWeather(){
   const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia");
   const j=await r.json();
   if($("weatherTemp") && j.current&&Number.isFinite(j.current.temperature_2m)) $("weatherTemp").textContent=Math.round(j.current.temperature_2m)+"°C";
- }catch(e){ $("weatherTemp").textContent="--°C"; }
+ }catch(e){ if($("weatherTemp")) $("weatherTemp").textContent="--°C"; }
 }
 loadWeather();
 function renderWatch(){let a=JSON.parse(localStorage.getItem("watchlist")||"[]");$("watchgrid").innerHTML=a.length?a.map((x,i)=>`<div class="panel watch"><button class="remove" data-i="${i}">×</button><small>${esc(x.category)}</small><div class="price">${esc(x.ticker)}</div><div>${esc(x.name||"")}</div><span class="tag">Watch</span></div>`).join(""):`<div class="empty">No assets yet. Add stocks, crypto or ETFs you want to monitor.</div>`;document.querySelectorAll(".remove").forEach(b=>b.onclick=()=>{let a=JSON.parse(localStorage.getItem("watchlist")||"[]");a.splice(+b.dataset.i,1);localStorage.setItem("watchlist",JSON.stringify(a));renderWatch()})}
