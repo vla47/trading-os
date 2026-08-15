@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trading OS</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--panel2:#f4f7fa;--text:#18212b;--muted:#66717e;--line:#d9dfe7;--good:#16865c;--bad:#d9364f;--accent:#3b73d1;--warn:#d07a00;--shadow:0 1px 2px rgba(20,30,45,.04)}
+[data-theme="light"]{--bg:#f4f6f8;--panel:#fff;--panel2:#f4f7fa;--text:#18212b;--muted:#66717e;--line:#d9dfe7;--good:#16865c;--bad:#d9364f;--accent:#3b73d1;--warn:#d07a00}
+[data-theme="dark"]{--bg:#0b0f14;--panel:#121821;--panel2:#171f2a;--text:#e8edf3;--muted:#8d9aaa;--line:#263140;--good:#35c98b;--bad:#ff6875;--accent:#6ea8fe;--warn:#f2c94c}
+[data-theme="midnight"]{--bg:#070b18;--panel:#0d1426;--panel2:#121b31;--text:#edf2ff;--muted:#8995b0;--line:#24304a;--good:#43d9a0;--bad:#ff6b86;--accent:#9b8cff;--warn:#e8c45a}
+[data-theme="forest"]{--bg:#09120f;--panel:#0e1b16;--panel2:#14251e;--text:#e9f4ef;--muted:#8ca49a;--line:#294238;--good:#4bd39a;--bad:#ff7373;--accent:#62b8a0;--warn:#e7c969}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select,input{font:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+.primary{background:var(--accent);color:#fff;border-color:transparent}
+input[type=file]{display:none}
+.importFeedback{font-size:11px;line-height:1.35;margin-top:6px;color:var(--muted)}.importFeedback.error{color:var(--bad)}.importFeedback.good{color:var(--good)}.hidden{display:none!important}
+.error{color:var(--bad)}
+.good{color:var(--good)}
+.bad{color:var(--bad)}
+.warn{color:var(--warn)}
+.sub,.status,small{color:var(--muted)}
+.status{font-size:12px}#status{display:none}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;flex:0 0 220px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;transition:width .18s ease;position:sticky;top:0;height:100vh}
+.sidebar.collapsed{width:72px;flex-basis:72px}
+.brand{padding:18px 18px 16px;border-bottom:1px solid var(--line);display:flex;gap:11px;align-items:center;min-height:78px}
+.brandMark{width:38px;height:38px;border-radius:10px;background:var(--panel2);display:grid;place-items:center;color:var(--accent);font-size:21px;font-weight:800}
+.brandText h1{font-size:18px;margin:0 0 2px}.brandText .sub{font-size:11px;line-height:1.25}
+.sidebar.collapsed .brandText{display:none}
+.sidebarNav{padding:12px 10px;flex:1}
+.sideBtn{width:100%;display:flex;align-items:center;gap:11px;border:0;background:transparent;text-align:left;color:var(--muted);padding:10px 11px;border-radius:8px;margin-bottom:3px}
+.sideBtn.active{background:var(--panel2);color:var(--accent);font-weight:700}
+.sideIcon{width:18px;text-align:center;font-size:15px;flex:0 0 18px}
+.sideLabel{white-space:nowrap}.sidebar.collapsed .sideLabel{display:none}
+.dataHead{display:flex;align-items:center;justify-content:space-between}
+.dataHead .chev{margin-left:auto}.sidebar.collapsed .dataHead .chev{display:none}
+.dataMenu{padding:2px 0 6px 39px}.sidebar.collapsed .dataMenu{display:none}
+.dataMenu button,.dataMenu label{display:block;width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:7px 8px;border-radius:7px;cursor:pointer}
+.dataMenu button:hover,.dataMenu label:hover{background:var(--panel2);color:var(--text)}
+.sideBottom{padding:10px;border-top:1px solid var(--line)}
+.content{min-width:0;flex:1}
+.topbar{height:68px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:16px}
+.topLeft{display:flex;align-items:center;gap:12px}.collapseBtn{width:36px;height:36px;padding:0;font-size:19px}
+.pageTitle{font-size:18px;font-weight:800}.topRight{display:flex;align-items:center;gap:15px;white-space:nowrap}
+.marketStat{color:var(--muted);font-size:12px}.marketStat b{color:var(--text);font-weight:650}
+.main{padding:12px 18px 28px;max-width:1700px;margin:auto}
+.importStatus{display:flex;justify-content:flex-end;min-height:18px;margin-bottom:4px}
+#dashboard{width:100%}
+.grid{display:block}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:var(--shadow)}
+.card{min-height:66px;padding:8px 9px;position:relative}.collapsibleCard{overflow:hidden}.collapseHeader{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:0;color:inherit;text-align:left;padding:0;cursor:pointer;font:inherit}.collapseHeader h2{margin:0}.collapseHeader:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}.collapseIcon{font-size:18px;color:var(--muted);min-width:20px;text-align:center}.collapseHint{display:block;color:var(--muted);font-size:10px;margin-top:2px}.collapseBody{margin-top:7px}.collapsibleCard:not(.expanded) .collapseBody[hidden]{display:none}.collapsibleCard.expanded .collapseIcon{transform:rotate(0deg)}.diagnosticBlock table{width:100%}.diagnosticsSection{width:100%}.diagnosticsCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.diagnosticsCards .panel{min-width:0}.diagnosticsCards .collapseBody{margin-top:7px}.diagnosticsCards table{width:100%}.metricGroupTitle{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin:8px 1px 5px}.metricGroup{display:grid;gap:6px}.performanceGroup{grid-template-columns:repeat(4,minmax(0,1fr))}.riskGroup{grid-template-columns:repeat(8,minmax(0,1fr))}
+.sortableCard{cursor:grab}.sortableCard:active{cursor:grabbing}.sortableCard.dragging{opacity:.45;transform:scale(.99)}.sortableCard.dropTarget{outline:2px dashed var(--accent);outline-offset:2px}
+.metricTop{display:flex;align-items:center;justify-content:space-between;gap:6px}.metricIcon{font-size:18px;font-weight:800;line-height:1}.metricIcon.good{color:var(--good)}.metricIcon.bad{color:var(--bad)}.metricIcon.warn{color:var(--warn)}.metricIcon.neutral{color:var(--muted)}.label{color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.value{font-size:16px;font-weight:750;margin-top:3px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hint{font-size:8px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section{margin-top:7px}.two{display:grid;grid-template-columns:1fr 1fr;gap:7px}.three{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:7px}.four{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px}
+.section.panel{padding:11px}
+.panel h2{font-size:15px;margin:0 0 8px}
+.bullet{padding:6px 0;border-bottom:1px solid var(--line)}.bullet:last-child{border-bottom:0}
+.insight{padding:9px;border-left:3px solid var(--accent);background:var(--panel2);margin:6px 0;border-radius:5px}.insight.bad{border-left-color:var(--bad)}.insight.good{border-left-color:var(--good)}
+canvas{width:100%;height:220px;display:block}
+table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:4px 5px;border-bottom:1px solid var(--line);font-size:12px}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}
+.healthBanner{display:none}
+.empty{text-align:center;color:var(--muted);padding:55px 20px}
+.watchgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.watch{position:relative}.remove{position:absolute;right:8px;top:8px;border:0;padding:3px 7px}.price{font-size:22px;font-weight:700;margin-top:7px}.tag{display:inline-block;font-size:10px;padding:3px 7px;border-radius:12px;background:var(--panel2);color:var(--muted);margin-top:7px}
+.watchToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.dataQualityText{font-size:12px;line-height:1.45}
+@media(max-width:1250px){.grid{grid-template-columns:repeat(6,minmax(0,1fr))}.riskGroup{grid-template-columns:repeat(4,minmax(0,1fr))}.three{grid-template-columns:1fr 1fr}.four{grid-template-columns:1fr 1fr}.watchgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.diagnosticsCards{grid-template-columns:repeat(2,minmax(0,1fr))}.riskGroup,.performanceGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar{width:72px;flex-basis:72px}.brandText,.sideLabel,.dataMenu,.dataHead .chev{display:none}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.two,.three{grid-template-columns:1fr}.topRight .marketStat{display:none}}
+@media(max-width:650px){.sidebar{display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.four{grid-template-columns:1fr}.watchgrid{grid-template-columns:1fr}.topbar{padding:0 12px}.main{padding:10px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brandMark">↗</div>
+    <div class="brandText"><h1>Trading OS</h1><div class="sub">Performance analytics,<br>trading coach and watchlist.</div></div>
+  </div>
+  <div class="sidebarNav">
+    <button class="sideBtn tab active" data-page="dashboard"><span class="sideIcon">⌂</span><span class="sideLabel">Dashboard</span></button>
+    <button class="sideBtn tab" data-page="watchlist"><span class="sideIcon">☆</span><span class="sideLabel">Watchlist</span></button>
+    <button class="sideBtn dataHead" id="dataToggle"><span class="sideIcon">⇩</span><span class="sideLabel">Data &amp; Import</span><span class="chev" id="dataChevron">⌃</span></button>
+    <div class="dataMenu" id="dataMenu">
+      <label for="file">＋ Add / Import CSV</label>
+      <button id="demo">Load IBKR demo</button>
+      <button id="clearData">Clear all trades</button>
+      <button id="dataQualityJump">Data Quality</button>
+      <select id="importMode" style="width:100%;margin-top:5px"><option value="auto">Import: Auto</option><option value="binance">Import: Binance Spot</option><option value="generic">Import: Generic CSV</option></select>
+      <label for="file" style="display:none">Add trades CSV</label>
+      <input id="file" type="file" accept=".csv,text/csv"><div id="importFeedback" class="importFeedback" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="sideBottom">
+    <button class="sideBtn"><span class="sideIcon">⚙</span><span class="sideLabel">Settings</span></button>
+    <button class="sideBtn" id="collapseBottom"><span class="sideIcon">‹</span><span class="sideLabel">Collapse</span></button>
+  </div>
+</aside>
+
+<div class="content">
+<header class="topbar">
+  <div class="topLeft">
+    <button class="collapseBtn" id="collapseBtn" title="Collapse sidebar">‹</button>
+    <div class="pageTitle" id="pageTitle">Dashboard</div>
+  </div>
+  <div class="topRight">
+    <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
+    <div class="marketStat">◷ <b id="clock">--:--</b></div>
+    <div class="marketStat">▣ <b id="today">---</b></div>
+    <select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
+    <span id="status" class="status">No trades loaded · Demo uses current IBKR YTD realized trades</span>
+  </div>
+</header>
+
+<main class="main">
+<section id="dashboard"><div id="healthBanner" class="hidden" aria-hidden="true"></div>
+<div class="importStatus" style="display:none"><span class="status" id="statusMirror"></span></div><div id="app" class="hidden">
+<div class="grid" id="kpis"></div>
+<div class="hidden" aria-hidden="true"><canvas id="equity"></canvas><canvas id="drawdown"></canvas></div>
+<div class="section panel symbolPanel collapsibleCard expanded">
+  <button class="collapseHeader" type="button" aria-expanded="true">
+    <span><h2>Stocks &amp; P/L</h2><span class="collapseHint">Realized result by symbol · best → worst</span></span>
+    <span class="collapseIcon">⌃</span>
+  </button>
+  <div class="collapseBody"><div id="symbols"></div></div>
+</div><div class="section diagnosticsSection">
+  <div class="metricGroupTitle">TRADE QUALITY</div>
+  <div class="diagnosticsCards">
+    <div class="panel collapsibleCard sortableCard" draggable="true" data-sort-key="diagnostic-consistency">
+      <button class="collapseHeader" type="button" aria-expanded="true"><h2>Consistency</h2><span class="collapseIcon">⌃</span></button>
+      <div class="collapseBody"><div id="consistency"></div></div>
+    </div>
+    <div class="panel collapsibleCard sortableCard" draggable="true" data-sort-key="diagnostic-risk">
+      <button class="collapseHeader" type="button" aria-expanded="true"><h2>Risk &amp; Reward</h2><span class="collapseIcon">⌃</span></button>
+      <div class="collapseBody"><div id="risk"></div></div>
+    </div>
+    <div class="panel collapsibleCard sortableCard" draggable="true" data-sort-key="diagnostic-quality">
+      <button class="collapseHeader" type="button" aria-expanded="true"><h2>Trade Quality</h2><span class="collapseIcon">⌃</span></button>
+      <div class="collapseBody"><div id="quality"></div></div>
+    </div>
+    <div class="panel collapsibleCard sortableCard" draggable="true" data-sort-key="diagnostic-fees">
+      <button class="collapseHeader" type="button" aria-expanded="true"><h2>Fees</h2><span class="collapseIcon">⌃</span></button>
+      <div class="collapseBody"><div id="fees"></div></div>
+    </div>
+  </div>
+</div><div class="section panel collapsibleCard">
+  <button class="collapseHeader" type="button" aria-expanded="false"><h2>Recent closed trades</h2><span class="collapseIcon">⌄</span></button>
+  <div class="collapseBody" hidden><div id="trades"></div></div>
+</div>
+<div class="section panel collapsibleCard">
+  <button class="collapseHeader" type="button" aria-expanded="false"><h2>Data quality &amp; import result</h2><span class="collapseIcon">⌄</span></button>
+  <div class="collapseBody" hidden><div id="dataQuality" class="sub">Import a CSV to see detected fields and whether the data is sufficient for coaching.</div></div>
+</div>
+<div id="empty" class="empty">Upload a broker/exchange CSV to start. The file is processed locally in your browser.<br><br><small>For Binance Spot Trade History, upload the CSV directly — columns like Time, Pair, Side, Price, Executed, Amount and Fee are supported.</small></div>
+</section>
+
+<section id="watchlist" class="hidden">
+<div class="panel watchToolbar"><input id="asset" placeholder="Ticker, e.g. NVDA"><input id="name" placeholder="Name (optional)"><select id="category"><option>Stock</option><option>Crypto</option><option>ETF</option><option>Other</option></select><button class="primary" id="add">Add asset</button><span class="status">Watchlist is saved in this browser.</span></div>
+<div class="watchgrid" id="watchgrid"></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id); let trades=[];
+const num=x=>{if(x==null||x==="")return null;let s=String(x).trim().replace(/\s/g,"").replace(/[$€£]/g,"").replace(/,/g,"");if(s.startsWith("(")&&s.endsWith(")"))s="-"+s.slice(1,-1);let n=Number(s.replace(/%$/,""));return Number.isFinite(n)?n:null};
+function parseCSV(text){
+ text=text.replace(/^\uFEFF/,"").replace(/\u0000/g,"");
+ const sample=text.split(/\r?\n/).filter(Boolean).slice(0,12).join("\n");
+ const counts={",":(sample.match(/,/g)||[]).length,";":(sample.match(/;/g)||[]).length,"\t":(sample.match(/\t/g)||[]).length};
+ const delim=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+ let rows=[],row=[],cell="",q=false;
+ for(let i=0;i<text.length;i++){
+  const c=text[i],n=text[i+1];
+  if(c=='"'&&q&&n=='"'){cell+='"';i++;continue}
+  if(c=='"'){q=!q;continue}
+  if(c===delim&&!q){row.push(cell);cell="";continue}
+  if((c=="\n"||c=="\r")&&!q){if(c=="\r"&&n=="\n")i++;row.push(cell);cell="";if(row.some(v=>v.trim()))rows.push(row);row=[];continue}
+  cell+=c;
+ }
+ row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
+ if(!rows.length)return [];
+ const headers=rows.shift().map((x,i)=>String(x).replace(/^\uFEFF/,"").replace(/^\s+|\s+$/g,"").replace(/^"|"$/g,"")||`Column ${i+1}`);
+ return {headers, rows:rows.map(r=>Object.fromEntries(headers.map((h,i)=>[h,(r[i]??"").trim()])))};
+}
+function pick(o,patterns){for(const p of patterns){const k=Object.keys(o).find(k=>p.test(k));if(k)return o[k]}return null}
+function normalize(raw){
+ return raw.map((o,i)=>{
+  let symbol=pick(o,[/^symbol$/i,/ticker/i,/instrument/i,/asset/i,/pair$/i,/product/i,/market/i,/trading.?pair/i])||"UNKNOWN";
+  let side=pick(o,[/^side$/i,/direction/i,/buy.?sell/i,/order.?side/i,/order.?type/i,/type/i])||"";
+  let executedRaw=pick(o,[/^executed$/i,/filled.*quantity/i,/executed.*quantity/i,/quantity$/i,/^qty$/i,/shares/i,/units/i]);
+  let amountRaw=pick(o,[/^amount$/i,/quote.*amount/i,/notional/i]);
+  let qty=num(executedRaw);
+  let price=num(pick(o,[/^price$/i,/fill.*price/i,/execution.*price/i,/avg.*price/i]));
+  // Binance exports values such as "0.00334BTC" and "199.95USDC".
+  if(qty===null && executedRaw) qty=num(String(executedRaw).match(/^[-+]?[\d.]+/)?.[0]);
+  if(amountRaw && qty===null) qty=num(String(amountRaw).match(/^[-+]?[\d.]+/)?.[0]);
+  let pnl=num(pick(o,[/^p.?l$/i,/profit/i,/realized.*p.?l/i,/realised.*p.?l/i,/net.*profit/i,/realized.*profit/i]));
+  let feeRaw=pick(o,[/fee/i,/commission/i,/trading.?fee/i]);
+  let fee=num(feeRaw);
+  if(fee===null && feeRaw) fee=num(String(feeRaw).match(/^[-+]?[\d.]+/)?.[0]);
+  let date=pick(o,[/^date$/i,/^time$/i,/timestamp/i,/executed.*time/i,/created/i,/transaction.*time/i])||"";
+  return {symbol:String(symbol).toUpperCase(),side:String(side).toUpperCase(),qty,price,pnl,fee,date,raw:o,i};
+ }).filter(x=>x.symbol!=="UNKNOWN");
+}
+function closedTrades(t){
+ // Analytical unit = a completed position, not an individual fill.
+ // If the import contains BUY/SELL executions, reconstruct positions with FIFO.
+ // Existing realized P/L is used only when an exit cannot be matched to an
+ // in-period entry (e.g. a position opened before the imported history).
+ const ordered=[...t].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ const books={},out=[];
+ for(const x of ordered){
+   const s=x.symbol;
+   books[s]??=[];
+   const sell=/SELL|^S$|OUT|DISPOSE/.test(x.side);
+   if(!sell){
+     if(Number.isFinite(x.qty)&&Number.isFinite(x.price)){
+       books[s].push({...x,remain:x.qty});
+     }
+     continue;
+   }
+   let rem=Number.isFinite(x.qty)?x.qty:0;
+   let matchedQty=0, entryValue=0, entryFee=0, firstDate=null;
+   const matchedIndices=[];
+   while(rem>1e-10&&books[s].length){
+     const b=books[s][0], q=Math.min(rem,b.remain||0);
+     if(q<=1e-10){books[s].shift();continue}
+     matchedQty+=q;
+     entryValue+=(b.price||0)*q;
+     entryFee+=(b.fee||0)*(q/(b.qty||q));
+     firstDate=firstDate?Math.min(Date.parse(firstDate),Date.parse(b.date))===Date.parse(firstDate)?firstDate:b.date:b.date;
+     matchedIndices.push(b.i);
+     rem-=q;b.remain-=q;
+     if(b.remain<=1e-10)books[s].shift();
+   }
+
+   const exitFee=(x.fee||0);
+   if(matchedQty>1e-10){
+     const pnl=(x.price*matchedQty-entryValue)-entryFee-exitFee;
+     const entry=entryValue/matchedQty;
+     const hold=firstDate&&x.date?(Date.parse(x.date)-Date.parse(firstDate))/86400000:null;
+     out.push({
+       symbol:s,qty:matchedQty,price:x.price,date:x.date,
+       entry,entryDate:firstDate,entryIndex:matchedIndices[0],
+       exitIndex:x.i,pnl,fee:entryFee+exitFee,holdingDays:hold,
+       tradeKey:`${s}|${firstDate}|${x.date}|${x.i}`
+     });
+   }
+
+   // If some quantity could not be matched, retain the unmatched portion as
+   // an "external entry" trade using IBKR's realized P/L where available.
+   if(rem>1e-10 && Number.isFinite(x.pnl)){
+     const ratio=x.qty?rem/x.qty:1;
+     out.push({
+       symbol:s,qty:rem,price:x.price,date:x.date,
+       entry:null,entryDate:null,entryIndex:null,exitIndex:x.i,
+       pnl:x.pnl*ratio,fee:exitFee*ratio,holdingDays:null,
+       externalEntry:true,tradeKey:`${s}|external|${x.date}|${x.i}`
+     });
+   }
+ }
+ return out;
+}
+function behaviorStats(t,c){
+ const ordered=[...t].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ const by={}; let avgDown=0,buyCount=0,buyAfterLoss=0;
+ for(const x of ordered){
+  const s=x.symbol;by[s]??={lastBuy:null,open:[]};
+  if(/BUY/.test(x.side)){
+   buyCount++;
+   const state=by[s];
+   if(state.open.length){
+    const avgEntry=state.open.reduce((sum,z)=>sum+z.price*z.qty,0)/state.open.reduce((sum,z)=>sum+z.qty,0);
+    if(x.price<avgEntry) avgDown++;
+   }
+   state.open.push({price:x.price,qty:x.qty||0});
+  } else if(/SELL/.test(x.side)){
+   let rem=x.qty||0,state=by[s];
+   while(rem>0&&state.open.length){let b=state.open[0],q=Math.min(rem,b.qty);rem-=q;b.qty-=q;if(b.qty<=1e-10)state.open.shift()}
+  }
+ }
+ const hold=c.filter(x=>x.entryDate&&x.date).map(x=>(new Date(x.date)-new Date(x.entryDate))/86400000).filter(x=>Number.isFinite(x));
+ return {avgDown,buyCount,avgDownRate:buyCount?avgDown/buyCount:0,avgHold:hold.length?avg(hold):null};
+}
+function money(x){return x==null||!Number.isFinite(x)?"—":(x<0?"-":"")+"$"+Math.abs(x).toLocaleString(undefined,{maximumFractionDigits:2})}
+function pct(x){return Number.isFinite(x)?(x*100).toFixed(1)+"%":"—"} function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function calc(){
+ const c=closedTrades(trades);if(!c.length){$("status").textContent="CSV loaded, but no closed P/L could be detected. Use the preview/error message below.";return}
+ c.sort((a,b)=>String(a.date).localeCompare(String(b.date)));const pn=c.map(x=>x.pnl||0),wins=pn.filter(x=>x>0),losses=pn.filter(x=>x<0);
+ let e=0,peak=0,maxDD=0,eq=[0],dd=[0];for(const p of pn){e+=p;peak=Math.max(peak,e);let d=e-peak;maxDD=Math.min(maxDD,d);eq.push(e);dd.push(d)}
+ const gw=wins.reduce((a,b)=>a+b,0),gl=Math.abs(losses.reduce((a,b)=>a+b,0)),pf=gl?gw/gl:null,wr=wins.length/pn.length,aw=avg(wins),al=avg(losses),pay=al?aw/Math.abs(al):null;
+ const bs=behaviorStats(trades,c);
+ const sampleStatus=pn.length<20?"LOW SAMPLE":pn.length<50?"EARLY":"USEFUL";
+ const symbolPn={}; c.forEach(x=>symbolPn[x.symbol]=(symbolPn[x.symbol]||0)+(x.pnl||0));
+ const ranked=Object.entries(symbolPn).sort((a,b)=>b[1]-a[1]);
+ const top3=ranked.slice(0,3), bottom=ranked[ranked.length-1];
+ const concentration=Math.abs(e)>0&&ranked.length?Math.max(...ranked.map(x=>Math.abs(x[1])))/Math.abs(e):0;
+ const healthReady=pn.length>=20;
+ const health=(e>0?25:0)+(pf!==null&&pf>=1.5?25:pf>=1?15:0)+(avg(pn)>0?25:0)+(maxDD===0||Math.abs(maxDD)<=Math.max(1,Math.abs(e)*.15)?25:10);
+ const healthClass=health>=75?"good":health>=50?"warn":"bad";
+ $("healthBanner").innerHTML=`<div class="healthTitle">${healthReady?(health>=75?"🟢 PROFITABLE — HEALTHY":"🟡 PROFITABLE — NEEDS ATTENTION"):"🟢 PROFITABLE — BUT SAMPLE IS STILL DEVELOPING"}</div><div class="healthSub">${healthReady?"Composite view of profitability, expectancy, risk and consistency.":"Your history is profitable, but we need more comparable closed trades before making a strong strategy verdict."}</div>`;
+ const performanceKpis=[
+["Net P/L",money(e),e>=0?"good":"bad","Am I actually making money?","↗"],
+["Expectancy / Trade",money(avg(pn)),avg(pn)>=0?"good":"bad","Average profit per closed trade","↗"],
+["Profit Factor",pf?.toFixed(2)??"—",pf>=1.5?"good":pf>=1?"warn":"bad","Total profits ÷ total losses","↗"],
+["Win Rate",pct(wr),wr>=.5?"good":"warn","Percentage of trades that are profitable","↗"]];
+const riskBehaviorKpis=[
+["Avg Win",money(aw),"good","Average profit on winning trades","↗"],
+["Avg Loss",money(al),"bad","Average loss on losing trades","↘"],
+["Max Drawdown",money(maxDD),"bad","Largest peak-to-trough loss","↘"],
+["Profit Concentration",concentration>.5?"HIGH":"OK",concentration>.5?"bad":"good","How dependent I am on a few winners","↘"],
+["Avg Holding Time",(()=>{const h=c.map(x=>x.holdingDays).filter(Number.isFinite);return h.length?avg(h).toFixed(1)+"d":"—"})(),"neutral","Average time a trade stays open","◷"],
+["Averaging Down",pct(bs.avgDownRate),bs.avgDownRate>.15?"bad":"good","How often I add to a losing position","↗"],
+["Best Symbol",ranked[0]?`${ranked[0][0]} ${money(ranked[0][1])}`:"—","good","My strongest symbol by realized P/L","↗"],
+["Worst Symbol",bottom?`${bottom[0]} ${money(bottom[1])}`:"—",bottom&&bottom[1]<0?"bad":"warn","My weakest symbol by realized P/L","↘"]];
+const metricCard=(x,i)=>`<div class="card sortableCard" draggable="true" data-sort-key="kpi-${i}"><div class="metricTop"><div class="label">${x[0]}</div><div class="metricIcon ${x[2]}">${x[4]}</div></div><div class="value ${x[2]}">${x[1]}</div><div class="hint">${esc(x[3])}</div></div>`;
+$("kpis").innerHTML=`<div class="metricGroupTitle">TRADING PERFORMANCE</div><div class="metricGroup performanceGroup">${performanceKpis.map(metricCard).join("")}</div><div class="metricGroupTitle">RISK, BEHAVIOR &amp; ATTRIBUTION</div><div class="metricGroup riskGroup">${riskBehaviorKpis.map((x,i)=>metricCard(x,i+performanceKpis.length)).join("")}</div>`;
+  enableReordering($("kpis").querySelector(".performanceGroup"),"tradingOS.performanceOrder");
+  enableReordering($("kpis").querySelector(".riskGroup"),"tradingOS.riskOrder");
+ $("quality").innerHTML=`<table><tr><td>Avg winner</td><td class="good">${money(aw)}</td></tr><tr><td>Avg loser</td><td class="bad">${money(al)}</td></tr><tr><td>Payoff ratio</td><td>${pay?pay.toFixed(2):"—"}</td></tr><tr><td>Best trade</td><td class="good">${money(Math.max(...pn))}</td></tr><tr><td>Worst trade</td><td class="bad">${money(Math.min(...pn))}</td></tr></table>`;
+ const daily={}; c.forEach(x=>{const d=String(x.date||"").slice(0,10);if(d){daily[d]=(daily[d]||0)+(x.pnl||0)}});
+ const dayVals=Object.values(daily),profDays=dayVals.filter(x=>x>0).length,lossDays=dayVals.filter(x=>x<0).length;
+ let totalFeesQuote=0, feeQuoteKnown=true;
+ trades.forEach(x=>{const raw=x.raw||{};const fk=Object.keys(raw).find(k=>/fee/i.test(k));const fv=raw[fk||""];const m=String(fv||"").match(/^([-+]?\\d*\\.?\\d+)([A-Za-z]+)?$/);if(!m){feeQuoteKnown=false;return}
+   const fvNum=Number(m[1]),fa=m[2]||"";
+   const pair=x.symbol||"",quote=pair.endsWith("USDC")?"USDC":pair.endsWith("USDT")?"USDT":null;
+   if(quote && fa===quote) totalFeesQuote+=fvNum;
+   else if(quote && x.price!=null) totalFeesQuote+=fvNum*x.price;
+   else feeQuoteKnown=false;
+ });
+ $("consistency").innerHTML=`<table><tr><td>Trading days</td><td>${dayVals.length}</td></tr><tr><td>Profitable days</td><td class="good">${profDays}</td></tr><tr><td>Loss days</td><td class="bad">${lossDays}</td></tr><tr><td>Profit-day rate</td><td>${dayVals.length?pct(profDays/dayVals.length):"—"}</td></tr></table>`;
+ $("risk").innerHTML=`<table><tr><td>Best trade</td><td class="good">${money(Math.max(...pn))}</td></tr><tr><td>Worst trade</td><td class="bad">${money(Math.min(...pn))}</td></tr><tr><td>Payoff ratio</td><td>${pay?pay.toFixed(2):"—"}</td></tr><tr><td>Loss / winner</td><td>${aw?Math.abs(al/aw).toFixed(2):"—"}</td></tr></table>`;
+ $("fees").innerHTML=`<table><tr><td>Estimated fees</td><td>${feeQuoteKnown?money(totalFeesQuote):"Mixed / unavailable"}</td></tr><tr><td>Fee basis</td><td>${feeQuoteKnown?"Quote currency":"Source currencies differ"}</td></tr><tr><td>Executions</td><td>${trades.length}</td></tr></table>`;
+ let priorities=[];
+ if(pn.length<20) priorities.push("Highest priority: sample is too small for a strategy verdict. Get 20–30+ comparable closed trades before changing the system.");
+ if(pn.length>=20 && pf<1) priorities.push("Primary issue: expectancy is negative. Do not increase size yet.");
+ if(pay!==null&&pay<1) priorities.push("Improve risk/reward: average loss is larger than average win.");
+ if(bs.avgDownRate>.15) priorities.push("Review averaging down. Mark planned adds separately from rescue trades.");
+ if(!priorities.length) priorities.push("Next: compare performance by setup, symbol, timeframe and market regime.");
+ 
+ const by={};for(const x of c){by[x.symbol]??=[];by[x.symbol].push(x.pnl||0)}
+ const symbolRows=Object.entries(by).sort((a,b)=>b[1].reduce((x,y)=>x+y,0)-a[1].reduce((x,y)=>x+y,0));
+$("symbols").innerHTML=`<table><tr><th>Symbol</th><th>P/L</th><th>Trades</th><th>Win%</th><th>Avg trade</th></tr>`+
+symbolRows.map(([s,a])=>{let p=a.reduce((x,y)=>x+y,0),w=a.filter(x=>x>0).length;return `<tr><td><b>${esc(s)}</b></td><td class="${p>=0?"good":"bad"}"><b>${money(p)}</b></td><td>${a.length}</td><td>${pct(w/a.length)}</td><td class="${p/a.length>=0?"good":"bad"}">${money(p/a.length)}</td></tr>`}).join("")+
+`</table>`;
+ const f=[];
+ if(pf<1)f.push(["bad","Your trading is losing money overall. Do not increase size until expectancy is positive."]);
+ if(pay!==null&&pay<1)f.push(["bad","Average winner is smaller than average loser. Your exits/risk-reward need work."]);
+ if(wr<.4&&pay<1.5)f.push(["bad","Low win rate and weak payoff: focus on entry quality and downside control."]);
+ if(bs.avgDownRate>.15)f.push(["bad",`You averaged down on ${Math.round(bs.avgDownRate*100)}% of buys. This is a key behavior to review: separate planned accumulation from defending a losing trade.`]);
+ if(maxDD<0 && Math.abs(maxDD)>Math.max(1,Math.abs(e)*.15))f.push(["warn","Drawdown is large relative to your total P/L. Position sizing may be too aggressive."]);
+ const counts={};c.forEach(x=>counts[x.symbol]=(counts[x.symbol]||0)+1);const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];if(top&&top[1]/c.length>.5)f.push(["warn",`${top[0]} is ${Math.round(top[1]/c.length*100)}% of closed trades. Check concentration and overtrading.`]);
+ if(bs.avgHold!==null)f.push(["good",`Average holding time: ${bs.avgHold.toFixed(1)} days. Track this by setup later to see whether your winners need more time.`]);
+ if(!f.length)f.push(["good","No major statistical warning flags detected. Next step: tag setups and market regime to find what actually drives your edge."]);
+ 
+ $("trades").innerHTML=`<table><tr><th>Date</th><th>Symbol</th><th>Qty</th><th>P/L</th></tr>`+c.slice(-40).reverse().map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.symbol)}</td><td>${x.qty??"—"}</td><td class="${x.pnl>=0?"good":"bad"}">${money(x.pnl)}</td></tr>`).join("")+"</table>";
+ $("dataQuality").innerHTML=`<b>${c.length}</b> closed trades reconstructed from <b>${trades.length}</b> execution rows. `+
+ (trades.some(x=>x.pnl!==null)?"Explicit realized P/L was found in the source CSV.":"P/L was reconstructed from FIFO BUY/SELL matching.")+
+ ` For market-context coaching (20 EMA, volume profile, trend), we will later add historical OHLCV data.`;
+ draw($("equity"),eq,false);draw($("drawdown"),dd,true);$("app").classList.remove("hidden");$("empty").classList.add("hidden");
+ const isBinance=trades.some(x=>/BTCUSDC|ETHUSDC|SOLUSDC/.test(x.symbol)) && trades.some(x=>x.raw && Object.keys(x.raw).some(k=>/^executed$/i.test(k)));
+ $("status").textContent=`${trades.length} rows loaded · ${c.length} closed trades analyzed${isBinance?" · Binance format recognized":""}`;
+}
+function draw(canvas,data,red){const ctx=canvas.getContext("2d"),dpr=devicePixelRatio||1,w=canvas.clientWidth,h=250;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);const min=Math.min(...data),max=Math.max(...data),range=max-min||1;ctx.beginPath();data.forEach((v,i)=>{let x=i/(data.length-1||1)*w,y=h-15-(v-min)/range*(h-30);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue(red?"--bad":"--accent").trim();ctx.lineWidth=2;ctx.stroke()}
+function loadText(text,name){
+ try{
+  const parsed=parseCSV(text);
+  if(!parsed.rows.length)throw Error("No data rows detected.");
+  trades=normalize(parsed.rows);
+  const headerText=parsed.headers.join(", ");
+  if(!trades.length)throw Error(`No recognizable trade rows. Headers detected: ${headerText}`);
+  const c=closedTrades(trades);
+  if(!c.length){
+   $("status").innerHTML=`<span class="error">CSV read successfully (${trades.length} rows), but no completed buy/sell pairs were found. Headers: ${esc(headerText)}</span>`;
+   $("empty").innerHTML=`<b>CSV imported, but no closed trades were detected.</b><br><br>
+   <small>Detected columns:</small><br><code>${esc(headerText)}</code><br><br>
+   Check that the export contains both BUY and SELL executions for the same asset. Open trades cannot produce realized P/L yet.`;
+   return;
+  }
+  calc();
+ }catch(err){
+  $("status").innerHTML=`<span class="error">${esc(err.message)}</span>`;
+ }
+}
+function rowKey(x){return [x.symbol,x.side,x.price,x.qty,x.date,JSON.stringify(x.raw||{})].join("|")}
+function mergeTrades(incoming){
+ const seen=new Set(trades.map(rowKey)); let added=0,duplicates=0;
+ for(const x of incoming){const k=rowKey(x);if(seen.has(k)){duplicates++;continue}seen.add(k);trades.push(x);added++}
+ return {added,duplicates};
+}
+$("file").onchange=async e=>{
+ const files=[...e.target.files];
+ if(!files.length)return;
+ const feedback=$("importFeedback");
+ feedback.className="importFeedback";
+ feedback.textContent=`Reading ${files.length} CSV file${files.length>1?"s":""}…`;
+ let addedTotal=0, duplicateTotal=0, failed=[];
+ for(const f of files){
+  try{
+   const text=await f.text();
+   const parsed=parseCSV(text);
+   if(!parsed.rows.length)throw Error("No data rows detected.");
+   const incoming=normalize(parsed.rows);
+   if(!incoming.length)throw Error(`No recognizable trade rows. Headers: ${parsed.headers.join(", ")}`);
+   const m=mergeTrades(incoming);
+   addedTotal+=m.added; duplicateTotal+=m.duplicates;
+  }catch(err){
+   failed.push(`${f.name}: ${err.message}`);
+  }
+ }
+ try{
+  if(addedTotal||trades.length){
+   calc();
+   feedback.className=failed.length?"importFeedback error":"importFeedback good";
+   feedback.textContent=`Imported ${addedTotal} new fills${duplicateTotal?` · ${duplicateTotal} duplicates skipped`:""}${failed.length?` · ${failed.length} failed`:""} `;
+  }else{
+   feedback.className="importFeedback error";
+   feedback.textContent=failed.join(" · ")||"No data imported.";
+  }
+ }catch(err){
+  feedback.className="importFeedback error";
+  feedback.textContent=`Import calculation failed: ${err.message}`;
+  console.error(err);
+ }
+ e.target.value="";
+};
+$("clearData").onclick=()=>{
+ if(!trades.length)return;
+ if(confirm("Clear all imported trades and reset the dashboard?")){
+  trades=[];$("app").classList.add("hidden");$("empty").classList.remove("hidden");
+  $("status").textContent="All trade data cleared";$("file").value="";
+ }
+};
+const IBKR_DEMO_DATA=[{"symbol":"SPCX","side":"SELL","qty":100.0,"price":169.83,"pnl":62.63005,"fee":2.36995,"date":"2026-06-12T16:56:16Z","entry":169.18,"entryDate":"2026-06-12T16:55:32Z","holdingDays":0.000509},{"symbol":"SPCX","side":"SELL","qty":90.0,"price":171.45,"pnl":117.914042,"fee":2.235958,"date":"2026-06-12T17:37:18Z","entry":170.115,"entryDate":"2026-06-12T17:31:43Z","holdingDays":0.003877},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":171.45,"pnl":13.212671,"fee":0.137329,"date":"2026-06-12T17:37:18Z","entry":170.115,"entryDate":"2026-06-12T17:31:43Z","holdingDays":0.003877},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":170.35,"pnl":5.662898,"fee":2.037102,"date":"2026-06-15T13:35:01Z","entry":169.58,"entryDate":"2026-06-15T11:13:09Z","holdingDays":0.098519},{"symbol":"SPCX","side":"SELL","qty":10.0,"price":174.49,"pnl":5.562045,"fee":2.037955,"date":"2026-06-15T14:16:43Z","entry":173.73,"entryDate":"2026-06-15T13:53:39Z","holdingDays":0.016019},{"symbol":"SPCX","side":"SELL","qty":1.0,"price":201.46,"pnl":26.140649,"fee":2.004351,"date":"2026-06-16T12:57:39Z","entry":173.315,"entryDate":"2026-06-15T14:50:45Z","holdingDays":0.921458},{"symbol":"SPCX","side":"SELL","qty":1.0,"price":211.275,"pnl":-0.609553,"fee":2.004553,"date":"2026-06-16T15:56:06Z","entry":209.88,"entryDate":"2026-06-16T14:39:51Z","holdingDays":0.052951},{"symbol":"NVDA","side":"SELL","qty":11.0,"price":192.18,"pnl":-27.315759,"fee":3.045759,"date":"2026-06-29T14:11:00Z","entry":194.386364,"entryDate":"2026-06-25T04:01:36Z","holdingDays":4.423194},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":294.275,"pnl":121.487369,"fee":2.062631,"date":"2026-07-01T19:27:07Z","entry":281.92,"entryDate":"2026-06-30T12:58:37Z","holdingDays":1.269792},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.83,"pnl":46.134989,"fee":2.065011,"date":"2026-07-02T14:31:21Z","entry":301.01,"entryDate":"2026-07-02T13:42:11Z","holdingDays":0.034144},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.95,"pnl":2.634964,"fee":1.165036,"date":"2026-07-02T14:42:56Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.003889},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.99,"pnl":3.034956,"fee":1.165044,"date":"2026-07-02T14:43:55Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.004572},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":305.99,"pnl":4.034956,"fee":0.165044,"date":"2026-07-02T14:43:55Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.004572},{"symbol":"AAPL","side":"SELL","qty":30.0,"price":306.3,"pnl":20.404677,"fee":1.495323,"date":"2026-07-02T14:44:32Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.005},{"symbol":"AAPL","side":"SELL","qty":22.0,"price":306.16,"pnl":11.616826,"fee":1.363174,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":6.0,"price":306.16,"pnl":3.440953,"fee":0.099047,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":12.0,"price":306.13,"pnl":6.521913,"fee":0.198087,"date":"2026-07-02T14:46:07Z","entry":305.57,"entryDate":"2026-07-02T14:37:20Z","holdingDays":0.0061},{"symbol":"AAPL","side":"SELL","qty":20.0,"price":307.925,"pnl":47.569115,"fee":2.130885,"date":"2026-07-02T16:39:38Z","entry":305.44,"entryDate":"2026-07-02T14:50:57Z","holdingDays":0.075475},{"symbol":"AAPL","side":"SELL","qty":10.0,"price":315.32,"pnl":24.633034,"fee":2.066966,"date":"2026-07-10T20:00:49Z","entry":312.65,"entryDate":"2026-07-06T15:05:05Z","holdingDays":4.20537},{"symbol":"NVDA","side":"SELL","qty":10.0,"price":205.021,"pnl":-29.134244,"fee":2.044244,"date":"2026-07-20T14:19:29Z","entry":207.73,"entryDate":"2026-07-16T14:04:40Z","holdingDays":4.010289},{"symbol":"INTC","side":"SELL","qty":40.0,"price":97.355,"pnl":444.661739,"fee":3.088261,"date":"2026-08-04T13:48:17Z","entry":86.16125,"entryDate":"2026-07-28T15:52:06Z","holdingDays":6.914016},{"symbol":"AAPL","side":"SELL","qty":1.0,"price":310.61,"pnl":4.3334,"fee":1.1066,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":7.0,"price":310.61,"pnl":37.333803,"fee":0.746197,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":1.0,"price":310.62,"pnl":5.3434,"fee":0.1066,"date":"2026-08-05T11:28:33Z","entry":305.17,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690162},{"symbol":"AAPL","side":"SELL","qty":6.0,"price":310.61,"pnl":34.825403,"fee":0.639597,"date":"2026-08-05T11:28:34Z","entry":304.699167,"entryDate":"2026-08-03T18:54:43Z","holdingDays":1.690174},{"symbol":"AAPL","side":"SELL","qty":5.0,"price":310.61,"pnl":29.492002,"fee":0.532998,"date":"2026-08-05T11:28:34Z","entry":304.605,"entryDate":"2026-08-04T13:49:42Z","holdingDays":0.901991},{"symbol":"AVGO","side":"SELL","qty":15.0,"price":428.48,"pnl":703.464585,"fee":3.135415,"date":"2026-08-10T13:26:26Z","entry":381.373333,"entryDate":"2026-07-27T14:16:23Z","holdingDays":13.965312},{"symbol":"TSLA","side":"SELL","qty":15.0,"price":327.2,"pnl":-443.17412,"fee":4.10412,"date":"2026-08-10T13:28:19Z","entry":356.471333,"entryDate":"2026-07-22T12:39:44Z","holdingDays":19.033738},{"symbol":"NVDA","side":"SELL","qty":52.0,"price":223.08,"pnl":1198.930585,"fee":6.249415,"date":"2026-08-10T13:28:45Z","entry":199.903462,"entryDate":"2026-07-27T14:36:47Z","holdingDays":13.952755},{"symbol":"GOOGL","side":"SELL","qty":40.0,"price":354.75,"pnl":918.499646,"fee":3.300354,"date":"2026-08-10T13:32:00Z","entry":331.705,"entryDate":"2026-07-24T09:34:42Z","holdingDays":17.164792}];
+$("demo").onclick=()=>{
+  trades=[];
+  mergeTrades(IBKR_DEMO_DATA.map((x,i)=>({...x,i:"ibkr-trade-demo-"+i})));
+  calc();
+  $("status").textContent=`IBKR trade demo loaded · ${trades.length} reconstructed closed trades`;
+};
+$("theme").onchange=e=>{document.documentElement.dataset.theme=e.target.value;localStorage.setItem("theme",e.target.value)};
+$("theme").value=localStorage.getItem("theme")||"light";document.documentElement.dataset.theme=$("theme").value;
+function syncStatus(){if($("statusMirror"))$("statusMirror").textContent=$("status").textContent||"";}setInterval(syncStatus,500);
+
+let sidebarCollapsed=localStorage.getItem("sidebarCollapsed")==="1";
+function setSidebarCollapsed(v){sidebarCollapsed=v;$("sidebar").classList.toggle("collapsed",v);localStorage.setItem("sidebarCollapsed",v?"1":"0");$("collapseBtn").textContent=v?"›":"‹";$("collapseBottom").querySelector(".sideLabel").textContent=v?"":"Collapse";}
+setSidebarCollapsed(sidebarCollapsed);
+$("collapseBtn").onclick=()=>setSidebarCollapsed(!sidebarCollapsed);
+$("collapseBottom").onclick=()=>setSidebarCollapsed(!sidebarCollapsed);
+
+let dataOpen=localStorage.getItem("dataOpen")!=="0";
+function setDataOpen(v){dataOpen=v;$("dataMenu").classList.toggle("hidden",!v);$("dataChevron").textContent=v?"⌃":"⌄";localStorage.setItem("dataOpen",v?"1":"0");}
+setDataOpen(dataOpen);
+$("dataToggle").onclick=()=>setDataOpen(!dataOpen);
+$("dataQualityJump").onclick=()=>{ $("dataQuality").scrollIntoView({behavior:"smooth",block:"center"}); setDataOpen(true); };
+
+function updateClock(){
+ const d=new Date();
+ $("clock").textContent=d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+ $("today").textContent=d.toLocaleDateString([], {month:"short",day:"numeric",year:"numeric"});
+}
+updateClock();setInterval(updateClock,1000);
+
+async function loadWeather(){
+ try{
+  const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia");
+  const j=await r.json();
+  if(j.current&&Number.isFinite(j.current.temperature_2m)) $("weatherTemp").textContent=Math.round(j.current.temperature_2m)+"°C";
+ }catch(e){ $("weatherTemp").textContent="--°C"; }
+}
+loadWeather();
+function renderWatch(){let a=JSON.parse(localStorage.getItem("watchlist")||"[]");$("watchgrid").innerHTML=a.length?a.map((x,i)=>`<div class="panel watch"><button class="remove" data-i="${i}">×</button><small>${esc(x.category)}</small><div class="price">${esc(x.ticker)}</div><div>${esc(x.name||"")}</div><span class="tag">Watch</span></div>`).join(""):`<div class="empty">No assets yet. Add stocks, crypto or ETFs you want to monitor.</div>`;document.querySelectorAll(".remove").forEach(b=>b.onclick=()=>{let a=JSON.parse(localStorage.getItem("watchlist")||"[]");a.splice(+b.dataset.i,1);localStorage.setItem("watchlist",JSON.stringify(a));renderWatch()})}
+$("add").onclick=()=>{let ticker=$("asset").value.trim().toUpperCase();if(!ticker)return;let a=JSON.parse(localStorage.getItem("watchlist")||"[]");a.push({ticker,name:$("name").value.trim(),category:$("category").value});localStorage.setItem("watchlist",JSON.stringify(a));$("asset").value="";$("name").value="";renderWatch()};renderWatch();
+document.querySelectorAll(".collapseHeader").forEach(btn=>btn.addEventListener("click",()=>{const card=btn.closest(".collapsibleCard"),body=card.querySelector(".collapseBody"),open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));body.hidden=open;card.classList.toggle("expanded",!open);const icon=btn.querySelector(".collapseIcon");if(icon)icon.textContent=open?"⌄":"⌃";}));
+
+function enableReordering(container, storageKey){
+  if(!container) return;
+  const saved=JSON.parse(localStorage.getItem(storageKey)||"null");
+  const applyOrder=()=>{
+    const items=[...container.querySelectorAll(":scope > .sortableCard")];
+    if(!items.length)return;
+    const order=JSON.parse(localStorage.getItem(storageKey)||"null");
+    if(!Array.isArray(order))return;
+    const map=new Map(items.map(el=>[el.dataset.sortKey,el]));
+    order.forEach(k=>{const el=map.get(k);if(el)container.appendChild(el)});
+  };
+  applyOrder();
+
+  let dragged=null;
+  container.addEventListener("dragstart",e=>{
+    const card=e.target.closest(".sortableCard");
+    if(!card)return;
+    dragged=card;
+    card.classList.add("dragging");
+    e.dataTransfer.effectAllowed="move";
+    e.dataTransfer.setData("text/plain",card.dataset.sortKey);
+  });
+  container.addEventListener("dragover",e=>{
+    if(!dragged)return;
+    const target=e.target.closest(".sortableCard");
+    if(!target||target===dragged||target.parentElement!==container)return;
+    e.preventDefault();
+    container.querySelectorAll(".dropTarget").forEach(x=>x.classList.remove("dropTarget"));
+    target.classList.add("dropTarget");
+    const r=target.getBoundingClientRect();
+    if(e.clientX<r.left+r.width/2) container.insertBefore(dragged,target);
+    else container.insertBefore(dragged,target.nextSibling);
+  });
+  container.addEventListener("dragend",()=>{
+    if(!dragged)return;
+    dragged.classList.remove("dragging");
+    container.querySelectorAll(".dropTarget").forEach(x=>x.classList.remove("dropTarget"));
+    localStorage.setItem(storageKey,JSON.stringify([...container.querySelectorAll(":scope > .sortableCard")].map(x=>x.dataset.sortKey)));
+    dragged=null;
+  });
+}
+enableReordering($("kpis").querySelector(".performanceGroup"),"tradingOS.performanceOrder");
+enableReordering($("kpis").querySelector(".riskGroup"),"tradingOS.riskOrder");
+if(document.querySelector(".diagnosticsCards"))enableReordering(document.querySelector(".diagnosticsCards"),"tradingOS.diagnosticOrder");
+</script>
+</body></html>
