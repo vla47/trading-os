@@ -163,6 +163,21 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:8px 6px
 .userMenu .topDropdown .dataMenu{display:block !important}
 </style>
 </head>
+<style>
+/* Safety overrides to prevent cards overlapping on mobile/tablet */
+@media (max-width:1024px){
+  .grid, .metricGroup, .performanceGroup, .riskGroup, .diagnosticsCards{ 
+    gap:8px !important;
+    row-gap:8px !important;
+    column-gap:8px !important;
+    align-items:start !important;
+    grid-auto-rows: min-content !important;
+  }
+  .card, .panel{position:relative;z-index:1;margin-bottom:8px !important;break-inside:avoid;page-break-inside:avoid;}
+  .card{clear:both}
+}
+</style>
+</head>
 <body>
 <div class="layout">
 <!-- Sidebar removed per user request -->
