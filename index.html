@@ -177,6 +177,13 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:8px 6px
   .card{clear:both}
 }
 </style>
+<style>
+/* For small phones (including iPhone 14 Pro), force single-column and zero gaps */
+@media (max-width:420px){
+  .grid, .performanceGroup, .riskGroup, .metricGroup, .diagnosticsCards{grid-template-columns:1fr !important;gap:0 !important;row-gap:0 !important;column-gap:0 !important}
+  .card, .panel{margin-bottom:0 !important;padding:8px !important}
+}
+</style>
 </head>
 <body>
 <div class="layout">
