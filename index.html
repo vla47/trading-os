@@ -60,6 +60,8 @@ th{color:var(--muted);font-weight:600;font-size:12px}
 .flag.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
 .tag{display:inline-block;font-size:12px;padding:1px 6px;border-radius:8px;background:var(--panel2);color:var(--accent);margin:1px}
 canvas{width:100%;height:230px;display:block}
+#kpiEdge .card{min-width:0}
+.mbar{display:flex;align-items:center;gap:8px;min-width:0}.mbar span{display:block;height:10px;border-radius:3px;min-width:2px;flex:0 0 auto;max-width:70%}.mbar .pos{background:var(--good)}.mbar .neg{background:var(--bad)}.mbar b{font-weight:600;white-space:nowrap}.monthT .bars{width:60%}
 .unlock{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}.unlock.hidden{display:none}.unlock input[type=password]{padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:8px;background:transparent;color:inherit;min-width:200px}.remember{display:flex;gap:5px;align-items:center;color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:55px 20px;line-height:1.6}
 .dq{font-size:14px;line-height:1.6}
@@ -115,6 +117,8 @@ canvas{width:100%;height:230px;display:block}
     <div class="metricGroup" id="kpiR"></div>
     <div class="groupTitle">RULES &amp; RISK · checked against Trading plan §7</div>
     <div class="metricGroup" id="kpiRules"></div>
+    <div class="groupTitle">EDGE &amp; CONSISTENCY · closed swing trades</div>
+    <div class="metricGroup" id="kpiEdge"></div>
 
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
 
@@ -122,6 +126,8 @@ canvas{width:100%;height:230px;display:block}
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>By setup / tag</h2><span class="sub">#tags from Setup / Notes</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="tagTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade · shaded = drawdown</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
     </div>
+
+    <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win%</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
 
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Stocks &amp; P/L</h2><span class="sub">Realized by symbol · best → worst</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="symTbl"></div></div>
 
@@ -309,6 +315,7 @@ function metrics(j) {
     breaches: withR.filter((t) => t.R < RULES.stopBreachR).length,
     holdW: avg(wins.map((t) => t.hold).filter(Number.isFinite)), holdL: avg(losses.map((t) => t.hold).filter(Number.isFinite)),
     avgDownTrades: swing.filter((t) => t.addsToLoser).length, unreal, openRisk,
+    best: pn.length ? Math.max(...pn) : NaN, worst: pn.length ? Math.min(...pn) : NaN,
     etfRealized: sum(etf.filter((t) => !t.open).map((t) => t.realized)), etfCur: etf[0]?.cur || "EUR",
   };
 }
@@ -349,6 +356,33 @@ function render(j, sourceName) {
     card("Loss streaks", `${m.maxStreak}`, m.breakers ? "warn" : "good", `Longest run · ${m.breakers}× hit ${RULES.lossStreak} in a row`, [`Breaker: ${RULES.lossStreak}`, m.breakers ? "bad" : "good"]),
   ].join("");
 
+  // edge & consistency
+  const payoff = m.al ? m.aw / Math.abs(m.al) : null;
+  const top5 = [...m.closed].map((t) => t.realized).sort((a, b) => b - a).slice(0, 5);
+  const conc = m.net > 0 ? sum(top5.filter((x) => x > 0)) / m.net : null;
+  const symP = {}; for (const t of m.closed) symP[t.sym] = (symP[t.sym] || 0) + t.realized;
+  const topSyms = Object.entries(symP).sort((a, b) => b[1] - a[1]).slice(0, 2).filter((x) => x[1] > 0);
+  const byDay = {}; for (const t of m.closed) byDay[t.exitDate] = (byDay[t.exitDate] || 0) + t.realized;
+  const dayV = Object.values(byDay), profDays = dayV.filter((x) => x > 0).length;
+  const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
+  $("kpiEdge").innerHTML = [
+    card("Payoff ratio", payoff ? payoff.toFixed(2) : "—", payoff >= 2 ? "good" : payoff >= 1 ? "warn" : "bad", `Best ${money(m.best)} · worst ${money(m.worst)}`),
+    card("Profit concentration", conc != null ? pct(conc) : "—", conc == null ? "" : conc > 0.5 ? "warn" : "good",
+      (conc != null ? "Top 5 trades · " : "") + topSyms.map(([k, v]) => `${k} ${m.net > 0 ? pct(v / m.net) : money(v)}`).join(" · ")),
+    card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
+      holdBad ? "Losers held longer than winners" : "Winners held at least as long as losers", ["Cut losers fast", holdBad ? "bad" : "good"]),
+    card("Profitable days", dayV.length ? pct(profDays / dayV.length) : "—", profDays / dayV.length >= 0.5 ? "good" : "warn", `${profDays} of ${dayV.length} days with a closed trade`),
+  ].join("");
+
+  // monthly
+  const byMon = {}; for (const t of m.closed) (byMon[t.exitDate.slice(0, 7)] ??= []).push(t);
+  const mons = Object.entries(byMon).sort((a, b) => a[0].localeCompare(b[0]));
+  const mMax = Math.max(1, ...mons.map(([, ts]) => Math.abs(sum(ts.map((t) => t.realized)))));
+  $("monthTbl").innerHTML = mons.length ? `<table class="monthT"><tr><th class="l">Month</th><th class="l bars">P/L</th><th>Trades</th><th>Win%</th></tr>` +
+    mons.map(([k, ts]) => { const p = sum(ts.map((t) => t.realized));
+      const lbl = new Date(k + "-01T00:00:00").toLocaleDateString(undefined, { month: "short", year: "numeric" });
+      return `<tr><td class="l">${esc(lbl)}</td><td class="l bars"><div class="mbar"><span class="${p >= 0 ? "pos" : "neg"}" style="width:${(Math.abs(p) / mMax * 100).toFixed(1)}%"></span><b class="${cls(p)}">${money(p)}</b></div></td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td></tr>`; }).join("") + `</table>` : `<div class="empty">No closed trades.</div>`;
+
   // open positions
   $("openTbl").innerHTML = m.openT.length ? `<table><tr><th>Ticker</th><th>Shares</th><th>Avg cost</th><th>Last</th><th>Stop</th><th>Unrealized</th><th>Risk to stop</th><th>% of NLV</th><th class="l">Flags</th></tr>` +
     m.openT.map((t) => `<tr><td><b>${esc(t.sym)}</b>${t.dir < 0 ? " <span class='muted'>short</span>" : ""}</td><td>${t.openShares}</td><td>${money(t.cost, t.cur, 2)}</td><td>${money(t.last, t.cur, 2)}</td>
@@ -378,7 +412,7 @@ function render(j, sourceName) {
   // data quality
   const noStop = m.closed.filter((t) => t.R == null).length, untagged = m.closed.filter((t) => !t.tags.length).length;
   $("dataQuality").innerHTML = `<b>${j.rows}</b> rows → <b>${j.trades.length}</b> trades (${m.closed.length} closed swing, ${m.openT.length} open, ${m.all.filter((t) => t.section === "etf").length} ETF/long-term).<br>
-    Missing stop: <b class="${noStop ? "warn" : "good"}">${noStop}</b> closed trades · Untagged: <b class="${untagged ? "warn" : "good"}">${untagged}</b> · Holding winners ${m.holdW.toFixed(1)}d vs losers ${m.holdL.toFixed(1)}d<br>
+    Missing stop: <b class="${noStop ? "warn" : "good"}">${noStop}</b> closed trades · Untagged: <b class="${untagged ? "warn" : "good"}">${untagged}</b><br>
     ETF / long-term realized: <b class="${cls(m.etfRealized)}">${money(m.etfRealized, m.etfCur, 2)}</b> (kept out of the swing stats; different currency)<br>
     Account NLV: <b>${nlv ? money(nlv) : "not in journal"}</b> · Last IBKR sync: <b>${esc(j.sync || "—")}</b>${m.all.some((t) => t.orphan) ? " · Sells whose buy predates history are excluded." : ""}`;
 
