@@ -46,6 +46,8 @@ button:hover{border-color:var(--accent)}
 .rule.bad{color:var(--bad)}.rule.good{color:var(--good)}
 .section{margin-top:10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
+.metricGroup .card{min-width:0}
 .panel h2{font-size:18px;font-weight:800;margin:0}
 .panel .sub{font-size:12px}
 .collapseHeader{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:0;padding:0;text-align:left;border-radius:0}
@@ -65,7 +67,8 @@ canvas{width:100%;height:230px;display:block}
 .unlock{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}.unlock.hidden{display:none}.unlock input[type=password]{padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:8px;background:transparent;color:inherit;min-width:200px}.remember{display:flex;gap:5px;align-items:center;color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:55px 20px;line-height:1.6}
 .dq{font-size:14px;line-height:1.6}
-@media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}
+@media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.four{grid-template-columns:1fr}}
 @media(max-width:700px){.marketStat{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
 @media(max-width:420px){.metricGroup{grid-template-columns:1fr}}
 </style>
@@ -123,13 +126,27 @@ canvas{width:100%;height:230px;display:block}
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
 
     <div class="section two">
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>By setup / tag</h2><span class="sub">#tags from Setup / Notes</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="tagTbl"></div></div>
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade · shaded = drawdown</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
     </div>
 
-    <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win%</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
+    <div class="section two">
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win%</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>P/L per trade</h2><span class="sub">Each closed trade in exit order · green win, red loss</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="tradeBars"></canvas></div></div>
+    </div>
 
-    <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Stocks &amp; P/L</h2><span class="sub">Realized by symbol · best → worst</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="symTbl"></div></div>
+    <div class="groupTitle">TRADE QUALITY</div>
+    <div class="four">
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Consistency</h2><span class="sub">By day of exit</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="consTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Risk &amp; Reward</h2><span class="sub">Size of wins vs losses</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="rrTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Trade quality</h2><span class="sub">Typical trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="qualTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Fees &amp; activity</h2><span class="sub">Executions and pace</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="feeTbl"></div></div>
+    </div>
+
+    <div class="section two">
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>By setup / tag</h2><span class="sub">#tags from Setup / Notes</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="tagTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Stocks &amp; P/L</h2><span class="sub">Realized by symbol · best → worst</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="symTbl"></div></div>
+    </div>
 
     <div class="section panel collapsible"><button class="collapseHeader" type="button"><span><h2>Closed trades</h2><span class="sub">Newest first · one row per trade (first entry → last exit)</span></span><span class="collapseIcon">⌄</span></button><div class="collapseBody hidden" id="tradeTbl"></div></div>
 
@@ -250,10 +267,11 @@ function derive(t, nlv) {
   const R = riskOk && risk > 0 && !open && !t.orphan ? realized / risk : null;
 
   // lots (FIFO) for averaging-down detection and open cost basis
-  let lots = [], adds = 0, addsToLoser = 0, maxPos = 0, pos = 0;
+  let lots = [], adds = 0, addsToLoser = 0, maxPos = 0, pos = 0, entries = 0, maxCost = 0;
   for (const r of t.rows) {
     const q = r.side === opening ? r.shares : -r.shares;
     if (q > 0) {
+      entries++;
       if (lots.length) {
         adds++;
         const cost = sum(lots.map((l) => l.p * l.q)) / sum(lots.map((l) => l.q));
@@ -265,6 +283,7 @@ function derive(t, nlv) {
       while (rem > 1e-9 && lots.length) { const l = lots[0], m = Math.min(rem, l.q); l.q -= m; rem -= m; if (l.q <= 1e-9) lots.shift(); }
     }
     pos += q; maxPos = Math.max(maxPos, pos);
+    maxCost = Math.max(maxCost, sum(lots.map((l) => l.p * l.q)));
   }
   const lastNote = t.rows[t.rows.length - 1].note;
   const lastM = lastNote.match(/last\s*[$€]([\d,.]+)/i), unM = lastNote.match(/unrealized\s*([+−\-])[$€]([\d,.]+)/i);
@@ -284,7 +303,7 @@ function derive(t, nlv) {
   if (!riskOk && t.section === "swing") flags.push(["No stop", "warn"]);
   if (open && last != null && curStop != null && dir * (last - curStop) < 0) flags.push(["Below stop", "bad"]);
   if (posPct != null && posPct > RULES.positionPct * 1.1) flags.push([`Size ${pct(posPct)}`, "bad"]);
-  return { ...t, dir, cur, realized, open, tags, setup, R, risk: riskOk ? risk : null, adds, addsToLoser, maxPos, last, unrealized,
+  return { ...t, dir, cur, realized, open, tags, setup, R, risk: riskOk ? risk : null, adds, addsToLoser, entries, maxCost, maxPos, last, unrealized,
     curStop, openShares, cost, riskToStop, posPct, entryDate, exitDate, hold: exitDate ? days(entryDate, exitDate) : null, flags };
 }
 
@@ -296,11 +315,12 @@ function metrics(j) {
   const openT = swing.filter((t) => t.open);
   const pn = closed.map((t) => t.realized), wins = closed.filter((t) => t.realized > 0), losses = closed.filter((t) => t.realized <= 0);
   const gw = sum(wins.map((t) => t.realized)), gl = Math.abs(sum(losses.map((t) => t.realized)));
-  let e = 0, peak = 0, maxDD = 0, streak = 0, maxStreak = 0, breakers = 0;
+  let e = 0, peak = 0, maxDD = 0, streak = 0, maxStreak = 0, breakers = 0, wStreak = 0, maxWStreak = 0;
   const eq = [0], dd = [0];
   for (const t of closed) {
     e += t.realized; peak = Math.max(peak, e); maxDD = Math.min(maxDD, e - peak); eq.push(e); dd.push(e - peak);
-    if (t.realized <= 0) { streak++; if (streak === RULES.lossStreak) breakers++; maxStreak = Math.max(maxStreak, streak); } else streak = 0;
+    if (t.realized <= 0) { streak++; if (streak === RULES.lossStreak) breakers++; maxStreak = Math.max(maxStreak, streak); wStreak = 0; }
+    else { streak = 0; wStreak++; maxWStreak = Math.max(maxWStreak, wStreak); }
   }
   const withR = closed.filter((t) => t.R != null);
   const rWins = withR.filter((t) => t.R > 0), rLoss = withR.filter((t) => t.R <= 0);
@@ -315,6 +335,7 @@ function metrics(j) {
     breaches: withR.filter((t) => t.R < RULES.stopBreachR).length,
     holdW: avg(wins.map((t) => t.hold).filter(Number.isFinite)), holdL: avg(losses.map((t) => t.hold).filter(Number.isFinite)),
     avgDownTrades: swing.filter((t) => t.addsToLoser).length, unreal, openRisk,
+    maxWStreak, pn,
     best: pn.length ? Math.max(...pn) : NaN, worst: pn.length ? Math.min(...pn) : NaN,
     etfRealized: sum(etf.filter((t) => !t.open).map((t) => t.realized)), etfCur: etf[0]?.cur || "EUR",
   };
@@ -333,11 +354,16 @@ function render(j, sourceName) {
   const nlv = j.nlv;
   const n = m.closed.length, cov = n ? m.withR.length / n : 0;
 
+  const avgHold = avg(m.closed.map((t) => t.hold).filter(Number.isFinite));
   $("kpiPerf").innerHTML = [
     card("Net realized P/L", money(m.net), cls(m.net), `${n} closed trades`),
     card("Incl. open positions", money(m.net + m.unreal), cls(m.net + m.unreal), `Open: ${money(m.unreal)} unrealized at last sync`),
     card("Win rate", pct(m.wr), m.wr >= 0.5 ? "good" : "warn", `${m.closed.filter((t) => t.realized > 0).length}W / ${m.closed.filter((t) => t.realized <= 0).length}L · PF ${m.pf?.toFixed(2) ?? "—"}`),
-    card("Expectancy / trade", money(m.exp), cls(m.exp), `Avg win ${money(m.aw)} · avg loss ${money(m.al)}`),
+    card("Expectancy / trade", money(m.exp), cls(m.exp), "Average P/L per closed trade"),
+    card("Profit factor", m.pf?.toFixed(2) ?? "—", m.pf >= 1.5 ? "good" : m.pf >= 1 ? "warn" : "bad", "Gross profit ÷ gross loss"),
+    card("Avg win", money(m.aw), "good", "Average profit on winning trades"),
+    card("Avg loss", money(m.al), "bad", "Average loss on losing trades"),
+    card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
   ].join("");
 
   $("kpiR").innerHTML = [
@@ -364,6 +390,8 @@ function render(j, sourceName) {
   const topSyms = Object.entries(symP).sort((a, b) => b[1] - a[1]).slice(0, 2).filter((x) => x[1] > 0);
   const byDay = {}; for (const t of m.closed) byDay[t.exitDate] = (byDay[t.exitDate] || 0) + t.realized;
   const dayV = Object.values(byDay), profDays = dayV.filter((x) => x > 0).length;
+  const symAll = Object.entries(symP).sort((a, b) => b[1] - a[1]);
+  const allBuys = sum(m.swing.map((t) => t.entries)), adBuys = sum(m.swing.map((t) => t.addsToLoser)), adRate = allBuys ? adBuys / allBuys : 0;
   const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
   $("kpiEdge").innerHTML = [
     card("Payoff ratio", payoff ? payoff.toFixed(2) : "—", payoff >= 2 ? "good" : payoff >= 1 ? "warn" : "bad", `Best ${money(m.best)} · worst ${money(m.worst)}`),
@@ -372,7 +400,28 @@ function render(j, sourceName) {
     card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
       holdBad ? "Losers held longer than winners" : "Winners held at least as long as losers", ["Cut losers fast", holdBad ? "bad" : "good"]),
     card("Profitable days", dayV.length ? pct(profDays / dayV.length) : "—", profDays / dayV.length >= 0.5 ? "good" : "warn", `${profDays} of ${dayV.length} days with a closed trade`),
+    card("Averaging-down rate", pct(adRate), adRate > 0.15 ? "bad" : adRate > 0 ? "warn" : "good", `${adBuys} of ${allBuys} buys below average cost`),
+    card("Best symbol", symAll[0] ? esc(symAll[0][0]) : "—", "good", symAll[0] ? money(symAll[0][1]) + " realized" : ""),
+    card("Worst symbol", symAll.length ? esc(symAll[symAll.length - 1][0]) : "—", symAll.length && symAll[symAll.length - 1][1] < 0 ? "bad" : "warn", symAll.length ? money(symAll[symAll.length - 1][1]) + " realized" : ""),
+    card("Win / loss streak", `${m.maxWStreak} <span class="muted">/</span> ${m.maxStreak}`, "", "Longest run of winners / losers"),
   ].join("");
+
+  // trade quality panels
+  const kv = (rows) => `<table class="kv">${rows.map(([k, v, c = ""]) => `<tr><td>${k}</td><td class="${c}">${v}</td></tr>`).join("")}</table>`;
+  const dayArr = Object.entries(byDay).sort((a, b) => b[1] - a[1]);
+  const lossDays = dayV.filter((x) => x < 0).length;
+  const sortedPn = [...m.pn].sort((a, b) => a - b), med = sortedPn.length ? (sortedPn.length % 2 ? sortedPn[(sortedPn.length - 1) / 2] : (sortedPn[sortedPn.length / 2 - 1] + sortedPn[sortedPn.length / 2]) / 2) : NaN;
+  $("consTbl").innerHTML = kv([["Trading days", dayV.length], ["Profitable days", profDays, "good"], ["Loss days", lossDays, "bad"],
+    ["Profit-day rate", dayV.length ? pct(profDays / dayV.length) : "—"], ["Best day", dayArr[0] ? `${money(dayArr[0][1])} <span class="muted">${esc(dayArr[0][0])}</span>` : "—", "good"],
+    ["Worst day", dayArr.length ? `${money(dayArr[dayArr.length - 1][1])} <span class="muted">${esc(dayArr[dayArr.length - 1][0])}</span>` : "—", "bad"]]);
+  $("rrTbl").innerHTML = kv([["Best trade", money(m.best), "good"], ["Worst trade", money(m.worst), "bad"], ["Payoff ratio", payoff ? payoff.toFixed(2) : "—"],
+    ["Loss / winner", m.aw ? Math.abs(m.al / m.aw).toFixed(2) : "—"], ["Gross profit", money(sum(m.pn.filter((x) => x > 0))), "good"], ["Gross loss", money(sum(m.pn.filter((x) => x <= 0))), "bad"]]);
+  $("qualTbl").innerHTML = kv([["Avg winner", money(m.aw), "good"], ["Avg loser", money(m.al), "bad"], ["Median trade", money(med), cls(med)],
+    ["Expectancy (R)", fmtR(m.expR), cls(m.expR)], ["Avg hold winners", Number.isFinite(m.holdW) ? m.holdW.toFixed(1) + "d" : "—"], ["Avg hold losers", Number.isFinite(m.holdL) ? m.holdL.toFixed(1) + "d" : "—"]]);
+  const firstD = m.closed[0]?.entryDate, lastD = m.closed[m.closed.length - 1]?.exitDate, weeks = firstD && lastD ? Math.max(1, days(firstD, lastD) / 7) : NaN;
+  const execs = sum(m.swing.map((t) => t.rows.length));
+  $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Trades / week", Number.isFinite(weeks) ? (m.closed.length / weeks).toFixed(1) : "—"],
+    ["Avg position size", money(avg(m.closed.map((t) => t.maxCost)))], ["Commissions", "<span class='muted'>in IBKR P/L</span>"], ["Fees as separate line", "<span class='muted'>not synced</span>"]]);
 
   // monthly
   const byMon = {}; for (const t of m.closed) (byMon[t.exitDate.slice(0, 7)] ??= []).push(t);
@@ -416,12 +465,41 @@ function render(j, sourceName) {
     ETF / long-term realized: <b class="${cls(m.etfRealized)}">${money(m.etfRealized, m.etfCur, 2)}</b> (kept out of the swing stats; different currency)<br>
     Account NLV: <b>${nlv ? money(nlv) : "not in journal"}</b> · Last IBKR sync: <b>${esc(j.sync || "—")}</b>${m.all.some((t) => t.orphan) ? " · Sells whose buy predates history are excluded." : ""}`;
 
-  drawEquity($("equity"), m.eq, m.dd);
+  drawCharts(m);
   $("app").classList.remove("hidden");
   $("empty").classList.add("hidden");
   $("status").textContent = `${sourceName || "Trades.md"} · ${j.trades.length} trades · last sync ${j.sync || "—"} · loaded ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
+function drawCharts(m) {
+  drawEquity($("equity"), m.eq, m.dd);
+  drawDD($("drawdown"), m.dd);
+  drawBars($("tradeBars"), m.pn);
+}
+function chartCtx(canvas, h = 230) {
+  const ctx = canvas.getContext("2d"), dpr = devicePixelRatio || 1, w = canvas.clientWidth || 600;
+  canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + "px"; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement);
+  return { ctx, w, h, col: (v) => css.getPropertyValue(v).trim() };
+}
+function drawDD(canvas, dd) {
+  const { ctx, w, h, col } = chartCtx(canvas);
+  if (dd.length < 2) return;
+  const min = Math.min(-1, ...dd), pad = 14, X = (i) => (i / (dd.length - 1)) * (w - 2) + 1, Y = (v) => pad + (v / min) * (h - 2 * pad);
+  ctx.fillStyle = col("--bad"); ctx.globalAlpha = 0.18; ctx.beginPath(); ctx.moveTo(X(0), Y(0));
+  dd.forEach((v, i) => ctx.lineTo(X(i), Y(v))); ctx.lineTo(X(dd.length - 1), Y(0)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = col("--bad"); ctx.lineWidth = 2; ctx.beginPath(); dd.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)))); ctx.stroke();
+  ctx.fillStyle = col("--muted"); ctx.font = "12px Inter, system-ui"; ctx.fillText("$0", 4, 12); ctx.fillText(money(min), 4, h - 2);
+}
+function drawBars(canvas, pn) {
+  const { ctx, w, h, col } = chartCtx(canvas);
+  if (!pn.length) return;
+  const max = Math.max(1, ...pn.map(Math.abs)), pad = 14, mid = h / 2, bw = (w - 2) / pn.length;
+  ctx.strokeStyle = col("--line"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+  pn.forEach((v, i) => { const bh = (Math.abs(v) / max) * (mid - pad); ctx.fillStyle = col(v > 0 ? "--good" : "--bad");
+    ctx.fillRect(1 + i * bw + bw * 0.15, v > 0 ? mid - bh : mid, Math.max(1, bw * 0.7), Math.max(1, bh)); });
+  ctx.fillStyle = col("--muted"); ctx.font = "12px Inter, system-ui"; ctx.fillText(money(max), 4, 12); ctx.fillText(money(-max), 4, h - 2);
+}
 function drawEquity(canvas, eq, dd) {
   const css = getComputedStyle(document.documentElement), col = (v) => css.getPropertyValue(v).trim();
   const ctx = canvas.getContext("2d"), dpr = devicePixelRatio || 1, w = canvas.clientWidth || 600, h = 230;
@@ -507,7 +585,7 @@ function initUI() {
   let theme = "light"; try { theme = localStorage.getItem("theme") || "light"; } catch (e) {}
   $("theme").value = theme; document.documentElement.dataset.theme = theme;
   $("theme").onchange = (e) => { document.documentElement.dataset.theme = e.target.value; try { localStorage.setItem("theme", e.target.value); } catch (err) {} if (lastText) render(parseJournal(lastText), lastName); };
-  addEventListener("resize", () => { if (lastText) drawEquity($("equity"), metrics(parseJournal(lastText)).eq, metrics(parseJournal(lastText)).dd); });
+  let rzT; addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(() => { if (lastText) drawCharts(metrics(parseJournal(lastText))); }, 150); });
   // clock + weather (Sofia)
   const tick = () => { const d = new Date(); $("clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); $("today").textContent = d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }); };
   tick(); setInterval(tick, 15000);
