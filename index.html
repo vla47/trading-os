@@ -116,7 +116,7 @@ canvas{width:100%;height:230px;display:block}
   <div id="app" class="hidden">
     <div class="groupTitle">PERFORMANCE · closed swing trades</div>
     <div class="metricGroup" id="kpiPerf"></div>
-    <div class="groupTitle">RISK UNITS (R) · needs Stop on the entry row</div>
+    <div class="groupTitle" id="kpiRTitle">RISK UNITS (R) · needs Stop on the entry row</div>
     <div class="metricGroup" id="kpiR"></div>
     <div class="groupTitle">RULES &amp; RISK · checked against Trading plan §7</div>
     <div class="metricGroup" id="kpiRules"></div>
@@ -137,9 +137,9 @@ canvas{width:100%;height:230px;display:block}
 
     <div class="groupTitle">TRADE QUALITY</div>
     <div class="four">
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Consistency</h2><span class="sub">By day of exit</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="consTbl"></div></div>
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Risk &amp; Reward</h2><span class="sub">Size of wins vs losses</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="rrTbl"></div></div>
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Trade quality</h2><span class="sub">Typical trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="qualTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Consistency</h2><span class="sub">By day of exit · profitable-day rate is in the cards</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="consTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Risk &amp; Reward</h2><span class="sub">% of position · win rate you need to break even</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="rrTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Trade quality</h2><span class="sub">Return on position size</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="qualTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Fees &amp; activity</h2><span class="sub">Executions and pace</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="feeTbl"></div></div>
     </div>
 
@@ -366,6 +366,8 @@ function render(j, sourceName) {
     card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
   ].join("");
 
+  const hasR = m.withR.length > 0;
+  $("kpiRTitle").classList.toggle("hidden", !hasR); $("kpiR").classList.toggle("hidden", !hasR);
   $("kpiR").innerHTML = [
     card("Stop coverage", pct(cov), cov >= 0.9 ? "good" : "warn", `${m.withR.length} of ${n} closed trades have a stop`),
     card("Expectancy (R)", fmtR(m.expR), cls(m.expR), `Total ${fmtR(m.totR)}`),
@@ -394,7 +396,7 @@ function render(j, sourceName) {
   const allBuys = sum(m.swing.map((t) => t.entries)), adBuys = sum(m.swing.map((t) => t.addsToLoser)), adRate = allBuys ? adBuys / allBuys : 0;
   const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
   $("kpiEdge").innerHTML = [
-    card("Payoff ratio", payoff ? payoff.toFixed(2) : "—", payoff >= 2 ? "good" : payoff >= 1 ? "warn" : "bad", `Best ${money(m.best)} · worst ${money(m.worst)}`),
+    card("Payoff ratio", payoff ? payoff.toFixed(2) : "—", payoff >= 2 ? "good" : payoff >= 1 ? "warn" : "bad", "Avg win ÷ avg loss"),
     card("Profit concentration", conc != null ? pct(conc) : "—", conc == null ? "" : conc > 0.5 ? "warn" : "good",
       (conc != null ? "Top 5 trades · " : "") + topSyms.map(([k, v]) => `${k} ${m.net > 0 ? pct(v / m.net) : money(v)}`).join(" · ")),
     card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
@@ -411,13 +413,21 @@ function render(j, sourceName) {
   const dayArr = Object.entries(byDay).sort((a, b) => b[1] - a[1]);
   const lossDays = dayV.filter((x) => x < 0).length;
   const sortedPn = [...m.pn].sort((a, b) => a - b), med = sortedPn.length ? (sortedPn.length % 2 ? sortedPn[(sortedPn.length - 1) / 2] : (sortedPn[sortedPn.length / 2 - 1] + sortedPn[sortedPn.length / 2]) / 2) : NaN;
-  $("consTbl").innerHTML = kv([["Trading days", dayV.length], ["Profitable days", profDays, "good"], ["Loss days", lossDays, "bad"],
-    ["Profit-day rate", dayV.length ? pct(profDays / dayV.length) : "—"], ["Best day", dayArr[0] ? `${money(dayArr[0][1])} <span class="muted">${esc(dayArr[0][0])}</span>` : "—", "good"],
+  $("consTbl").innerHTML = kv([["Trading days", dayV.length], ["Loss days", lossDays, lossDays ? "bad" : ""],
+    ["Avg P/L per day", money(avg(dayV)), cls(avg(dayV))], ["Active weeks", new Set(Object.keys(byDay).map((d) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10); })).size], ["Best day", dayArr[0] ? `${money(dayArr[0][1])} <span class="muted">${esc(dayArr[0][0])}</span>` : "—", "good"],
     ["Worst day", dayArr.length ? `${money(dayArr[dayArr.length - 1][1])} <span class="muted">${esc(dayArr[dayArr.length - 1][0])}</span>` : "—", "bad"]]);
-  $("rrTbl").innerHTML = kv([["Best trade", money(m.best), "good"], ["Worst trade", money(m.worst), "bad"], ["Payoff ratio", payoff ? payoff.toFixed(2) : "—"],
-    ["Loss / winner", m.aw ? Math.abs(m.al / m.aw).toFixed(2) : "—"], ["Gross profit", money(sum(m.pn.filter((x) => x > 0))), "good"], ["Gross loss", money(sum(m.pn.filter((x) => x <= 0))), "bad"]]);
-  $("qualTbl").innerHTML = kv([["Avg winner", money(m.aw), "good"], ["Avg loser", money(m.al), "bad"], ["Median trade", money(med), cls(med)],
-    ["Expectancy (R)", fmtR(m.expR), cls(m.expR)], ["Avg hold winners", Number.isFinite(m.holdW) ? m.holdW.toFixed(1) + "d" : "—"], ["Avg hold losers", Number.isFinite(m.holdL) ? m.holdL.toFixed(1) + "d" : "—"]]);
+  const ret = (t) => (t.maxCost ? t.realized / t.maxCost : NaN);
+  const rW = m.closed.filter((t) => t.realized > 0).map(ret).filter(Number.isFinite), rL = m.closed.filter((t) => t.realized <= 0).map(ret).filter(Number.isFinite);
+  const rAll = m.closed.map(ret).filter(Number.isFinite), rS = [...rAll].sort((a, b) => a - b);
+  const rMed = rS.length ? (rS.length % 2 ? rS[(rS.length - 1) / 2] : (rS[rS.length / 2 - 1] + rS[rS.length / 2]) / 2) : NaN;
+  const sp = (x, dp = 1) => (Number.isFinite(x) ? (x >= 0 ? "+" : MINUS) + Math.abs(x * 100).toFixed(dp) + "%" : "—");
+  const be = m.aw && m.al ? Math.abs(m.al) / (m.aw + Math.abs(m.al)) : NaN;
+  $("rrTbl").innerHTML = kv([["Gross profit", money(sum(m.pn.filter((x) => x > 0))), "good"], ["Gross loss", money(sum(m.pn.filter((x) => x <= 0))), "bad"],
+    ["Avg win %", sp(avg(rW)), "good"], ["Avg loss %", sp(avg(rL)), "bad"],
+    ["Break-even win rate", pct(be), m.wr > be ? "good" : "bad"], ["Edge over break-even", Number.isFinite(be) ? (m.wr - be >= 0 ? "+" : MINUS) + Math.abs((m.wr - be) * 100).toFixed(0) + " pts" : "—", m.wr > be ? "good" : "bad"]]);
+  $("qualTbl").innerHTML = kv([["Median trade", money(med), cls(med)], ["Avg return / trade", sp(avg(rAll)), cls(avg(rAll))], ["Median return", sp(rMed), cls(rMed)],
+    ["Largest win %", rS.length ? sp(rS[rS.length - 1]) : "—", "good"], ["Largest loss %", rS.length ? sp(rS[0]) : "—", "bad"],
+    ["Trades > +1% / < −1%", `${rAll.filter((x) => x > 0.01).length} <span class="muted">/</span> ${rAll.filter((x) => x < -0.01).length}`]]);
   const firstD = m.closed[0]?.entryDate, lastD = m.closed[m.closed.length - 1]?.exitDate, weeks = firstD && lastD ? Math.max(1, days(firstD, lastD) / 7) : NaN;
   const execs = sum(m.swing.map((t) => t.rows.length));
   $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Trades / week", Number.isFinite(weeks) ? (m.closed.length / weeks).toFixed(1) : "—"],
@@ -442,9 +452,9 @@ function render(j, sourceName) {
   const byTag = {};
   for (const t of m.closed) for (const k of t.tags.length ? t.tags : ["untagged"]) (byTag[k] ??= []).push(t);
   const tagRows = Object.entries(byTag).sort((a, b) => sum(b[1].map((t) => t.realized)) - sum(a[1].map((t) => t.realized)));
-  $("tagTbl").innerHTML = `<table><tr><th>Tag</th><th>Trades</th><th>Win%</th><th>P/L</th><th>Avg R</th><th>Total R</th></tr>` +
+  $("tagTbl").innerHTML = `<table><tr><th>Tag</th><th>Trades</th><th>Win%</th><th>P/L</th>${hasR ? "<th>Avg R</th><th>Total R</th>" : ""}</tr>` +
     tagRows.map(([k, ts]) => { const p = sum(ts.map((t) => t.realized)), rs = ts.filter((t) => t.R != null).map((t) => t.R);
-      return `<tr><td>${k === "untagged" ? "<span class='muted'>untagged</span>" : `<span class="tag">${esc(k)}</span>`}</td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td><td class="${cls(p)}">${money(p)}</td><td>${fmtR(avg(rs))}</td><td>${rs.length ? fmtR(sum(rs)) : "—"}</td></tr>`; }).join("") +
+      return `<tr><td>${k === "untagged" ? "<span class='muted'>untagged</span>" : `<span class="tag">${esc(k)}</span>`}</td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td><td class="${cls(p)}">${money(p)}</td>${hasR ? `<td>${fmtR(avg(rs))}</td><td>${rs.length ? fmtR(sum(rs)) : "—"}</td>` : ""}</tr>`; }).join("") +
     `</table>` + (byTag.untagged ? `<div class="sub" style="margin-top:6px">Add #tags in Setup / Notes (e.g. #breakout, #ep, #mistake-chased) to compare setups.</div>` : "");
 
   // symbols
