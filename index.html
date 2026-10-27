@@ -64,13 +64,6 @@ th{color:var(--muted);font-weight:600;font-size:12px}
 canvas{width:100%;height:230px;display:block}
 #kpiEdge .card{min-width:0}
 .mbar{display:flex;align-items:center;gap:8px;min-width:0}.mbar span{display:block;height:10px;border-radius:3px;min-width:2px;flex:0 0 auto;max-width:70%}.mbar .pos{background:var(--good)}.mbar .neg{background:var(--bad)}.mbar b{font-weight:600;white-space:nowrap}.monthT .bars{width:60%}
-.alerts{margin-bottom:6px}.alerts h2{font-size:16px;margin:0 0 8px}.alerts .ok{color:var(--good);font-weight:700}
-.alertList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;margin:0;padding:0;list-style:none}
-.alertList li{display:flex;gap:8px;align-items:baseline;font-size:14px;line-height:1.4;min-width:0}.alertList .dot{flex:0 0 9px;height:9px;border-radius:50%;transform:translateY(1px)}
-.dot.bad{background:var(--bad)}.dot.warn{background:var(--warn)}.alertList .ref{color:var(--muted);font-size:12px;white-space:nowrap}
-.alertHead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.alertCount{font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px}
-.alertCount.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}.alertCount.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.alertCount.good{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good)}
-@media(max-width:800px){.alertList{grid-template-columns:1fr}}
 .unlock{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}.unlock.hidden{display:none}.unlock input[type=password]{padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:8px;background:transparent;color:inherit;min-width:200px}.remember{display:flex;gap:5px;align-items:center;color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:55px 20px;line-height:1.6}
 .dq{font-size:14px;line-height:1.6}
@@ -121,7 +114,6 @@ canvas{width:100%;height:230px;display:block}
     <small>Everything is processed locally in your browser. The published copy is encrypted; only your passphrase opens it.</small></div>
 
   <div id="app" class="hidden">
-    <div class="alerts panel" id="alerts"></div>
     <div class="groupTitle">PERFORMANCE · closed swing trades</div>
     <div class="metricGroup" id="kpiPerf"></div>
     <div class="groupTitle" id="kpiRTitle">RISK UNITS (R) · needs Stop on the entry row</div>
@@ -172,11 +164,6 @@ canvas{width:100%;height:230px;display:block}
 
 // ---- RULES (from Trading/My Strategy/Trading plan.md §7) -------------------
 const RULES = {
-  maxInvestedPct: 0.5,    // ≤ 50% invested
-  maxOpenPositions: 10,   // regime max (green)
-  monthStopPct: -0.03,    // month down −3% → no new entries
-  partialDays: 3,         // day 3–5: sell ⅓–½ into strength
-  noProgressDays: 5,      // no progress after 3–5 days → exit or tighten
   positionPct: 0.05,      // 5% of account per position
   maxStopPct: 0.08,       // max stop distance from entry
   maxOpenRiskPct: 0.02,   // sum of open risk to stops
@@ -397,9 +384,6 @@ function render(j, sourceName) {
     card("Loss streaks", `${m.maxStreak}`, m.breakers ? "warn" : "good", `Longest run · ${m.breakers}× hit ${RULES.lossStreak} in a row`, [`Breaker: ${RULES.lossStreak}`, m.breakers ? "bad" : "good"]),
   ].join("");
 
-  // rule alerts (Trading plan §6–§7) -----------------------------
-  renderAlerts(m, j);
-
   // edge & consistency
   const payoff = m.al ? m.aw / Math.abs(m.al) : null;
   const top5 = [...m.closed].map((t) => t.realized).sort((a, b) => b - a).slice(0, 5);
@@ -497,50 +481,6 @@ function render(j, sourceName) {
   $("status").textContent = `${sourceName || "Trades.md"} · ${j.trades.length} trades · last sync ${j.sync || "—"} · loaded ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function renderAlerts(m, j) {
-  const A = [], nlv = j.nlv, today = new Date().toISOString().slice(0, 10);
-  const add = (sev, text, ref) => A.push({ sev, text, ref });
-  const list = (ts) => ts.map((t) => t.sym).join(", ");
-  // live: open positions
-  const noStop = m.openT.filter((t) => t.curStop == null);
-  if (noStop.length) add("bad", `No stop on ${noStop.length} open position${noStop.length > 1 ? "s" : ""}: <b>${esc(list(noStop))}</b>`, "§7 Never: enter without a stop");
-  const below = m.openT.filter((t) => t.last != null && t.curStop != null && t.dir * (t.last - t.curStop) < 0);
-  if (below.length) add("bad", `Price below stop: <b>${esc(list(below))}</b> — exit`, "§7 Stop");
-  const big = m.openT.filter((t) => t.posPct != null && t.posPct > RULES.positionPct * 1.1);
-  if (big.length) add("bad", `Oversized: ${big.map((t) => `<b>${esc(t.sym)}</b> ${pct(t.posPct, 1)}`).join(", ")} (target ${pct(RULES.positionPct)})`, "§7 Size");
-  const loserOpen = m.openT.filter((t) => t.addsToLoser);
-  if (loserOpen.length) add("bad", `Added to a losing position: <b>${esc(list(loserOpen))}</b>`, "§7 Never: add to a loser");
-  const invested = nlv ? sum(m.openT.filter((t) => t.last != null).map((t) => t.last * t.openShares)) / nlv : null;
-  if (invested != null && invested > RULES.maxInvestedPct) add("warn", `Invested ${pct(invested)} of account (max ${pct(RULES.maxInvestedPct)})`, "§7 Exposure");
-  if (m.openT.length > RULES.maxOpenPositions) add("warn", `${m.openT.length} open positions (max ${RULES.maxOpenPositions})`, "§7 Exposure");
-  if (m.openRisk != null && nlv && m.openRisk / nlv > RULES.maxOpenRiskPct) add("bad", `Open risk to stops ${pct(m.openRisk / nlv, 2)} (max ${pct(RULES.maxOpenRiskPct)})`, "§7 Exposure");
-  const age = (t) => days(t.entryDate, today);
-  const stale = m.openT.filter((t) => age(t) >= RULES.noProgressDays && (t.unrealized ?? 0) <= 0);
-  if (stale.length) add("warn", `No progress after ${RULES.noProgressDays}+ days: ${stale.map((t) => `<b>${esc(t.sym)}</b> ${Math.round(age(t))}d`).join(", ")} — exit or tighten`, "§6.3");
-  const partial = m.openT.filter((t) => age(t) >= RULES.partialDays && (t.unrealized ?? 0) > 0 && !t.rows.some((r) => r.side !== t.rows[0].side));
-  if (partial.length) add("warn", `Day ${RULES.partialDays}+ in profit, no partial yet: <b>${esc(list(partial))}</b> — sell ⅓–½, stop to breakeven`, "§6.1");
-  // circuit breakers
-  const last3 = m.closed.slice(-RULES.lossStreak);
-  if (last3.length === RULES.lossStreak && last3.every((t) => t.realized <= 0)) add("bad", `${RULES.lossStreak} losers in a row (last: ${esc(last3[last3.length - 1].exitDate)}) — no new entries next day, review them`, "§7 Circuit breaker");
-  const mon = today.slice(0, 7), monP = sum(m.closed.filter((t) => t.exitDate.startsWith(mon)).map((t) => t.realized));
-  if (nlv && monP / nlv <= RULES.monthStopPct) add("bad", `Month down ${pct(monP / nlv, 1)} — no new entries rest of month`, "§7 Circuit breaker");
-  // recent history (last 30 days of exits)
-  const recent = m.closed.filter((t) => days(t.exitDate, today) <= 30);
-  const rAvg = recent.filter((t) => t.addsToLoser), rBreach = recent.filter((t) => t.R != null && t.R < RULES.stopBreachR), rWide = recent.filter((t) => t.flags.some((f) => f[0] === "Stop > 8%"));
-  const rNoStop = recent.filter((t) => t.R == null);
-  if (rAvg.length) add("warn", `Last 30 days: ${rAvg.length} closed trade${rAvg.length > 1 ? "s" : ""} averaged down (${esc(Object.entries(rAvg.reduce((o, t) => ((o[t.sym] = (o[t.sym] || 0) + 1), o), {})).map(([k, v]) => v > 1 ? `${k} ×${v}` : k).join(", "))}) — tag #mistake-avgdown`, "§7 / §8");
-  if (rBreach.length) add("bad", `Last 30 days: ${rBreach.length} loss${rBreach.length > 1 ? "es" : ""} beyond −1R (stop not respected)`, "§7 Never moved down");
-  if (rWide.length) add("warn", `Last 30 days: ${rWide.length} trade${rWide.length > 1 ? "s" : ""} with stop wider than 8%`, "§7 Stop");
-  if (rNoStop.length) add("warn", `Last 30 days: ${rNoStop.length} closed trade${rNoStop.length > 1 ? "s" : ""} without a Stop in the journal`, "§8 Journal");
-  const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
-  if (holdBad) add("warn", `Losers held longer than winners (${m.holdL.toFixed(1)}d vs ${m.holdW.toFixed(1)}d)`, "§6 Cut losers fast");
-  A.sort((a, b) => (a.sev === b.sev ? 0 : a.sev === "bad" ? -1 : 1));
-  const nb = A.filter((a) => a.sev === "bad").length, nw = A.length - nb;
-  const badge = A.length ? `<span class="alertCount ${nb ? "bad" : "warn"}">${nb ? nb + " breach" + (nb > 1 ? "es" : "") : ""}${nb && nw ? " · " : ""}${nw ? nw + " warning" + (nw > 1 ? "s" : "") : ""}</span>` : `<span class="alertCount good">All clear</span>`;
-  $("alerts").innerHTML = `<div class="alertHead"><h2>Rule check</h2>${badge}</div>` + (A.length
-    ? `<ul class="alertList">${A.map((a) => `<li><span class="dot ${a.sev}"></span><span>${a.text} <span class="ref">${esc(a.ref)}</span></span></li>`).join("")}</ul>`
-    : `<div class="ok">No rule breaches — positions and recent trades are within Trading plan §6–§7.</div>`);
-}
 function drawCharts(m) {
   drawEquity($("equity"), m.eq, m.dd);
   drawDD($("drawdown"), m.dd);
