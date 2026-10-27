@@ -19,3 +19,8 @@ __pycache__/
 # Build
 dist/
 build/
+
+# Trading journal: never publish in plain text (only journal.enc.json)
+Trades journal.md
+Trades journal.js
+*.md.bak
