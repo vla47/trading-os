@@ -478,7 +478,9 @@ function render(j, sourceName) {
   drawCharts(m);
   $("app").classList.remove("hidden");
   $("empty").classList.add("hidden");
-  $("status").textContent = `${sourceName || "Trades.md"} · ${j.trades.length} trades · last sync ${j.sync || "—"} · loaded ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  $("status").textContent = updatedAt
+    ? `Updated ${fmtWhen(updatedAt)} · ${j.trades.length} trades`
+    : `${sourceName || "Trades.md"} · ${j.trades.length} trades · last sync ${j.sync || "—"} · loaded ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function drawCharts(m) {
@@ -626,9 +628,17 @@ async function decryptJournal(enc, pass) {
   const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(enc.iv) }, key, b64(enc.ct));
   return new TextDecoder().decode(pt);
 }
-let encCache = null;
+let encCache = null, updatedAt = null;
+const fmtWhen = (d) => d.toLocaleDateString([], { day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 async function fetchEnc() {
-  try { const r = await fetch(ENC_URL + "?t=" + Date.now(), { cache: "no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; }
+  try {
+    const r = await fetch(ENC_URL + "?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) return null;
+    const enc = await r.json();
+    // When the synced file was published: explicit timestamp if the sync wrote one, else the server's Last-Modified.
+    const t = Date.parse(enc.synced_at || r.headers.get("last-modified") || "");
+    enc.updatedAt = Number.isFinite(t) ? new Date(t) : null;
+    return enc;
+  } catch (e) { return null; }
 }
 function savedPass() { try { return localStorage.getItem(PASS_KEY) || sessionStorage.getItem(PASS_KEY); } catch (e) { return null; } }
 async function tryUnlock(pass, remember) {
@@ -637,7 +647,8 @@ async function tryUnlock(pass, remember) {
     const text = await decryptJournal(encCache, pass);
     try { (remember ? localStorage : sessionStorage).setItem(PASS_KEY, pass); if (!remember) localStorage.removeItem(PASS_KEY); } catch (e) {}
     $("unlock").classList.add("hidden");
-    if (text !== lastText) load(text, "Trades journal.md (synced " + (encCache.synced || "") + ")");
+    updatedAt = encCache.updatedAt;
+    if (text !== lastText) load(text, "Trades journal.md");
     return true;
   } catch (e) { return false; }
 }
