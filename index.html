@@ -278,8 +278,8 @@ details.more[open]>summary{margin-bottom:6px}
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
   <div class="inlRow">
-  <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="seg small tfSeg" data-chart="QQQ"><button type="button" data-tf="D" class="on">D</button><button type="button" data-tf="W">W</button></span> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small" id="ichQQQLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
-  <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="seg small tfSeg" data-chart="BTC"><button type="button" data-tf="D" class="on">D</button><button type="button" data-tf="W">W</button></span> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small" id="ichBTCLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
+  <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="seg small tfSeg" data-chart="QQQ"><button type="button" data-tf="D">D</button><button type="button" data-tf="W" class="on">W</button></span> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small" id="ichQQQLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
+  <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="seg small tfSeg" data-chart="BTC"><button type="button" data-tf="D">D</button><button type="button" data-tf="W" class="on">W</button></span> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small" id="ichBTCLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
   </div>
   <div class="panel assetCard">
     <div class="assetHead">
@@ -1149,7 +1149,7 @@ async function openChart(key, name) {
 const INLINE = [["QQQ", "ichQQQ", "Nasdaq 100"], ["BTC", "ichBTC", "Bitcoin"]], inlObjs = {};
 const LEGEND = { D: '<span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span>',
   W: '<span class="lg ema">10w SMA</span><span class="lg sma50">30w SMA</span>' };
-const inlTf = { QQQ: "D", BTC: "D" };
+const inlTf = { QQQ: "W", BTC: "W" };   // weekly by default; a click is remembered per chart
 try { Object.assign(inlTf, JSON.parse(localStorage.getItem("tradingOS.chartTf") || "{}")); } catch (e) {}
 document.querySelectorAll(".tfSeg").forEach((seg) => {
   const k = seg.dataset.chart;
