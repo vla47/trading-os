@@ -104,7 +104,6 @@ canvas{width:100%;height:230px;display:block}
 
 <main class="main">
   <div class="loadBar">
-    <button class="primary" id="openBtn">Open journal</button>
     <button id="reloadBtn" class="hidden">↻ Reload</button>
     <input id="file" type="file" accept=".md,text/markdown,text/plain" class="hidden">
     <span class="status" id="status">No journal loaded</span>
@@ -117,7 +116,7 @@ canvas{width:100%;height:230px;display:block}
     <span class="status" id="unlockMsg"></span>
   </form>
 
-  <div id="empty" class="empty">Open <b>Trading/Trades journal.md</b> (or drop it on this page).<br>
+  <div id="empty" class="empty">Open <b>Trading/Trades journal.md</b> from ⚙ Settings → Open journal… (or drop it on this page).<br>
     The journal is the single source of truth: executions come from the IBKR sync, Stop and Setup / Notes come from you.<br>
     <small>Everything is processed locally in your browser. The published copy is encrypted; only your passphrase opens it.</small></div>
 
@@ -574,7 +573,7 @@ async function reloadJournal() {
 
 // ---- UI ----------------------------------------------------------
 function initUI() {
-  $("openBtn").onclick = openJournal; $("menuOpen").onclick = openJournal; $("reloadBtn").onclick = reloadJournal;
+  $("menuOpen").onclick = openJournal; $("reloadBtn").onclick = reloadJournal;
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
   $("clearData").onclick = async () => {
     try { localStorage.removeItem(TEXT_KEY); localStorage.removeItem(NAME_KEY); localStorage.removeItem(PASS_KEY); sessionStorage.removeItem(PASS_KEY); } catch (e) {}
