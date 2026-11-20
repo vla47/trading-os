@@ -1,11 +1,11 @@
 {
- "updated": "2026-11-20T18:32:17+00:00",
+ "updated": "2026-11-20T18:38:41+00:00",
  "items": [
   {
    "label": "QQQ",
-   "price": 620.14,
+   "price": 622.28,
    "dec": 2,
-   "chg": -3.86,
+   "chg": -3.53,
    "dot": "red",
    "stage": "S3 T"
   },
@@ -18,41 +18,41 @@
   },
   {
    "label": "BTC",
-   "price": 58857.0,
+   "price": 58961.0,
    "dec": 0,
-   "chg": -4.92,
+   "chg": -4.76,
    "stage": "S4 D"
   },
   {
    "label": "GOLD",
-   "price": 3524.0,
+   "price": 3512.2,
    "dec": 2,
-   "chg": -4.38,
+   "chg": -4.7,
    "stage": "S4 D"
   },
   {
    "label": "BRENT",
-   "price": 89.38,
+   "price": 89.33,
    "dec": 2,
-   "chg": -0.07
+   "chg": -0.12
   },
   {
    "label": "US10Y",
    "price": 4.94,
    "dec": 2,
-   "chg": -2.26
+   "chg": -2.14
   },
   {
    "label": "EURUSD",
-   "price": 1.0975,
+   "price": 1.0973,
    "dec": 4,
-   "chg": 0.02
+   "chg": 0.0
   },
   {
    "label": "VIX",
-   "price": 32.22,
+   "price": 31.88,
    "dec": 2,
-   "chg": 13.29,
+   "chg": 12.1,
    "dot": "red"
   }
  ]
