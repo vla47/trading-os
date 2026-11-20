@@ -133,6 +133,7 @@ canvas{width:100%;height:230px;display:block}
 .inlRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .inlChart{padding:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr;height:460px;min-width:0}
 .inlChart .chartLegend{gap:8px}
+.tfSeg{vertical-align:middle;margin:0 4px}.tfSeg button{padding:2px 9px!important;font-size:12px!important}
 @media(max-width:1000px){.inlRow{grid-template-columns:1fr}}
 .inlEl{min-height:0}
 @media(max-width:700px){.inlChart{height:380px}}
@@ -277,8 +278,8 @@ details.more[open]>summary{margin-bottom:6px}
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
   <div class="inlRow">
-  <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
-  <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
+  <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="seg small tfSeg" data-chart="QQQ"><button type="button" data-tf="D" class="on">D</button><button type="button" data-tf="W">W</button></span> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small" id="ichQQQLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
+  <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="seg small tfSeg" data-chart="BTC"><button type="button" data-tf="D" class="on">D</button><button type="button" data-tf="W">W</button></span> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small" id="ichBTCLeg"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
   </div>
   <div class="panel assetCard">
     <div class="assetHead">
@@ -1098,9 +1099,21 @@ function maLine(bars, n, ema) {
   });
   return out;
 }
-async function drawChart(el, key) {
-  const [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
+// daily -> weekly bars (weeks start Monday); last week is the current, partial week
+function toWeekly(bars) {
+  const out = [];
+  for (const b of bars) {
+    const d = new Date(b[0] + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    const wk = d.toISOString().slice(0, 10), w = out[out.length - 1];
+    if (w && w[0] === wk) { w[2] = Math.max(w[2], b[2]); w[3] = Math.min(w[3], b[3]); w[4] = b[4]; w[5] += b[5]; }
+    else out.push([wk, b[1], b[2], b[3], b[4], b[5]]);
+  }
+  return out;
+}
+async function drawChart(el, key, tf = "D") {
+  let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
   const L = window.LightweightCharts;
+  if (tf === "W") d = { ...d, bars: toWeekly(d.bars) };
   el.textContent = "";
     const chartObj = L.createChart(el, { autoSize: true,
       layout: { background: { type: "solid", color: cssVar("--panel") }, textColor: cssVar("--muted"), fontFamily: getComputedStyle(document.body).fontFamily },
@@ -1117,10 +1130,11 @@ async function drawChart(el, key) {
       c.priceScale().applyOptions({ scaleMargins: { top: 0.06, bottom: 0.22 } });
     }
     const line = (data, color) => chartObj.addSeries(L.LineSeries, { color, lineWidth: 2, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false }).setData(data);
-    line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7");
-    chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - 130), to: d.bars.length + 3 });
+    if (tf === "W") { line(maLine(d.bars, 10, false), "#3b82f6"); line(maLine(d.bars, 30, false), "#f59e0b"); }
+    else { line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7"); }
+    chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - (tf === "W" ? 80 : 130)), to: d.bars.length + 3 });
   const last = d.bars[d.bars.length - 1], prev = d.bars[d.bars.length - 2];
-  return { chart: chartObj, d, sub: `${d.symbol} · daily · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})` };
+  return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})` };
 }
 async function openChart(key, name) {
   $("chartModal").classList.remove("hidden"); $("chartTitle").textContent = key; $("chartSub").textContent = name && name !== key ? name : "Loading…";
@@ -1133,6 +1147,19 @@ async function openChart(key, name) {
 }
 // always-visible QQQ / BTC charts at the top of the Assets page
 const INLINE = [["QQQ", "ichQQQ", "Nasdaq 100"], ["BTC", "ichBTC", "Bitcoin"]], inlObjs = {};
+const LEGEND = { D: '<span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span>',
+  W: '<span class="lg ema">10w SMA</span><span class="lg sma50">30w SMA</span>' };
+const inlTf = { QQQ: "D", BTC: "D" };
+try { Object.assign(inlTf, JSON.parse(localStorage.getItem("tradingOS.chartTf") || "{}")); } catch (e) {}
+document.querySelectorAll(".tfSeg").forEach((seg) => {
+  const k = seg.dataset.chart;
+  const mark = () => seg.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.tf === inlTf[k]));
+  mark();
+  seg.querySelectorAll("button").forEach((b) => b.onclick = () => {
+    inlTf[k] = b.dataset.tf; mark(); try { localStorage.setItem("tradingOS.chartTf", JSON.stringify(inlTf)); } catch (e) {}
+    drawInline();
+  });
+});
 // redraws are queued, never overlapped: two overlapping runs could wipe each other's QQQ chart (blank panel)
 let inlChain = Promise.resolve();
 function drawInline() { return inlChain = inlChain.then(drawInlineNow, drawInlineNow); }
@@ -1141,7 +1168,8 @@ async function drawInlineNow() {
   for (const [key, id, name] of INLINE) {
     try {
       if (inlObjs[key]) { inlObjs[key].remove(); inlObjs[key] = null; }
-      const r = await drawChart($(id), key);
+      const r = await drawChart($(id), key, inlTf[key]);
+      $(id + "Leg").innerHTML = LEGEND[inlTf[key]];
       inlObjs[key] = r.chart; $(id + "Sub").textContent = name + " · " + r.sub;
     } catch (e) { $(id + "Sub").textContent = name + " · chart data not available yet"; }
   }
