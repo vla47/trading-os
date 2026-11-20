@@ -75,6 +75,8 @@ canvas{width:100%;height:230px;display:block}
 .unlock input[type=password]{padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:15px}
 .unlock .remember{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .unlock button{padding:10px;font-size:15px;text-align:center}
+.passArea{display:grid;gap:12px}.passArea.hidden{display:none}
+.linkBtn{background:none;border:0;color:var(--muted);font-size:13px;padding:0;text-decoration:underline;cursor:pointer;box-shadow:none}
 .unlock #unlockMsg{text-align:center;min-height:1em;color:var(--bad);font-size:13px}
 .menuStatus{font-size:12px;color:var(--muted);padding:2px 2px 8px;border-bottom:1px solid var(--line);white-space:normal}
 .empty{text-align:center;color:var(--muted);padding:55px 20px;line-height:1.6}
@@ -102,6 +104,8 @@ canvas{width:100%;height:230px;display:block}
         <label for="theme">Theme</label>
         <select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
         <button id="menuOpen">Open journal…</button>
+        <button id="pkSetup" class="hidden">Set up Touch ID unlock</button>
+        <button id="pkRemove" class="hidden">Remove Touch ID unlock</button>
         <button id="clearData">Forget loaded journal</button>
       </div>
     </div>
@@ -115,9 +119,13 @@ canvas{width:100%;height:230px;display:block}
   </div>
   <form id="unlock" class="unlock hidden" autocomplete="off">
     <svg class="unlockLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg>
-    <input id="passInput" type="password" autocomplete="current-password" placeholder="Passphrase" aria-label="Passphrase">
-    <label class="remember"><input id="passRemember" type="checkbox" checked> Remember this device</label>
-    <button class="primary" type="submit">Unlock</button>
+    <button id="pkBtn" class="primary hidden" type="button">Unlock with Touch ID</button>
+    <button id="pkUsePass" class="linkBtn hidden" type="button">Use passphrase instead</button>
+    <div id="passArea" class="passArea">
+      <input id="passInput" type="password" autocomplete="current-password" placeholder="Passphrase" aria-label="Passphrase">
+      <label class="remember" id="rememberRow"><input id="passRemember" type="checkbox" checked> Remember this device</label>
+      <button class="primary" type="submit">Unlock</button>
+    </div>
     <span class="status" id="unlockMsg" role="alert"></span>
   </form>
 
@@ -580,7 +588,7 @@ function initUI() {
   $("menuOpen").onclick = openJournal; $("reloadBtn").onclick = reloadJournal;
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
   $("clearData").onclick = async () => {
-    purgeLegacySecrets(); await forgetPass();
+    purgeLegacySecrets(); await forgetPass(); await idbDel(PK_REC);
     await idbDel("handle"); fileHandle = null; lastText = null;
     $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("reloadBtn").classList.add("hidden"); $("status").textContent = "No journal loaded";
     if (!isFile) { encCache = null; loadEncrypted(); }   // show the passphrase prompt again
@@ -675,7 +683,7 @@ async function fetchEnc() {
 // "Remember on this device": the passphrase is sealed with a random AES-GCM key that is created
 // non-extractable and kept in IndexedDB, so neither the key nor the passphrase sits readable in storage.
 // "Don't remember": the passphrase lives in memory for this tab only.
-let sessionPass = null;
+let sessionPass = null, activePass = null;
 async function sealPass(pass) {
   const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -689,18 +697,67 @@ async function unsealPass() {
   } catch (e) { return null; }
 }
 async function forgetPass() { sessionPass = null; await idbDel("passKey"); await idbDel("passSealed"); }
+
+// ---- Passkey (Touch ID / Face ID) unlock via the WebAuthn PRF extension ----
+// The passkey yields a secret only after biometric verification; it is turned into an AES key (HKDF)
+// that seals the journal passphrase. Only the sealed passphrase and the credential id are stored here.
+const PK_REC = "passkeyRec", PK_INFO = new TextEncoder().encode("TradingOS passkey unlock v1");
+const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
+async function prfKey(prfOut) {
+  const base = await crypto.subtle.importKey("raw", prfOut, "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: PK_INFO }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function pkGet(credId, salt) {
+  const a = await navigator.credentials.get({ publicKey: { challenge: rnd(32), rpId: location.hostname, userVerification: "required",
+    allowCredentials: [{ type: "public-key", id: credId }], extensions: { prf: { eval: { first: salt } } } } });
+  const out = a.getClientExtensionResults()?.prf?.results?.first;
+  if (!out) throw new Error("This browser or passkey provider does not support passkey encryption (PRF).");
+  return out;
+}
+async function passkeySetup(pass) {
+  if (!window.PublicKeyCredential) throw new Error("Passkeys are not available in this browser.");
+  const salt = rnd(32);
+  const cred = await navigator.credentials.create({ publicKey: {
+    rp: { name: "Trading OS", id: location.hostname }, user: { id: rnd(16), name: "Trading OS", displayName: "Trading OS" },
+    challenge: rnd(32), pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { residentKey: "required", userVerification: "required" },
+    extensions: { prf: { eval: { first: salt } } } } });
+  const ext = cred.getClientExtensionResults()?.prf;
+  if (!ext || ext.enabled === false) throw new Error("This browser or passkey provider does not support passkey encryption (PRF).");
+  const credId = new Uint8Array(cred.rawId);
+  const out = ext.results?.first || await pkGet(credId, salt);   // some platforms only return PRF on sign-in
+  const iv = rnd(12);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await prfKey(out), new TextEncoder().encode(pass)));
+  await idbSet(PK_REC, { credId, salt, iv, ct });
+  await forgetPass(); sessionPass = pass;   // Touch ID replaces "remember this device"
+}
+async function passkeyUnlock() {
+  const r = await idbGet(PK_REC); if (!r) return null;
+  const out = await pkGet(r.credId, r.salt);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: r.iv }, await prfKey(out), r.ct));
+}
+async function refreshPasskeyUI() {
+  const has = !isFile && !!(await idbGet(PK_REC)), unlocked = !!lastText && !isFile;
+  $("pkBtn").classList.toggle("hidden", !has);
+  $("pkUsePass").classList.toggle("hidden", !has);
+  $("passArea").classList.toggle("hidden", has);
+  $("rememberRow").classList.toggle("hidden", has);
+  $("pkSetup").classList.toggle("hidden", has || !unlocked || !window.PublicKeyCredential);
+  $("pkRemove").classList.toggle("hidden", !has);
+}
 function purgeLegacySecrets() {
   try { [TEXT_KEY, NAME_KEY, PASS_KEY].forEach((k) => localStorage.removeItem(k)); sessionStorage.removeItem(PASS_KEY); } catch (e) {}
 }
 async function savedPass() { return sessionPass || await unsealPass(); }
 async function tryUnlock(pass, remember) {
+  activePass = pass;
   if (!encCache) return false;
   try {
     const text = await decryptJournal(encCache, pass);
     if (remember === true) { try { await sealPass(pass); } catch (e) {} }
     else if (remember === false) { await forgetPass(); sessionPass = pass; }
     $("unlock").classList.add("hidden");
-    updatedAt = encCache.updatedAt;
+    updatedAt = encCache.updatedAt; refreshPasskeyUI();
     if (text !== lastText) load(text, "Trades journal.md");
     return true;
   } catch (e) { return false; }
@@ -711,7 +768,8 @@ async function loadEncrypted() {
   encCache = enc;
   const pass = await savedPass();
   if (pass && await tryUnlock(pass, null)) return;   // null = keep the current remember setting
-  $("unlock").classList.remove("hidden"); $("empty").classList.add("hidden"); $("passInput").focus();
+  $("unlock").classList.remove("hidden"); $("empty").classList.add("hidden");
+  await refreshPasskeyUI(); if (!$("passArea").classList.contains("hidden")) $("passInput").focus();
 }
 async function handleGranted() {
   try { return fileHandle && (await fileHandle.queryPermission({ mode: "read" })) === "granted"; } catch (e) { return false; }
@@ -726,11 +784,24 @@ async function autoRefresh() {
 
 async function boot() {
   initUI();
+  $("pkBtn").onclick = async () => {
+    $("unlockMsg").textContent = "";
+    try { const pass = await passkeyUnlock(); if (pass && await tryUnlock(pass, null)) { sessionPass = pass; refreshPasskeyUI(); } else $("unlockMsg").textContent = "Passkey unlock failed — use the passphrase"; }
+    catch (err) { $("unlockMsg").textContent = err.name === "NotAllowedError" ? "Cancelled" : err.message; }
+  };
+  $("pkUsePass").onclick = () => { $("passArea").classList.remove("hidden"); $("pkUsePass").classList.add("hidden"); $("passInput").focus(); };
+  $("pkSetup").onclick = async () => {
+    try { await passkeySetup(activePass); $("status").textContent = "Touch ID unlock is set up on this device"; }
+    catch (err) { $("status").textContent = err.name === "NotAllowedError" ? "Touch ID setup cancelled" : err.message; }
+    refreshPasskeyUI();
+  };
+  $("pkRemove").onclick = async () => { await idbDel(PK_REC); $("status").textContent = "Touch ID unlock removed"; refreshPasskeyUI(); };
   $("unlock").onsubmit = async (e) => {
     e.preventDefault();
-    const ok = await tryUnlock($("passInput").value, $("passRemember").checked);
+    const remember = !$("rememberRow").classList.contains("hidden") && $("passRemember").checked;   // with Touch ID set up, never store the passphrase
+    const ok = await tryUnlock($("passInput").value, remember);
     $("unlockMsg").textContent = ok ? "" : "Incorrect passphrase";
-    if (ok) $("passInput").value = "";
+    if (ok) { $("passInput").value = ""; refreshPasskeyUI(); }
   };
   let text = null, name = null;
   if (isFile) { try { text = localStorage.getItem(TEXT_KEY); name = localStorage.getItem(NAME_KEY); } catch (e) {} }
