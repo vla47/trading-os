@@ -72,7 +72,8 @@ def ext_quote(t, reg_price: float, dec: int):
     if df.empty:
         return None
     reg = (t.get_history_metadata().get("currentTradingPeriod") or {}).get("regular") or {}
-    start, end = reg.get("start"), reg.get("end")
+    as_ts = lambda v: None if v is None else float(v) if isinstance(v, (int, float)) else pd.Timestamp(v).timestamp()
+    start, end = as_ts(reg.get("start")), as_ts(reg.get("end"))   # epoch seconds or Timestamps, depending on yfinance version
     ts, last = df.index[-1].timestamp(), float(df["Close"].dropna().iloc[-1])
     if not (start and end) or start <= ts < end:
         return None
