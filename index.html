@@ -127,7 +127,10 @@ canvas{width:100%;height:230px;display:block}
 .chartEl{min-height:0}
 .mktStrip .q{cursor:pointer}
 .assetCard{padding:16px 18px}
-.inlChart{padding:0;overflow:hidden;margin-bottom:12px;display:grid;grid-template-rows:auto 1fr;height:520px}
+.inlRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.inlChart{padding:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr;height:460px;min-width:0}
+.inlChart .chartLegend{gap:8px}
+@media(max-width:1000px){.inlRow{grid-template-columns:1fr}}
 .inlEl{min-height:0}
 @media(max-width:700px){.inlChart{height:380px}}
 .assetHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -270,8 +273,10 @@ details.more[open]>summary{margin-bottom:6px}
  </div>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
+  <div class="inlRow">
   <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
   <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
+  </div>
   <div class="panel assetCard">
     <div class="assetHead">
       <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
