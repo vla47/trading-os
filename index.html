@@ -107,7 +107,8 @@ canvas{width:100%;height:230px;display:block}
         <button id="menuOpen">Open journal…</button>
         <button id="pkSetup" class="hidden">Set up Touch ID unlock</button>
         <button id="pkRemove" class="hidden">Remove Touch ID unlock</button>
-        <button id="clearData">Forget loaded journal</button>
+        <button id="lockBtn" class="hidden">Lock</button>
+        <button id="clearData">Forget this device</button>
       </div>
     </div>
   </div>
@@ -593,12 +594,22 @@ async function reloadJournal() {
 function initUI() {
   $("menuOpen").onclick = openJournal; $("reloadBtn").onclick = reloadJournal;
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
-  $("clearData").onclick = async () => {
-    purgeLegacySecrets(); await forgetPass(); await idbDel(PK_REC);
-    await idbDel("handle"); fileHandle = null; lastText = null;
-    $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("reloadBtn").classList.add("hidden"); $("status").textContent = "No journal loaded";
-    if (!isFile) { encCache = null; loadEncrypted(); }   // show the passphrase prompt again
+  const closeJournal = () => {
+    lastText = null; $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("pkOffer").classList.add("hidden");
+    $("status").textContent = "No journal loaded"; $("userMenu").classList.add("hidden");
   };
+  // Lock: hide the journal now; Touch ID and "remember this device" stay set up.
+  $("lockBtn").onclick = async () => { sessionPass = null; activePass = null; closeJournal(); encCache = null; await loadEncrypted(); };
+  // Forget this device: also removes Touch ID, the remembered passphrase and the remembered file.
+  $("clearData").onclick = async () => {
+    if (!isFile && !confirm("Remove Touch ID and the remembered passphrase from this browser? You will need the passphrase next time.")) return;
+    purgeLegacySecrets(); await forgetPass(); await idbDel(PK_REC);
+    try { localStorage.removeItem("tradingOS.pkOfferDismissed"); } catch (e) {}
+    await idbDel("handle"); fileHandle = null; $("reloadBtn").classList.add("hidden");
+    closeJournal();
+    if (!isFile) { encCache = null; await loadEncrypted(); }   // show the unlock card again
+  };
+  if (isFile) $("clearData").textContent = "Close journal";
   let depth = 0;
   addEventListener("dragenter", (e) => { e.preventDefault(); depth++; $("dropHint").classList.remove("hidden"); });
   addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; $("dropHint").classList.add("hidden"); } });
@@ -750,6 +761,7 @@ async function refreshPasskeyUI() {
   $("rememberRow").classList.toggle("hidden", has);
   $("pkSetup").classList.toggle("hidden", has || !unlocked || !window.PublicKeyCredential);
   $("pkRemove").classList.toggle("hidden", !has);
+  $("lockBtn").classList.toggle("hidden", !unlocked);
   let dismissed = false; try { dismissed = localStorage.getItem("tradingOS.pkOfferDismissed") === "1"; } catch (e) {}
   $("pkOffer").classList.toggle("hidden", has || !unlocked || !window.PublicKeyCredential || dismissed || !activePass);
 }
