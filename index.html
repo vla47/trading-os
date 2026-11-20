@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trading OS</title>
-<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-v2-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-v2-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-v2-180.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='9' fill='%2318212b'/%3E%3Cpolyline points='6,25 12,19 17,22 27,10' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='27' cy='10' r='3.2' fill='%2335c98b'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -23,15 +23,15 @@ button:hover{border-color:var(--accent)}
 .hidden{display:none!important}
 /* header */
 .topbar{min-height:68px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:16px}
-.pageTitle{display:flex;align-items:center;gap:10px;min-width:0}
+.pageTitle{display:flex;align-items:center;gap:10px;min-width:0}.pageTitle .seg{margin-left:16px}
 .appLogo{width:34px;height:34px;flex:0 0 34px}
 .pageTitle b{font-size:22px;font-weight:800}.pageTitle .sub{font-size:12px}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
 .marketStat{color:var(--muted);font-size:15px}.marketStat b{color:var(--text)}
 .topRight{min-width:0}
-.mktStrip{display:flex;align-items:center;gap:18px;min-width:0;font-size:14px;color:var(--muted);margin-right:6px;cursor:pointer;user-select:none}
+.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);margin-right:6px;cursor:pointer;user-select:none}
 .mktStrip .grp{display:flex;gap:18px;transition:opacity .35s}.mktStrip .grp.fade{opacity:0}
-.mktStrip .pg{display:flex;gap:4px}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
+.mktStrip .pg{display:flex;gap:4px;margin-left:auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:3px}
@@ -40,7 +40,7 @@ button:hover{border-color:var(--accent)}
 .topDropdown{position:absolute;right:0;top:52px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:236px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
 .menuStatus{font-size:12px;color:var(--muted);padding:7px 10px 6px;line-height:1.35}
 .themeRow{display:flex;gap:8px;padding:4px 10px 8px}
-.sw{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--line);background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:none;cursor:pointer}
+.sw{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--b);box-shadow:none;cursor:pointer}
 .sw.on{outline:2px solid var(--accent);outline-offset:2px}
 .menuSep{height:1px;background:var(--line);margin:4px 6px}
 .mItem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;box-shadow:none;border-radius:8px;padding:7px 10px;font-size:14px;color:var(--text)}
@@ -108,22 +108,12 @@ canvas{width:100%;height:230px;display:block}
 /* sectors */
 .secHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:6px 2px 12px;flex-wrap:wrap}
 .secTitle{font-size:22px;margin:0 0 2px;font-weight:800}
-.secGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.barPanel h3{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
 .barRow{display:grid;grid-template-columns:172px 1fr;align-items:center;gap:10px;height:24px;cursor:pointer;border-radius:6px}
 .barRow:hover{background:var(--panel2)}
 .barRow .nm{font-size:13px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .barTrack{position:relative;height:18px}
 .bar{position:absolute;top:0;height:18px;border-radius:4px;min-width:2px}
 .barVal{position:absolute;top:0;font-size:12.5px;line-height:18px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
-.secTablePanel{margin-top:10px}.secTableHead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
-.secT{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
-.secT th{text-align:right;font-size:11.5px;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
-.secT td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line)}
-.secT th:first-child,.secT td:first-child{text-align:left}
-.secT tbody tr{cursor:pointer}.secT tbody tr:hover{background:var(--panel2)}
-.secT .pos{color:var(--good)}.secT .neg{color:var(--bad)}
-.secT .st{font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--panel2)}
 .rot.up{color:var(--good)}.rot.dn{color:var(--bad)}
 /* chart modal */
 .chartModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:100;padding:20px}
@@ -136,12 +126,23 @@ canvas{width:100%;height:230px;display:block}
 .iconBtn{width:34px;height:34px;padding:0;border-radius:10px;display:grid;place-items:center}
 .chartEl{min-height:0}
 .mktStrip .q{cursor:pointer}
-@media(max-width:1000px){.secGrid{grid-template-columns:1fr}.barRow{grid-template-columns:120px 1fr}}
+.assetCard{padding:16px 18px}
+.assetHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.assetCtl{display:flex;gap:8px;flex-wrap:wrap}
+.assetCols,.aRow{display:grid;grid-template-columns:minmax(150px,220px) 92px 1fr 74px;gap:12px;align-items:center}
+.assetCols{padding:0 8px 6px;border-bottom:1px solid var(--line);font-weight:700}.assetCols .rotH{text-align:right}
+.aRow{padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px}.aRow:hover{background:var(--panel2)}
+.aRow .nm{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aRow .nm .muted{font-size:12px;margin-left:4px}
+.aRow .tr{font-size:12px;white-space:nowrap}.aRow .tr .st{font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--panel2);margin-left:4px}
+.aRow .rot{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.assetFoot{margin-top:10px;line-height:1.5}
+@media(max-width:800px){.assetCols,.aRow{grid-template-columns:120px 70px 1fr 50px}}
 /* dashboard: hero metrics, alerts, progressive disclosure */
 .hero{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:4px 0 10px}
 .heroCard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
 .heroCard .hl{font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.02em}
 .heroCard .hv{font-size:30px;font-weight:800;margin-top:6px;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}.hviz{margin-top:8px;height:40px}.mini{width:100%;height:40px;display:block}.ring{width:46px;height:46px;flex:0 0 46px}.heroCard.side .hh{margin-top:8px}
 .heroCard .hh{font-size:12px;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hv.good{color:var(--good)}.hv.bad{color:var(--bad)}
 .alerts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
@@ -158,12 +159,13 @@ details.more[open]>summary span:first-child::before{content:"▾ "}
 details.more[open]>summary{margin-bottom:6px}
 @media(max-width:1100px){.hero{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:640px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.heroCard .hv{font-size:24px}}
+.aRow .pos{color:var(--good)}.aRow .neg{color:var(--bad)}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b></div>
-  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Sectors</button></nav>
+  <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b>
+  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button></nav></div>
   <div class="topRight">
     <div id="mktStrip" class="mktStrip" title="Market strip"></div>
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
@@ -224,7 +226,6 @@ details.more[open]>summary{margin-bottom:6px}
   <div id="app" class="hidden">
     <div class="hero" id="hero"></div>
     <div class="alerts" id="alerts"></div>
-      <div class="section panel collapsible open equityPanel"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
 
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
 
@@ -239,6 +240,7 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="groupTitle">EDGE &amp; CONSISTENCY · closed swing trades</div>
     <div class="metricGroup" id="kpiEdge"></div>
       <div class="section two">
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
       </div>
     <div class="section two">
@@ -265,15 +267,18 @@ details.more[open]>summary{margin-bottom:6px}
   </div>
  </div>
 
- <section id="sectorsView" class="hidden" aria-label="Sector rotation">
-  <div class="secHead">
-    <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
-    <div class="seg small" id="secGroup"><button type="button" data-g="sectors" class="on">Sectors</button><button type="button" data-g="themes">Themes</button></div>
-  </div>
-  <div class="secGrid" id="secBars"></div>
-  <div class="panel secTablePanel">
-    <div class="secTableHead"><h2>Rotation table</h2><span class="muted small">Sorted by 1-month return · ▲ = rising in the 1M ranking vs 3M (money flowing in) · click a row for the chart</span></div>
-    <div id="secTable"></div>
+ <section id="sectorsView" class="hidden" aria-label="Assets">
+  <div class="panel assetCard">
+    <div class="assetHead">
+      <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
+      <div class="assetCtl">
+        <div class="seg small" id="secGroup"><button type="button" data-g="markets" class="on">Markets</button><button type="button" data-g="sectors">Sectors</button><button type="button" data-g="themes">Themes</button></div>
+        <div class="seg small" id="secPeriod"><button type="button" data-p="1D">1D</button><button type="button" data-p="1W" class="on">1W</button><button type="button" data-p="1M">1M</button><button type="button" data-p="3M">3M</button><button type="button" data-p="6M">6M</button><button type="button" data-p="YTD">YTD</button></div>
+      </div>
+    </div>
+    <div class="assetCols muted small"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
+    <div id="secRows"></div>
+    <div class="muted small assetFoot">Bars: return over the selected period. Trend: 🔴🟡🟢 21ema rule and stage (S1 B base · S2 U up · S3 T top · S4 D down). Rotation ▲ = climbing the 1-month ranking vs 3 months (money flowing in). Click a row for the chart.</div>
   </div>
  </section>
 </main>
@@ -490,13 +495,31 @@ function render(j, sourceName) {
   // ---- hero row: the five numbers that say whether the edge works (TradeZella-style top section)
   {
     const tot = m.net + m.unreal, pay = m.al ? m.aw / Math.abs(m.al) : null, hasR0 = m.withR.length > 0;
-    const hc = (l, v, c, h) => `<div class="heroCard"><div class="hl">${esc(l)}</div><div class="hv ${c}">${v}</div><div class="hh">${h}</div></div>`;
+    // tiny inline charts so each headline number has a picture
+    const W = 132, H = 40;
+    const spark = (vals, color, fill) => {
+      if (!vals || vals.length < 2) return "";
+      const mn = Math.min(...vals, 0), mx = Math.max(...vals, 0), r = mx - mn || 1;
+      const pts = vals.map((v, i) => `${(i / (vals.length - 1) * W).toFixed(1)},${(H - 2 - (v - mn) / r * (H - 4)).toFixed(1)}`);
+      const zy = (H - 2 - (0 - mn) / r * (H - 4)).toFixed(1);
+      return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${fill ? `<polygon points="0,${zy} ${pts.join(" ")} ${W},${zy}" fill="${color}" opacity=".15"/>` : ""}<polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+    };
+    const bars = (vals) => {
+      if (!vals.length) return "";
+      const v = vals.slice(-24), mx = Math.max(...v.map(Math.abs), 1), bw = W / v.length;
+      return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H / 2}" y2="${H / 2}" stroke="var(--line)"/>${v.map((x, i) => { const h = Math.abs(x) / mx * (H / 2 - 2); return `<rect x="${(i * bw + 1).toFixed(1)}" y="${(x >= 0 ? H / 2 - h : H / 2).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${h.toFixed(1)}" fill="var(${x >= 0 ? "--good" : "--bad"})" rx="1"/>`; }).join("")}</svg>`;
+    };
+    const ring = (p) => { const c = 2 * Math.PI * 16, d = Math.max(0, Math.min(1, p || 0)) * c;
+      return `<svg class="ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--line)" stroke-width="5"/><circle cx="20" cy="20" r="16" fill="none" stroke="var(--good)" stroke-width="5" stroke-dasharray="${d.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 20 20)" stroke-linecap="round"/></svg>`; };
+    const pair = (a, b) => { const mx = Math.max(Math.abs(a) || 0, Math.abs(b) || 0, 1);
+      return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><rect x="0" y="6" height="11" rx="3" width="${(Math.abs(a) / mx * W).toFixed(1)}" fill="var(--good)"/><rect x="0" y="23" height="11" rx="3" width="${(Math.abs(b) / mx * W).toFixed(1)}" fill="var(--bad)"/></svg>`; };
+    const hc = (l, v, c, h, viz, side) => `<div class="heroCard${side ? " side" : ""}"><div class="hl">${esc(l)}</div><div class="hrow"><div class="hv ${c}">${v}</div>${side ? viz : ""}</div>${side ? "" : `<div class="hviz">${viz}</div>`}<div class="hh">${h}</div></div>`;
     $("hero").innerHTML = [
-      hc("Net P/L", money(tot), cls(tot), `${money(m.net)} realized · ${money(m.unreal)} open`),
-      hasR0 ? hc("Expectancy", fmtR(m.expR), cls(m.expR), `per trade · ${money(m.exp)} avg`) : hc("Expectancy", money(m.exp), cls(m.exp), "per closed trade"),
-      hc("Win rate", pct(m.wr), "", `${m.closed.filter((t) => t.realized > 0).length}W / ${m.closed.filter((t) => t.realized <= 0).length}L · ${m.closed.length} trades`),
-      hc("Payoff", pay ? pay.toFixed(2) + "×" : "—", pay != null && pay < 1 ? "bad" : "", `avg win ${money(m.aw)} · avg loss ${money(m.al)}`),
-      hc("Max drawdown", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "realized, peak → trough"),
+      hc("Net P/L", money(tot), cls(tot), `${money(m.net)} realized · ${money(m.unreal)} open`, spark(m.eq, "var(--accent)", true)),
+      hasR0 ? hc("Expectancy", fmtR(m.expR), cls(m.expR), `per trade · last 24 trades`, bars(m.pn)) : hc("Expectancy", money(m.exp), cls(m.exp), "per trade · last 24 trades", bars(m.pn)),
+      hc("Win rate", pct(m.wr), "", `${m.closed.filter((t) => t.realized > 0).length}W / ${m.closed.filter((t) => t.realized <= 0).length}L of ${m.closed.length} trades`, ring(m.wr), true),
+      hc("Payoff", pay ? pay.toFixed(2) + "×" : "—", pay != null && pay < 1 ? "bad" : "", `avg win ${money(m.aw)} · avg loss ${money(m.al)}`, pair(m.aw, m.al)),
+      hc("Max drawdown", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "realized, peak → trough", spark(m.dd, "var(--bad)", true)),
     ].join("");
     // alerts: only what breaks a rule gets colour (Von Restorff)
     const al = [], orP = m.openRisk != null && j.nlv ? m.openRisk / j.nlv : null;
@@ -512,12 +535,7 @@ function render(j, sourceName) {
   const avgHold = avg(m.closed.map((t) => t.hold).filter(Number.isFinite));
   $("kpiPerf").innerHTML = [
     card("Net realized P/L", money(m.net), cls(m.net), `${n} closed trades`),
-    card("Incl. open positions", money(m.net + m.unreal), cls(m.net + m.unreal), `Open: ${money(m.unreal)} unrealized at last sync`),
-    card("Win rate", pct(m.wr), m.wr >= 0.5 ? "good" : "warn", `${m.closed.filter((t) => t.realized > 0).length}W / ${m.closed.filter((t) => t.realized <= 0).length}L · PF ${m.pf?.toFixed(2) ?? "—"}`),
-    card("Expectancy / trade", money(m.exp), cls(m.exp), "Average P/L per closed trade"),
     card("Profit factor", m.pf?.toFixed(2) ?? "—", m.pf >= 1.5 ? "good" : m.pf >= 1 ? "warn" : "bad", "Gross profit ÷ gross loss"),
-    card("Avg win", money(m.aw), "good", "Average profit on winning trades"),
-    card("Avg loss", money(m.al), "bad", "Average loss on losing trades"),
     card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
   ].join("");
 
@@ -535,7 +553,6 @@ function render(j, sourceName) {
     card("Averaging down", String(m.avgDownTrades), m.avgDownTrades ? "bad" : "good", "Trades with an add below cost", ["Rule: never", m.avgDownTrades ? "bad" : "good"]),
     card("Open risk to stops", orPct != null ? pct(orPct, 2) : "—", orPct == null ? "warn" : orPct > RULES.maxOpenRiskPct ? "bad" : "good",
       orPct != null ? `${money(m.openRisk)} of ${money(nlv)} NLV` : `${m.openT.filter((t) => t.curStop == null).length} open trade(s) without a stop`, ["Max 2%", orPct != null && orPct <= RULES.maxOpenRiskPct ? "good" : "bad"]),
-    card("Max drawdown", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "Realized, peak → trough"),
     card("Loss streaks", `${m.maxStreak}`, m.breakers ? "warn" : "good", `Longest run · ${m.breakers}× hit ${RULES.lossStreak} in a row`, [`Breaker: ${RULES.lossStreak}`, m.breakers ? "bad" : "good"]),
   ].join("");
 
@@ -551,7 +568,6 @@ function render(j, sourceName) {
   const allBuys = sum(m.swing.map((t) => t.entries)), adBuys = sum(m.swing.map((t) => t.addsToLoser)), adRate = allBuys ? adBuys / allBuys : 0;
   const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
   $("kpiEdge").innerHTML = [
-    card("Payoff ratio", payoff ? payoff.toFixed(2) : "—", payoff >= 2 ? "good" : payoff >= 1 ? "warn" : "bad", "Avg win ÷ avg loss"),
     card("Profit concentration", conc != null ? pct(conc) : "—", conc == null ? "" : conc > 0.5 ? "warn" : "good",
       (conc != null ? "Top 5 trades · " : "") + topSyms.map(([k, v]) => `${k} ${m.net > 0 ? pct(v / m.net) : money(v)}`).join(" · ")),
     card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
@@ -978,44 +994,39 @@ function showView(v) {
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
-let secData = null, secGroup = "sectors";
-const SEC_PERIODS = [["1D", "1 DAY"], ["1W", "1 WEEK"], ["1M", "1 MONTH"], ["3M", "3 MONTHS"]];
+let secData = null, secGroup = "markets";
 const fmtPct = (v) => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2) + "%";
 function barColor(v, max) {
   const a = 0.35 + 0.65 * Math.min(1, Math.abs(v) / (max || 1));
   return `color-mix(in srgb, ${v >= 0 ? "var(--good)" : "var(--bad)"} ${Math.round(a * 100)}%, transparent)`;
 }
+let secPeriod = "1W";
+const PERIOD_LBL = { "1D": "1 day", "1W": "1 week", "1M": "1 month", "3M": "3 months", "6M": "6 months", YTD: "Year to date" };
 function renderSectors() {
   if (!secData) return;
-  const rows = secData[secGroup] || [];
+  const rows = (secData[secGroup] || []).filter((r) => r[secPeriod] != null).sort((a, b) => b[secPeriod] - a[secPeriod]);
+  $("secPeriodLbl").textContent = PERIOD_LBL[secPeriod];
   $("secUpdated").textContent = "Updated " + new Date(secData.updated).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) +
-    " · SPDR sector ETFs" + (secGroup === "themes" ? " · theme ETFs" : "") + " · S&P 500 " + fmtPct(secData.benchmark?.[0]?.["1W"]) + " this week";
-  const grid = $("secBars"); grid.textContent = "";
-  for (const [key, title] of SEC_PERIODS) {
-    const sorted = rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
-    const max = Math.max(...sorted.map((r) => Math.abs(r[key])), 0.01);
-    const hasNeg = sorted.some((r) => r[key] < 0), hasPos = sorted.some((r) => r[key] > 0);
-    const zero = hasNeg && hasPos ? 50 : hasNeg ? 100 : 0;          // zero line position in %
-    const span = hasNeg && hasPos ? 50 : 100;
-    const panel = document.createElement("div"); panel.className = "panel barPanel";
-    panel.innerHTML = `<h3>${title} PERFORMANCE</h3>`;
-    for (const r of sorted) {
-      const v = r[key], w = Math.max(0.6, Math.abs(v) / max * span * 0.72);
-      const row = document.createElement("div"); row.className = "barRow"; row.title = `${r.name} (${r.symbol}) — click for chart`;
-      row.onclick = () => openChart(r.symbol, r.name);
-      const left = v >= 0 ? zero : zero - w;
-      const valPos = v >= 0 ? `left:calc(${zero + w}% + 5px)` : `right:calc(${100 - (zero - w)}% + 5px)`;
-      row.innerHTML = `<span class="nm">${esc(r.name)}</span><span class="barTrack"><span class="bar" style="left:${left}%;width:${w}%;background:${barColor(v, max)}"></span><span class="barVal" style="${valPos}">${fmtPct(v)}</span></span>`;
-      panel.append(row);
-    }
-    grid.append(panel);
-  }
+    " · S&P 500 " + fmtPct(secData.benchmark?.[0]?.[secPeriod]) + " (" + PERIOD_LBL[secPeriod].toLowerCase() + ")";
+  const abs = rows.map((r) => Math.abs(r[secPeriod])).sort((a, b) => a - b);
+  const med = abs[Math.floor(abs.length / 2)] || 1, max = Math.max(Math.min(abs[abs.length - 1] || 1, med * 4), 0.01);  // one outlier (e.g. VIX) doesn't flatten the rest
+  const hasNeg = rows.some((r) => r[secPeriod] < 0), hasPos = rows.some((r) => r[secPeriod] > 0);
+  const zero = hasNeg && hasPos ? 50 : hasNeg ? 100 : 0, span = hasNeg && hasPos ? 50 : 100;
   const DOTS = { red: "🔴", yellow: "🟡", green: "🟢" };
-  const t = [...rows].sort((a, b) => (b["1M"] ?? -999) - (a["1M"] ?? -999));
-  const cell = (v) => `<td class="${v == null ? "" : v >= 0 ? "pos" : "neg"}">${fmtPct(v)}</td>`;
-  $("secTable").innerHTML = `<table class="secT"><thead><tr><th>${secGroup === "themes" ? "Theme" : "Sector"}</th><th>21ema</th><th>Stage</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>YTD</th><th>Rotation</th></tr></thead><tbody>` +
-    t.map((r) => `<tr data-sym="${esc(r.symbol)}" data-name="${esc(r.name)}"><td><b>${esc(r.name)}</b> <span class="muted small">${esc(r.symbol)}</span></td><td>${DOTS[r.dot] || ""}</td><td><span class="st">${esc(r.stage || "")}</span></td>${cell(r["1D"])}${cell(r["1W"])}${cell(r["1M"])}${cell(r["3M"])}${cell(r["6M"])}${cell(r.YTD)}<td class="rot ${r.rot > 0 ? "up" : r.rot < 0 ? "dn" : ""}">${r.rot > 0 ? "▲ " + r.rot : r.rot < 0 ? "▼ " + -r.rot : "–"}</td></tr>`).join("") + "</tbody></table>";
-  $("secTable").querySelectorAll("tbody tr").forEach((tr) => tr.onclick = () => openChart(tr.dataset.sym, tr.dataset.name));
+  const showRot = secGroup !== "markets";
+  const box = $("secRows"); box.textContent = "";
+  for (const r of rows) {
+    const v = r[secPeriod], over = Math.abs(v) > max, w = Math.max(0.6, Math.min(1, Math.abs(v) / max) * span * 0.78);
+    const left = v >= 0 ? zero : zero - w, valPos = v >= 0 ? `left:calc(${zero + w}% + 5px)` : `right:calc(${100 - (zero - w)}% + 5px)`;
+    const row = document.createElement("div"); row.className = "aRow"; row.title = `${r.name} (${r.symbol}) — click for chart`;
+    row.onclick = () => openChart(r.chart || r.symbol, r.name);
+    const rot = !showRot || !r.rot ? "–" : r.rot > 0 ? `<span class="pos">▲ ${r.rot}</span>` : `<span class="neg">▼ ${-r.rot}</span>`;
+    row.innerHTML = `<span class="nm"><b>${esc(r.name)}</b>${r.name !== r.symbol && !r.chart ? `<span class="muted">${esc(r.symbol)}</span>` : ""}</span>` +
+      `<span class="tr">${DOTS[r.dot] || ""}${r.stage ? `<span class="st">${esc(r.stage)}</span>` : ""}</span>` +
+      `<span class="barTrack"><span class="bar" style="left:${left}%;width:${w}%;background:${barColor(v, max)}"></span><span class="barVal" style="${valPos}">${fmtPct(v)}${over ? " »" : ""}</span></span>` +
+      `<span class="rot">${rot}</span>`;
+    box.append(row);
+  }
 }
 async function loadSectors() {
   try { secData = await (await fetch(DATA_BASE + "sectors.json?t=" + Date.now())).json(); renderSectors(); }
@@ -1070,6 +1081,9 @@ function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
+  });
+  document.querySelectorAll("#secPeriod button").forEach((b) => b.onclick = () => {
+    secPeriod = b.dataset.p; document.querySelectorAll("#secPeriod button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
   });
   $("chartClose").onclick = closeChart;
   $("chartModal").onclick = (e) => { if (e.target.id === "chartModal") closeChart(); };

@@ -121,7 +121,7 @@ def history(sym: str) -> pd.DataFrame:
 
 
 def main() -> None:
-    items = []
+    items, markets = [], []
     for label, sym, dec, want_stage in TICKERS:
         try:
             t = yf.Ticker(sym)
@@ -147,13 +147,19 @@ def main() -> None:
                 it["stage"] = stage(hist)
             items.append(it)
             write_chart(label, sym, df, dec)
+            row = perf_row(label, sym, hist)
+            row["1D"] = it["chg"]                       # same day change as the strip (chart meta)
+            row["dot"] = it.get("dot")                  # QQQ 21ema / VIX level only
+            row["stage"] = it.get("stage")
+            row["chart"] = label
+            markets.append(row)
         except Exception as exc:  # one bad ticker must not kill the strip
             print(f"{label}: {exc}")
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with open("quotes.json", "w") as fh:
         json.dump({"updated": now, "items": items}, fh, indent=1)
 
-    groups = {}
+    groups = {"markets": markets}
     for gname, lst in (("sectors", SECTORS), ("themes", THEMES), ("benchmark", [("S&P 500", "SPY")])):
         rows = []
         for name, sym in lst:
