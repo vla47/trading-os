@@ -284,7 +284,7 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="assetHead">
       <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
       <div class="assetCtl">
-        <div class="seg small" id="secGroup"><button type="button" data-g="markets" class="on">Markets</button><button type="button" data-g="sectors">Sectors</button><button type="button" data-g="themes">Themes</button><button type="button" data-g="heatmap" title="Nasdaq 100 heatmap (TradingView)">Heatmap</button></div>
+        <div class="seg small" id="secGroup"><button type="button" data-g="sectors" class="on">Sectors</button><button type="button" data-g="themes">Themes</button><button type="button" data-g="heatmap" title="Nasdaq 100 heatmap (TradingView)">Heatmap</button></div>
         <div class="seg small" id="secPeriod"><button type="button" data-p="1D">1D</button><button type="button" data-p="1W" class="on">1W</button><button type="button" data-p="1M">1M</button><button type="button" data-p="3M">3M</button><button type="button" data-p="6M">6M</button><button type="button" data-p="YTD">YTD</button></div>
       </div>
     </div>
@@ -1020,7 +1020,7 @@ function showView(v) {
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
-let secData = null, secGroup = "markets";
+let secData = null, secGroup = "sectors";
 const fmtPct = (v) => v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2) + "%";
 function barColor(v, max) {
   const a = 0.35 + 0.65 * Math.min(1, Math.abs(v) / (max || 1));
