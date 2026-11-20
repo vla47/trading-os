@@ -115,6 +115,8 @@ canvas{width:100%;height:230px;display:block}
 .barTrack{position:relative;height:18px}
 .bar{position:absolute;top:0;height:18px;border-radius:4px;min-width:2px}
 .barVal{position:absolute;top:0;font-size:12.5px;line-height:18px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+.heatEl{height:560px;margin-top:8px;border-radius:10px;overflow:hidden}.heatEl .tradingview-widget-container,.heatEl .tradingview-widget-container__widget{height:100%;width:100%}
+@media(max-width:700px){.heatEl{height:420px}}
 .rot.up{color:var(--good)}.rot.dn{color:var(--bad)}
 /* chart modal */
 .chartModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:100;padding:20px}
@@ -282,13 +284,14 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="assetHead">
       <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
       <div class="assetCtl">
-        <div class="seg small" id="secGroup"><button type="button" data-g="markets" class="on">Markets</button><button type="button" data-g="sectors">Sectors</button><button type="button" data-g="themes">Themes</button></div>
+        <div class="seg small" id="secGroup"><button type="button" data-g="markets" class="on">Markets</button><button type="button" data-g="sectors">Sectors</button><button type="button" data-g="themes">Themes</button><button type="button" data-g="heatmap" title="Nasdaq 100 heatmap (TradingView)">Heatmap</button></div>
         <div class="seg small" id="secPeriod"><button type="button" data-p="1D">1D</button><button type="button" data-p="1W" class="on">1W</button><button type="button" data-p="1M">1M</button><button type="button" data-p="3M">3M</button><button type="button" data-p="6M">6M</button><button type="button" data-p="YTD">YTD</button></div>
       </div>
     </div>
-    <div class="assetCols muted small"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
+    <div class="assetCols muted small" id="secCols"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
     <div id="secRows"></div>
-    <div class="muted small assetFoot">Bars: return over the selected period. Trend: 🔴🟡🟢 21ema rule and stage (S1 B base · S2 U up · S3 T top · S4 D down). Rotation ▲ = climbing the 1-month ranking vs 3 months (money flowing in). Click a row for the chart.</div>
+    <div id="secHeat" class="heatEl hidden"></div>
+    <div class="muted small assetFoot" id="secFoot">Bars: return over the selected period. Trend: 🔴🟡🟢 21ema rule and stage (S1 B base · S2 U up · S3 T top · S4 D down). Rotation ▲ = climbing the 1-month ranking vs 3 months (money flowing in). Click a row for the chart.</div>
   </div>
  </section>
 </main>
@@ -1025,7 +1028,30 @@ function barColor(v, max) {
 }
 let secPeriod = "1W";
 const PERIOD_LBL = { "1D": "1 day", "1W": "1 week", "1M": "1 month", "3M": "3 months", "6M": "6 months", YTD: "Year to date" };
+// Nasdaq 100 heatmap: TradingView embed, colour follows the card's period switch
+const HEAT_COLOR = { "1D": "change", "1W": "Perf.W", "1M": "Perf.1M", "3M": "Perf.3M", "6M": "Perf.6M", YTD: "Perf.YTD" };
+let heatKey = "";
+function renderHeatmap() {
+  const dark = document.documentElement.dataset.theme !== "light";
+  const key = secPeriod + "|" + dark;
+  $("secUpdated").textContent = "Nasdaq 100 · size = market cap · colour = " + PERIOD_LBL[secPeriod].toLowerCase() + " change · live from TradingView";
+  if (key === heatKey && $("secHeat").firstChild) return;   // no rebuild on the 5-minute refresh
+  heatKey = key;
+  const box = $("secHeat"); box.textContent = "";
+  const wrap = document.createElement("div"); wrap.className = "tradingview-widget-container";
+  const inner = document.createElement("div"); inner.className = "tradingview-widget-container__widget"; wrap.append(inner);
+  const s = document.createElement("script"); s.async = true;
+  s.src = "https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js";
+  s.textContent = JSON.stringify({ dataSource: "NASDAQ100", grouping: "sector", blockSize: "market_cap_basic", blockColor: HEAT_COLOR[secPeriod] || "change",
+    locale: "en", colorTheme: dark ? "dark" : "light", isTransparent: true, hasTopBar: false, isDataSetEnabled: false, isZoomEnabled: true,
+    hasSymbolTooltip: true, isMonoSize: false, width: "100%", height: "100%" });
+  wrap.append(s); box.append(wrap);
+}
 function renderSectors() {
+  const heat = secGroup === "heatmap";
+  for (const id of ["secCols", "secRows", "secFoot"]) $(id).classList.toggle("hidden", heat);
+  $("secHeat").classList.toggle("hidden", !heat);
+  if (heat) return renderHeatmap();
   if (!secData) return;
   const rows = (secData[secGroup] || []).filter((r) => r[secPeriod] != null).sort((a, b) => b[secPeriod] - a[secPeriod]);
   $("secPeriodLbl").textContent = PERIOD_LBL[secPeriod];
@@ -1107,20 +1133,20 @@ async function openChart(key, name) {
 }
 // always-visible QQQ / BTC charts at the top of the Assets page
 const INLINE = [["QQQ", "ichQQQ", "Nasdaq 100"], ["BTC", "ichBTC", "Bitcoin"]], inlObjs = {};
-let inlRun = 0;
-async function drawInline() {
+// redraws are queued, never overlapped: two overlapping runs could wipe each other's QQQ chart (blank panel)
+let inlChain = Promise.resolve();
+function drawInline() { return inlChain = inlChain.then(drawInlineNow, drawInlineNow); }
+async function drawInlineNow() {
   if ($("sectorsView").classList.contains("hidden")) return;
-  const run = ++inlRun;
   for (const [key, id, name] of INLINE) {
     try {
       if (inlObjs[key]) { inlObjs[key].remove(); inlObjs[key] = null; }
       const r = await drawChart($(id), key);
-      if (run !== inlRun) { r.chart.remove(); return; }
       inlObjs[key] = r.chart; $(id + "Sub").textContent = name + " · " + r.sub;
     } catch (e) { $(id + "Sub").textContent = name + " · chart data not available yet"; }
   }
 }
-new MutationObserver(() => drawInline()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHeatmap(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));

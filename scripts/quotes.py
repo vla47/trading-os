@@ -81,8 +81,8 @@ PERIODS = [("1D", 1), ("1W", 5), ("1M", 21), ("3M", 63), ("6M", 126)]
 
 
 def ohlcv_rows(df: pd.DataFrame, dec: int) -> list:
-    """Last ~1 year of daily bars for the chart: [date, open, high, low, close, volume]."""
-    d = df.dropna(subset=["Close"]).tail(260)
+    """Last ~1.6 years of daily bars for the chart: [date, open, high, low, close, volume]."""
+    d = df.dropna(subset=["Close"]).tail(400)  # 400 bars so the 200 SMA spans the whole visible range
     r = lambda v: round(float(v), dec + 1 if dec < 4 else dec)
     return [[i.strftime("%Y-%m-%d"), r(o), r(h), r(lo), r(c), int(v) if v == v else 0]
             for i, o, h, lo, c, v in zip(d.index, d["Open"], d["High"], d["Low"], d["Close"], d["Volume"])]
@@ -108,8 +108,8 @@ def perf_row(name: str, sym: str, close: pd.Series) -> dict:
 
 def add_rotation(rows: list) -> None:
     """Rank change: 1M rank vs 3M rank. Positive = moving up the table (money rotating in)."""
-    r1 = {r["symbol"]: i for i, r in enumerate(sorted(rows, key=lambda r: -(r["1M"] or -999)))}
-    r3 = {r["symbol"]: i for i, r in enumerate(sorted(rows, key=lambda r: -(r["3M"] or -999)))}
+    r1 = {r["symbol"]: i for i, r in enumerate(sorted(rows, key=lambda r: -(r["1M"] if r["1M"] is not None else -999)))}
+    r3 = {r["symbol"]: i for i, r in enumerate(sorted(rows, key=lambda r: -(r["3M"] if r["3M"] is not None else -999)))}
     for r in rows:
         r["rot"] = r3[r["symbol"]] - r1[r["symbol"]]
 
