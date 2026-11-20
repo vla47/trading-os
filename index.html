@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trading OS</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='9' fill='%2318212b'/%3E%3Cpolyline points='6,25 12,19 17,22 27,10' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='27' cy='10' r='3.2' fill='%2335c98b'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -26,7 +29,9 @@ button:hover{border-color:var(--accent)}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
 .marketStat{color:var(--muted);font-size:15px}.marketStat b{color:var(--text)}
 .topRight{min-width:0}
-.mktStrip{display:grid;grid-template-rows:repeat(2,auto);grid-auto-flow:column;gap:3px 20px;min-width:0;overflow-x:auto;scrollbar-width:none;font-size:13.5px;color:var(--muted);margin-right:6px}
+.mktStrip{display:flex;align-items:center;gap:18px;min-width:0;font-size:14px;color:var(--muted);margin-right:6px;cursor:pointer;user-select:none}
+.mktStrip .grp{display:flex;gap:18px;transition:opacity .35s}.mktStrip .grp.fade{opacity:0}
+.mktStrip .pg{display:flex;gap:4px}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:3px}
@@ -609,7 +614,8 @@ function initUI() {
     $("status").textContent = "No journal loaded"; $("userMenu").classList.add("hidden");
   };
   // Lock: hide the journal now; Touch ID and "remember this device" stay set up.
-  $("lockBtn").onclick = async () => { sessionPass = null; activePass = null; closeJournal(); encCache = null; await loadEncrypted(); };
+  // Lock: next visit needs Touch ID / passphrase
+  $("lockBtn").onclick = async () => { await forgetPass(); activePass = null; closeJournal(); encCache = null; await loadEncrypted(); };
   // Forget this device: also removes Touch ID, the remembered passphrase and the remembered file.
   $("clearData").onclick = async () => {
     if (!isFile && !confirm("Remove Touch ID and the remembered passphrase from this browser? You will need the passphrase next time.")) return;
@@ -653,21 +659,46 @@ function initUI() {
   // market strip: quotes.json deployed with the site by .github/workflows/quotes.yml (15 min in US hours, hourly otherwise) (same rules as the menu bar)
   const QUOTES = location.protocol === "file:" ? "https://vla47.github.io/trading-os/quotes.json" : "quotes.json";
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
+  // shown three at a time, rotating every 6 s; hover pauses, click jumps to the next group
+  const GROUPS = [["QQQ", "SXR8", "VIX"], ["BTC", "GOLD", "BRENT"], ["US10Y", "EURUSD"]];
+  let qItems = [], qPage = 0, qPaused = false;
+  const qEl = (it) => {
+    const q = document.createElement("span"); q.className = "q";
+    const chg = it.chg == null ? "" : (it.chg > 0 ? "+" : "") + it.chg.toFixed(2) + "%";
+    q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
+    const b = document.createElement("b"); b.textContent = Number(it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
+    q.append(b, " " + chg);
+    if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
+    return q;
+  };
+  const pages = () => {
+    const by = Object.fromEntries(qItems.map((it) => [it.label, it])), used = new Set(GROUPS.flat());
+    const ps = GROUPS.map((g) => g.map((l) => by[l]).filter(Boolean)).filter((g) => g.length);
+    const extra = qItems.filter((it) => !used.has(it.label)); for (let i = 0; i < extra.length; i += 3) ps.push(extra.slice(i, i + 3));
+    return ps;
+  };
+  const showPage = (fade) => {
+    const el = $("mktStrip"), ps = pages(); if (!ps.length) return;
+    qPage %= ps.length;
+    const draw = () => {
+      el.textContent = "";
+      const g = document.createElement("span"); g.className = "grp"; ps[qPage].forEach((it) => g.append(qEl(it)));
+      const pg = document.createElement("span"); pg.className = "pg"; ps.forEach((_, i) => { const d = document.createElement("i"); if (i === qPage) d.className = "on"; pg.append(d); });
+      el.append(g, pg);
+    };
+    const cur = el.querySelector(".grp");
+    if (fade && cur) { cur.classList.add("fade"); setTimeout(draw, 350); } else draw();
+  };
+  const strip = $("mktStrip");
+  strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
+  strip.onclick = () => { qPage++; showPage(true); };
+  setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 6000);
   const loadQuotes = () => fetch(QUOTES + "?t=" + Date.now()).then((r) => r.json()).then((j) => {
-    const el = $("mktStrip"); el.textContent = "";
-    for (const it of j.items || []) {
-      const q = document.createElement("span"); q.className = "q";
-      const chg = it.chg == null ? "" : (it.chg > 0 ? "+" : "") + it.chg.toFixed(2) + "%";
-      q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
-      const b = document.createElement("b"); b.textContent = Number(it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
-      q.append(b, " " + chg);
-      if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
-      el.append(q);
-    }
+    const el = $("mktStrip"); qItems = j.items || []; showPage(false);
     const age = (Date.now() - Date.parse(j.updated)) / 60000;
     el.classList.toggle("stale", age > 60);
     el.title = "Market strip · updated " + new Date(j.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 60 ? " (stale)" : "") +
-      "\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
+      "\nClick for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
   }).catch(() => {});
   loadQuotes(); setInterval(loadQuotes, 5 * 60000);
 }
@@ -756,7 +787,7 @@ async function passkeySetup(pass) {
   const iv = rnd(12);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await prfKey(out), new TextEncoder().encode(pass)));
   await idbSet(PK_REC, { credId, salt, iv, ct });
-  await forgetPass(); sessionPass = pass;   // Touch ID replaces "remember this device"
+  await sealPass(pass); sessionPass = pass;   // stays unlocked on reload until Lock / Forget this device
 }
 async function passkeyUnlock() {
   const r = await idbGet(PK_REC); if (!r) return null;
@@ -824,7 +855,7 @@ async function boot() {
       $("unlockMsg").textContent = "First time on this browser: enter the passphrase once — Touch ID is set up right after.";
       $("passTouchId").checked = true; $("passInput").focus(); return;
     }
-    try { const pass = await passkeyUnlock(); if (pass && await tryUnlock(pass, null)) { sessionPass = pass; refreshPasskeyUI(); } else $("unlockMsg").textContent = "Passkey unlock failed — use the passphrase"; }
+    try { const pass = await passkeyUnlock(); if (pass && await tryUnlock(pass, true)) { sessionPass = pass; refreshPasskeyUI(); } else $("unlockMsg").textContent = "Passkey unlock failed — use the passphrase"; }
     catch (err) { $("unlockMsg").textContent = err.name === "NotAllowedError" ? "Cancelled" : err.message; }
   };
   $("pkUsePass").onclick = () => { $("passArea").classList.remove("hidden"); $("pkUsePass").classList.add("hidden"); $("passInput").focus(); };
@@ -841,7 +872,7 @@ async function boot() {
   $("pkRemove").onclick = async () => { await idbDel(PK_REC); try { localStorage.removeItem("tradingOS.pkOfferDismissed"); } catch (e) {} $("status").textContent = "Touch ID unlock removed"; refreshPasskeyUI(); };
   $("unlock").onsubmit = async (e) => {
     e.preventDefault();
-    const remember = !$("rememberRow").classList.contains("hidden") && $("passRemember").checked;   // never stored when Touch ID is used
+    const remember = $("rememberRow").classList.contains("hidden") ? null : $("passRemember").checked;
     const wantTid = !$("tidRow").classList.contains("hidden") && $("passTouchId").checked;
     const pass = $("passInput").value;
     const ok = await tryUnlock(pass, remember);
