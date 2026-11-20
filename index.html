@@ -25,7 +25,8 @@ button:hover{border-color:var(--accent)}
 .appLogo{width:34px;height:34px;flex:0 0 34px}
 .pageTitle b{font-size:22px;font-weight:800}.pageTitle .sub{font-size:12px}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
-.marketStat{color:var(--muted);font-size:15px}.marketStat b{color:var(--text)}
+.marketStat{color:var(--muted);font-size:15px}
+.q .ext{margin-left:6px;font-size:12px;color:var(--muted);white-space:nowrap}.q .ext.pos{color:var(--good)}.q .ext.neg{color:var(--bad)}.marketStat b{color:var(--text)}
 .topRight{min-width:0}
 .topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
 .mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
@@ -809,16 +810,22 @@ function initUI() {
   // market strip: quotes.json deployed with the site by .github/workflows/quotes.yml (15 min in US hours, hourly otherwise) (same rules as the menu bar)
   const QUOTES = location.protocol === "file:" ? "https://vla47.github.io/trading-os/quotes.json" : "quotes.json";
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
-  // shown three at a time, rotating every 6 s; hover pauses, click jumps to the next group
-  const GROUPS = [["QQQ", "SXR8", "VIX"], ["BTC", "GOLD", "BRENT"], ["US10Y", "EURUSD"]];
+  // shown in groups, rotating every 6 s; hover pauses, click jumps to the next group
+  const GROUPS = [["QQQ", "VIX"], ["SXR8", "BTC", "GOLD"], ["BRENT", "US10Y", "EURUSD"]];   // QQQ gets room for its pre-market / after-hours quote
   let qItems = [], qPage = 0, qPaused = false;
   const qEl = (it) => {
     const q = document.createElement("span"); q.className = "q"; q.dataset.label = it.label; q.title = it.label + " — click for chart";
     const chg = it.chg == null ? "" : (it.chg > 0 ? "+" : "") + it.chg.toFixed(2) + "%";
     q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
-    const b = document.createElement("b"); b.textContent = Number(it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
+    const b = document.createElement("b"); b.textContent = Number(it.ext ? it.ext.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
     q.append(b, " " + chg);
     if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
+    if (it.ext) {   // pre-market / after-hours trade
+      const x = document.createElement("span"); x.className = "ext " + (it.ext.chg > 0 ? "pos" : it.ext.chg < 0 ? "neg" : "");
+      x.textContent = (it.ext.session === "pre" ? "PM" : "AH") + (it.ext.chg == null ? "" : " " + (it.ext.chg > 0 ? "+" : "") + it.ext.chg.toFixed(2) + "%");
+      x.title = (it.ext.session === "pre" ? "Pre-market" : "After-hours") + " · " + new Date(it.ext.time).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) + " · change vs the regular close " + Number(it.price).toFixed(it.dec);
+      q.append(x);
+    }
     return q;
   };
   const pages = () => {

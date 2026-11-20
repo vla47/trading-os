@@ -63,6 +63,24 @@ def stage(close: pd.Series) -> str:
     return "S3 T" if (p > hi * 0.80 and ma >= ma4) else "S1 B"
 
 
+EXT_HOURS = {"QQQ"}  # US-listed: also show the pre-market / after-hours price
+
+
+def ext_quote(t, reg_price: float, dec: int):
+    """Latest pre-market or after-hours trade vs the regular-session price (None inside regular hours)."""
+    df = t.history(period="1d", interval="1m", prepost=True)
+    if df.empty:
+        return None
+    reg = (t.get_history_metadata().get("currentTradingPeriod") or {}).get("regular") or {}
+    start, end = reg.get("start"), reg.get("end")
+    ts, last = df.index[-1].timestamp(), float(df["Close"].dropna().iloc[-1])
+    if not (start and end) or start <= ts < end:
+        return None
+    return {"session": "pre" if ts < start else "post", "price": round(last, dec),
+            "chg": round((last / reg_price - 1) * 100, 2) if reg_price else None,
+            "time": datetime.fromtimestamp(ts, timezone.utc).isoformat(timespec="minutes")}
+
+
 def vix_dot(v: float) -> str:
     return "red" if v > 25 else "yellow" if v >= 15 else "green"
 
@@ -145,6 +163,13 @@ def main() -> None:
                 it["dot"] = vix_dot(price)
             if want_stage:
                 it["stage"] = stage(hist)
+            if label in EXT_HOURS:
+                try:
+                    ext = ext_quote(t, price, dec)
+                    if ext:
+                        it["ext"] = ext
+                except Exception as exc:
+                    print(f"{label} extended hours: {exc}")
             items.append(it)
             write_chart(label, sym, df, dec)
             row = perf_row(label, sym, hist)
