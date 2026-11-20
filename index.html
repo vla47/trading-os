@@ -611,7 +611,7 @@ function initUI() {
   tick(); setInterval(tick, 15000);
   fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia")
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
-  // market strip: quotes.json written every ~15 min by .github/workflows/quotes.yml (same rules as the menu bar)
+  // market strip: quotes.json deployed with the site by .github/workflows/quotes.yml (15 min in US hours, hourly otherwise) (same rules as the menu bar)
   const QUOTES = location.protocol === "file:" ? "https://vla47.github.io/trading-os/quotes.json" : "quotes.json";
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
   const loadQuotes = () => fetch(QUOTES + "?t=" + Date.now()).then((r) => r.json()).then((j) => {

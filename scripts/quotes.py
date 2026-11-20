@@ -1,6 +1,6 @@
 """Market strip for Trading OS: same tickers and rules as the SwiftBar menu-bar plugin.
 
-Writes quotes.json next to index.html. Run by .github/workflows/quotes.yml.
+Writes quotes.json next to index.html. Run by .github/workflows/quotes.yml, which deploys it with the site (not committed).
 
 Rules (Tradelion rules.md):
   QQQ dot  (21.2-21.4, daily 21ema): red below | yellow fresh reclaim (<5 days) or 21ema not rising | green above rising

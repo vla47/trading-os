@@ -24,3 +24,6 @@ build/
 Trades journal.md
 Trades journal.js
 *.md.bak
+
+# Market strip: generated in the Pages deploy workflow, never committed
+quotes.json

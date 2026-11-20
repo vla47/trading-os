@@ -1,34 +1,46 @@
-name: Market strip
+name: Market strip + deploy
 
+# Builds the GitHub Pages site from main and adds a fresh quotes.json (no commits).
+# Requires: Settings → Pages → Source = "GitHub Actions".
 on:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 min (GitHub may delay scheduled runs)
+    - cron: "*/15 13-21 * * 1-5"   # every 15 min around US market hours (UTC)
+    - cron: "0 * * * *"            # hourly otherwise (BTC, FX, futures)
+  push:
+    branches: [main]               # journal sync pushes deploy right away
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: quotes
+  group: pages
   cancel-in-progress: true
 
 jobs:
-  quotes:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install yfinance pandas
-      - run: python scripts/quotes.py
-      - name: Commit quotes.json
+      - run: python scripts/quotes.py || echo "quotes failed, deploying without fresh data"
+      - name: Assemble site
         run: |
-          git config user.name "quotes-bot"
-          git config user.email "quotes-bot@users.noreply.github.com"
-          git add quotes.json
-          git diff --cached --quiet && exit 0
-          git commit -m "Update market strip" -q
-          # GitHub Pages serves the gh-pages branch, which mirrors main
-          git pull --rebase -q origin main
-          git push -q origin HEAD:main HEAD:gh-pages
+          mkdir _site
+          cp -r index.html assets journal.enc.json _site/
+          [ -f quotes.json ] && cp quotes.json _site/ || true
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
