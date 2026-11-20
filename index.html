@@ -36,6 +36,7 @@ button:hover{border-color:var(--accent)}
 .topDropdown{position:absolute;right:0;top:50px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;z-index:60;width:290px;box-shadow:var(--shadow);display:grid;gap:8px}
 .topDropdown label{font-size:13px;color:var(--muted)}
 .topDropdown select,.topDropdown button{width:100%;text-align:left}
+.topDropdown select{-webkit-appearance:none;appearance:none;padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2366717e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 /* load bar */
 .main{padding:12px 18px 28px;max-width:1700px;margin:auto}
 .loadBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
@@ -788,7 +789,7 @@ async function loadEncrypted() {
   encCache = enc;
   const pass = await savedPass();
   if (pass && await tryUnlock(pass, null)) return;   // null = keep the current remember setting
-  $("unlock").classList.remove("hidden"); $("empty").classList.add("hidden");
+  $("unlock").classList.remove("hidden"); $("empty").classList.add("hidden"); $("status").textContent = "🔒 Locked";
   await refreshPasskeyUI(); if (!$("passArea").classList.contains("hidden")) $("passInput").focus();
 }
 async function handleGranted() {
