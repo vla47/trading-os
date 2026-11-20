@@ -75,6 +75,7 @@ canvas{width:100%;height:230px;display:block}
 .unlock input[type=password]{padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:15px}
 .unlock .remember{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .unlock button{padding:10px;font-size:15px;text-align:center}
+.pkOffer{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:14px}.pkOffer.hidden{display:none}
 .passArea{display:grid;gap:12px}.passArea.hidden{display:none}
 .linkBtn{background:none;border:0;color:var(--muted);font-size:13px;padding:0;text-decoration:underline;cursor:pointer;box-shadow:none}
 .unlock #unlockMsg{text-align:center;min-height:1em;color:var(--bad);font-size:13px}
@@ -129,6 +130,11 @@ canvas{width:100%;height:230px;display:block}
     <span class="status" id="unlockMsg" role="alert"></span>
   </form>
 
+  <div id="pkOffer" class="pkOffer hidden">
+    <span>Unlock with Touch ID next time?</span>
+    <button id="pkOfferYes" class="primary" type="button">Set up Touch ID</button>
+    <button id="pkOfferNo" type="button">Not now</button>
+  </div>
   <div id="empty" class="empty">Open a journal from ⚙ Settings → Open journal…, or drop the file here.</div>
 
   <div id="app" class="hidden">
@@ -744,6 +750,8 @@ async function refreshPasskeyUI() {
   $("rememberRow").classList.toggle("hidden", has);
   $("pkSetup").classList.toggle("hidden", has || !unlocked || !window.PublicKeyCredential);
   $("pkRemove").classList.toggle("hidden", !has);
+  let dismissed = false; try { dismissed = localStorage.getItem("tradingOS.pkOfferDismissed") === "1"; } catch (e) {}
+  $("pkOffer").classList.toggle("hidden", has || !unlocked || !window.PublicKeyCredential || dismissed || !activePass);
 }
 function purgeLegacySecrets() {
   try { [TEXT_KEY, NAME_KEY, PASS_KEY].forEach((k) => localStorage.removeItem(k)); sessionStorage.removeItem(PASS_KEY); } catch (e) {}
@@ -791,11 +799,16 @@ async function boot() {
   };
   $("pkUsePass").onclick = () => { $("passArea").classList.remove("hidden"); $("pkUsePass").classList.add("hidden"); $("passInput").focus(); };
   $("pkSetup").onclick = async () => {
-    try { await passkeySetup(activePass); $("status").textContent = "Touch ID unlock is set up on this device"; }
-    catch (err) { $("status").textContent = err.name === "NotAllowedError" ? "Touch ID setup cancelled" : err.message; }
-    refreshPasskeyUI();
+    let msg, ok = false;
+    try { await passkeySetup(activePass); msg = "Touch ID unlock is set up on this device"; ok = true; }
+    catch (err) { msg = err.name === "NotAllowedError" ? "Touch ID setup cancelled" : err.message; }
+    $("status").textContent = msg;
+    await refreshPasskeyUI();
+    if (!ok) { $("pkOffer").classList.remove("hidden"); $("pkOffer").querySelector("span").textContent = msg; }
   };
-  $("pkRemove").onclick = async () => { await idbDel(PK_REC); $("status").textContent = "Touch ID unlock removed"; refreshPasskeyUI(); };
+  $("pkOfferYes").onclick = () => $("pkSetup").onclick();
+  $("pkOfferNo").onclick = () => { try { localStorage.setItem("tradingOS.pkOfferDismissed", "1"); } catch (e) {} $("pkOffer").classList.add("hidden"); };
+  $("pkRemove").onclick = async () => { await idbDel(PK_REC); try { localStorage.removeItem("tradingOS.pkOfferDismissed"); } catch (e) {} $("status").textContent = "Touch ID unlock removed"; refreshPasskeyUI(); };
   $("unlock").onsubmit = async (e) => {
     e.preventDefault();
     const remember = !$("rememberRow").classList.contains("hidden") && $("passRemember").checked;   // with Touch ID set up, never store the passphrase
