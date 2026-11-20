@@ -27,3 +27,5 @@ Trades journal.js
 
 # Market strip: generated in the Pages deploy workflow, never committed
 quotes.json
+sectors.json
+charts/

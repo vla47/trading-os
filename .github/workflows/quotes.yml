@@ -36,7 +36,8 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html assets journal.enc.json _site/
-          [ -f quotes.json ] && cp quotes.json _site/ || true
+          for f in quotes.json sectors.json; do [ -f "$f" ] && cp "$f" _site/ || true; done
+          [ -d charts ] && cp -r charts _site/ || true
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
