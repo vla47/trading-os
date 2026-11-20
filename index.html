@@ -30,8 +30,9 @@ button:hover{border-color:var(--accent)}
 .topRight{min-width:0}
 .topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
 .mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
-.mktStrip .grp{display:flex;gap:18px;transition:opacity .35s}.mktStrip .grp.fade{opacity:0}
-.mktStrip .pg{display:flex;gap:4px;margin-left:auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
+.mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0}
+.mktStrip .q{display:inline-block;will-change:transform,opacity,filter}
+.mktStrip .pg{display:flex;gap:4px;flex:0 0 auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:3px}
@@ -832,8 +833,20 @@ function initUI() {
       const pg = document.createElement("span"); pg.className = "pg"; ps.forEach((_, i) => { const d = document.createElement("i"); if (i === qPage) d.className = "on"; pg.append(d); });
       el.append(g, pg);
     };
+    // blur-slide with per-ticker stagger: old quotes rise out, new ones rise in from below
     const cur = el.querySelector(".grp");
-    if (fade && cur) { cur.classList.add("fade"); setTimeout(draw, 350); } else draw();
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches || !el.animate;
+    const ease = "cubic-bezier(.22,1,.36,1)";
+    const enter = () => { draw(); if (fade && !still) el.querySelectorAll(".grp .q").forEach((q, i) => q.animate(
+      [{ transform: "translateY(70%)", opacity: 0, filter: "blur(6px)" }, { transform: "none", opacity: 1, filter: "blur(0)" }],
+      { duration: 520, delay: i * 70, easing: ease, fill: "backwards" })); };
+    if (fade && cur && !still) {
+      const qs = [...cur.querySelectorAll(".q")];
+      const outs = qs.map((q, i) => q.animate(
+        [{ transform: "none", opacity: 1, filter: "blur(0)" }, { transform: "translateY(-70%)", opacity: 0, filter: "blur(6px)" }],
+        { duration: 300, delay: i * 50, easing: "cubic-bezier(.55,0,1,.45)", fill: "forwards" }));
+      Promise.all(outs.map((a) => a.finished)).then(enter, enter);
+    } else enter();
   };
   const strip = $("mktStrip");
   strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
