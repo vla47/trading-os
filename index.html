@@ -1138,6 +1138,13 @@ async function drawChart(el, key, tf = "D") {
     const line = (data, color) => chartObj.addSeries(L.LineSeries, { color, lineWidth: 2, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false }).setData(data);
     if (tf === "W") { line(maLine(d.bars, 10, false), "#3b82f6"); line(maLine(d.bars, 30, false), "#f59e0b"); }
     else { line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7"); }
+    // pre-market / after-hours: dashed line at the latest extended-hours trade (QQQ), refreshed with the chart
+    try {
+      const q = await fetch(DATA_BASE + "quotes.json?t=" + Date.now()).then((r) => r.json());
+      const x = (q.items || []).find((i) => i.label === key)?.ext;
+      if (x) c.createPriceLine({ price: x.price, color: cssVar("--accent"), lineWidth: 1, lineStyle: 2, axisLabelVisible: true,
+        title: (x.session === "pre" ? "PM " : "AH ") + (x.chg > 0 ? "+" : "") + x.chg.toFixed(2) + "%" });
+    } catch (e) {}
     chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - (tf === "W" ? 80 : 130)), to: d.bars.length + 3 });
   const last = d.bars[d.bars.length - 1], prev = d.bars[d.bars.length - 2];
   return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})` };
