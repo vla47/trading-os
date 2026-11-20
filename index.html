@@ -4,15 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trading OS</title>
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-v2-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-v2-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-v2-180.png">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='9' fill='%2318212b'/%3E%3Cpolyline points='6,25 12,19 17,22 27,10' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='27' cy='10' r='3.2' fill='%2335c98b'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYjBmMTQiLz48ZyBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik0xNyAyMnYyNiIgc3Ryb2tlPSIjZmY2ODc1IiBzdHJva2Utd2lkdGg9IjMiLz48cmVjdCB4PSIxMSIgeT0iMjgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgcng9IjIuNSIgZmlsbD0iI2ZmNjg3NSIvPjxwYXRoIGQ9Ik0zMiAxNnYzMCIgc3Ryb2tlPSIjMzVjOThiIiBzdHJva2Utd2lkdGg9IjMiLz48cmVjdCB4PSIyNiIgeT0iMjIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgcng9IjIuNSIgZmlsbD0iIzM1Yzk4YiIvPjxwYXRoIGQ9Ik00NyA4djI4IiBzdHJva2U9IiMzNWM5OGIiIHN0cm9rZS13aWR0aD0iMyIvPjxyZWN0IHg9IjQxIiB5PSIxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiByeD0iMi41IiBmaWxsPSIjMzVjOThiIi8+PC9nPjxwYXRoIGQ9Ik05IDU0IEwyNCA0NiBMMzYgNDkgTDU1IDM2IiBmaWxsPSJub25lIiBzdHJva2U9IiM2ZWE4ZmUiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-v3-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-v3-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-v3-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root,[data-theme="light"]{--bg:#f4f6f8;--panel:#fff;--panel2:#f4f7fa;--text:#18212b;--muted:#66717e;--line:#d9dfe7;--good:#16865c;--bad:#d9364f;--accent:#3b73d1;--warn:#d07a00;--shadow:0 2px 14px rgba(20,30,45,.08)}
 [data-theme="dark"]{--bg:#0b0f14;--panel:#121821;--panel2:#171f2a;--text:#e8edf3;--muted:#8d9aaa;--line:#263140;--good:#35c98b;--bad:#ff6875;--accent:#6ea8fe;--warn:#f2c94c;--shadow:none}
-[data-theme="midnight"]{--bg:#070b18;--panel:#0d1426;--panel2:#121b31;--text:#edf2ff;--muted:#8995b0;--line:#24304a;--good:#43d9a0;--bad:#ff6b86;--accent:#9b8cff;--warn:#e8c45a;--shadow:none}
 [data-theme="forest"]{--bg:#09120f;--panel:#0e1b16;--panel2:#14251e;--text:#e9f4ef;--muted:#8ca49a;--line:#294238;--good:#4bd39a;--bad:#ff7373;--accent:#62b8a0;--warn:#e7c969;--shadow:none}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,Inter,system-ui,"Segoe UI",sans-serif}
@@ -29,7 +28,8 @@ button:hover{border-color:var(--accent)}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
 .marketStat{color:var(--muted);font-size:15px}.marketStat b{color:var(--text)}
 .topRight{min-width:0}
-.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);margin-right:6px;cursor:pointer;user-select:none}
+.topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
+.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
 .mktStrip .grp{display:flex;gap:18px;transition:opacity .35s}.mktStrip .grp.fade{opacity:0}
 .mktStrip .pg{display:flex;gap:4px;margin-left:auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
@@ -97,7 +97,7 @@ canvas{width:100%;height:230px;display:block}
 .dq{font-size:14px;line-height:1.6}
 @media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.four{grid-template-columns:1fr}}
-@media(max-width:700px){.marketStat,.mktStrip{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
+@media(max-width:700px){.marketStat,.mktStrip,.topMid{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
 @media(max-width:420px){.metricGroup{grid-template-columns:1fr}}
 /* segmented control (header views, sector groups) */
 .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
@@ -127,6 +127,9 @@ canvas{width:100%;height:230px;display:block}
 .chartEl{min-height:0}
 .mktStrip .q{cursor:pointer}
 .assetCard{padding:16px 18px}
+.inlChart{padding:0;overflow:hidden;margin-bottom:12px;display:grid;grid-template-rows:auto 1fr;height:520px}
+.inlEl{min-height:0}
+@media(max-width:700px){.inlChart{height:380px}}
 .assetHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .assetCtl{display:flex;gap:8px;flex-wrap:wrap}
 .assetCols,.aRow{display:grid;grid-template-columns:minmax(150px,220px) 92px 1fr 74px;gap:12px;align-items:center}
@@ -166,8 +169,8 @@ details.more[open]>summary{margin-bottom:6px}
 <header class="topbar">
   <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b>
   <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button></nav></div>
+  <div class="topMid"><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
   <div class="topRight">
-    <div id="mktStrip" class="mktStrip" title="Market strip"></div>
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
     <div class="marketStat">◷ <b id="clock">--:--</b></div>
     <div class="marketStat">▣ <b id="today">---</b></div>
@@ -180,9 +183,8 @@ details.more[open]>summary{margin-bottom:6px}
         <div class="themeRow" role="radiogroup" aria-label="Theme">
           <button type="button" class="sw" data-theme="light" title="Light" aria-label="Light theme" style="--a:#f4f6f8;--b:#3b73d1"></button>
           <button type="button" class="sw" data-theme="dark" title="Dark" aria-label="Dark theme" style="--a:#121821;--b:#6ea8fe"></button>
-          <button type="button" class="sw" data-theme="midnight" title="Midnight" aria-label="Midnight theme" style="--a:#0d1426;--b:#9b8cff"></button>
           <button type="button" class="sw" data-theme="forest" title="Forest" aria-label="Forest theme" style="--a:#0e1b16;--b:#62b8a0"></button>
-          <select id="theme" class="hidden" aria-hidden="true"><option value="light">Light</option><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="forest">Forest</option></select>
+          <select id="theme" class="hidden" aria-hidden="true"><option value="light">Light</option><option value="dark">Dark</option><option value="forest">Forest</option></select>
         </div>
         <div class="menuSep"></div>
         <button id="menuOpen" class="mItem"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open journal…</button>
@@ -268,6 +270,8 @@ details.more[open]>summary{margin-bottom:6px}
  </div>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
+  <div class="panel inlChart"><div class="chartTop"><div><b>QQQ</b> <span class="muted small" id="ichQQQSub">Nasdaq 100</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichQQQ"></div></div>
+  <div class="panel inlChart"><div class="chartTop"><div><b>BTC</b> <span class="muted small" id="ichBTCSub">Bitcoin</span></div><div class="chartLegend small"><span class="lg ema">21 EMA</span><span class="lg sma50">50 SMA</span><span class="lg sma200">200 SMA</span></div></div><div class="inlEl" id="ichBTC"></div></div>
   <div class="panel assetCard">
     <div class="assetHead">
       <div><h1 class="secTitle">Where money is rotating</h1><div class="muted small" id="secUpdated"></div></div>
@@ -779,6 +783,7 @@ function initUI() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { menu.classList.add("hidden"); btn.setAttribute("aria-expanded", "false"); } });
   // theme
   let theme = "light"; try { theme = localStorage.getItem("theme") || "light"; } catch (e) {}
+  if (!["light", "dark", "forest"].includes(theme)) theme = "dark";
   $("theme").value = theme; document.documentElement.dataset.theme = theme;
   const markSw = () => document.querySelectorAll(".sw").forEach((b) => b.classList.toggle("on", b.dataset.theme === $("theme").value));
   document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { $("theme").value = b.dataset.theme; $("theme").onchange({ target: $("theme") }); markSw(); });
@@ -990,7 +995,7 @@ function showView(v) {
   $("journalView").classList.toggle("hidden", v !== "journal");
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
-  if (v === "sectors") loadSectors();
+  if (v === "sectors") { loadSectors(); drawInline(); }
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
@@ -1049,15 +1054,11 @@ function maLine(bars, n, ema) {
   });
   return out;
 }
-async function openChart(key, name) {
-  $("chartModal").classList.remove("hidden"); $("chartTitle").textContent = key; $("chartSub").textContent = name && name !== key ? name : "Loading…";
-  try {
-    const [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
-    const L = window.LightweightCharts, el = $("chartEl");
-    if (chartObj) { chartObj.remove(); chartObj = null; }
-    const last = d.bars[d.bars.length - 1], prev = d.bars[d.bars.length - 2];
-    $("chartSub").textContent = `${name && name !== key ? name + " · " : ""}${d.symbol} · daily · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})`;
-    chartObj = L.createChart(el, { autoSize: true,
+async function drawChart(el, key) {
+  const [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
+  const L = window.LightweightCharts;
+  el.textContent = "";
+    const chartObj = L.createChart(el, { autoSize: true,
       layout: { background: { type: "solid", color: cssVar("--panel") }, textColor: cssVar("--muted"), fontFamily: getComputedStyle(document.body).fontFamily },
       grid: { vertLines: { color: cssVar("--line") }, horzLines: { color: cssVar("--line") } },
       rightPriceScale: { borderColor: cssVar("--line") }, timeScale: { borderColor: cssVar("--line"), rightOffset: 4 }, crosshair: { mode: 0 } });
@@ -1074,8 +1075,34 @@ async function openChart(key, name) {
     const line = (data, color) => chartObj.addSeries(L.LineSeries, { color, lineWidth: 2, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false }).setData(data);
     line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7");
     chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - 130), to: d.bars.length + 3 });
+  const last = d.bars[d.bars.length - 1], prev = d.bars[d.bars.length - 2];
+  return { chart: chartObj, d, sub: `${d.symbol} · daily · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})` };
+}
+async function openChart(key, name) {
+  $("chartModal").classList.remove("hidden"); $("chartTitle").textContent = key; $("chartSub").textContent = name && name !== key ? name : "Loading…";
+  try {
+    if (chartObj) { chartObj.remove(); chartObj = null; }
+    const r = await drawChart($("chartEl"), key);
+    chartObj = r.chart;
+    $("chartSub").textContent = `${name && name !== key ? name + " · " : ""}${r.sub}`;
   } catch (e) { $("chartSub").textContent = "Chart data not available yet."; }
 }
+// always-visible QQQ / BTC charts at the top of the Assets page
+const INLINE = [["QQQ", "ichQQQ", "Nasdaq 100"], ["BTC", "ichBTC", "Bitcoin"]], inlObjs = {};
+let inlRun = 0;
+async function drawInline() {
+  if ($("sectorsView").classList.contains("hidden")) return;
+  const run = ++inlRun;
+  for (const [key, id, name] of INLINE) {
+    try {
+      if (inlObjs[key]) { inlObjs[key].remove(); inlObjs[key] = null; }
+      const r = await drawChart($(id), key);
+      if (run !== inlRun) { r.chart.remove(); return; }
+      inlObjs[key] = r.chart; $(id + "Sub").textContent = name + " · " + r.sub;
+    } catch (e) { $(id + "Sub").textContent = name + " · chart data not available yet"; }
+  }
+}
+new MutationObserver(() => drawInline()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
@@ -1090,7 +1117,7 @@ function initViews() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeChart(); });
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
-  setInterval(() => { if (!$("sectorsView").classList.contains("hidden") && !document.hidden) loadSectors(); }, 5 * 60000);
+  setInterval(() => { if (!$("sectorsView").classList.contains("hidden") && !document.hidden) { loadSectors(); drawInline(); } }, 5 * 60000);
 }
 
 async function boot() {
