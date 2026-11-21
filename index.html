@@ -137,7 +137,8 @@ canvas{width:100%;height:230px;display:block}
 .miniTop .nm{font-weight:800;font-size:16px;color:var(--text)}.miniTop .px{font-weight:800;font-size:22px;color:var(--text);font-variant-numeric:tabular-nums}
 .miniTop .st{font-size:13px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--panel2);color:var(--text)}
 .miniSub{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.miniSvg{width:100%;height:92px;display:block;margin-top:8px}
+.miniSvg{width:100%;height:190px;display:block;margin-top:8px}
+.miniTop .ext{font-size:13px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--panel2);color:var(--muted)}.miniTop .ext b{color:var(--text)}
 .miniLeg{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin-top:4px}.miniLeg .lg::before{width:12px;height:2px}.miniLeg .r{margin-left:auto}
 .lg.px::before{background:var(--text)}
 @media(max-width:1000px){.miniRow{grid-template-columns:1fr}}
@@ -872,7 +873,8 @@ function initUI() {
     const chg = c == null ? "" : (c > 0 ? "+" : "") + c.toFixed(2) + "%";
     q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
     const b = document.createElement("b"); b.textContent = Number(it.eth ? it.eth.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
-    q.append(b, " " + chg);
+    const cs = document.createElement("span"); cs.className = c > 0 ? "good" : c < 0 ? "bad" : ""; cs.textContent = chg;
+    q.append(b, " ", cs);
     if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; st.title = STAGE_NAME[it.stage] || ""; q.append(st); }
     if (it.eth) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.eth.session === "pre" ? "PM" : "AH"; q.append(st); }
     return q;
@@ -1259,7 +1261,8 @@ document.querySelectorAll(".miniCard").forEach((c) => {
   const go = () => openChart(c.dataset.key, c.dataset.name);
   c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
 });
-let inlChain = Promise.resolve();
+let inlChain = Promise.resolve(), inlRz;
+addEventListener("resize", () => { clearTimeout(inlRz); inlRz = setTimeout(drawInline, 200); });
 function drawInline() { return inlChain = inlChain.then(drawInlineNow, drawInlineNow); }
 async function drawInlineNow() {
   if ($("sectorsView").classList.contains("hidden")) return;
@@ -1271,22 +1274,38 @@ async function drawInlineNow() {
       // daily numbers: 21ema distance + direction (rule 21)
       const e21 = maLine(d.bars, 21, true), eN = e21[e21.length - 1].value, e5 = e21[e21.length - 6]?.value;
       const px = rec ? rec.price : d.bars[d.bars.length - 1][4], dist = (px / eN - 1) * 100;
-      // weekly line: last 52 weeks (+ the current week), 10w / 30w SMA
+      // weekly line: last 52 weeks (+ the current week), 10w / 30w SMA, price scale on the right
       const w = toWeekly(d.bars), m10 = maLine(w, 10, false), m30 = maLine(w, 30, false), N = 53;
       const ws = w.slice(-N), t0 = ws[0][0], f = (a) => a.filter((x) => x.time >= t0).map((x) => x.value);
-      const cl = ws.map((b) => b[4]), a10 = f(m10), a30 = f(m30), all = [...cl, ...a10, ...a30];
-      const mn = Math.min(...all), mx = Math.max(...all), W = 300, H = 92;
-      const pts = (a) => { const off = cl.length - a.length; return a.map((v, i) => `${((i + off) / (cl.length - 1) * W).toFixed(1)},${(H - 3 - (v - mn) / (mx - mn || 1) * (H - 6)).toFixed(1)}`).join(" "); };
-      const line = (a, col, sw) => `<polyline points="${pts(a)}" fill="none" stroke="${col}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+      const cl = ws.map((b) => b[4]); cl[cl.length - 1] = px;
+      const a10 = f(m10), a30 = f(m30), all = [...cl, ...a10, ...a30];
+      const mn = Math.min(...all) * 0.99, mx = Math.max(...all) * 1.01, AX = 52, W = Math.max(200, (c.clientWidth || 600) - 32), PW = W - AX, H = 190;
+      const X = (i) => i / (cl.length - 1) * PW, Y = (v) => H - 4 - (v - mn) / (mx - mn || 1) * (H - 8);
+      const pts = (a) => { const off = cl.length - a.length; return a.map((v, i) => `${X(i + off).toFixed(1)},${Y(v).toFixed(1)}`).join(" "); };
+      const line = (a, col, sw) => `<polyline points="${pts(a)}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+      const big = mx >= 10000, ax = (v) => big ? Math.round(v / 1000) + "k" : String(Math.round(v));
+      const r = mx - mn, st0 = 10 ** Math.floor(Math.log10(r / 4)), step = [1, 2, 2.5, 5, 10].map((m) => m * st0).find((x) => r / x <= 5);
+      let grid = "";
+      for (let v = Math.ceil(mn / step) * step; v <= mx; v += step)
+        grid += `<line x1="0" x2="${PW}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${cssVar("--line")}" stroke-width="0.6"/>` +
+          (Math.abs(Y(v) - Y(px)) < 14 ? "" : `<text x="${PW + 6}" y="${(Y(v) + 3.5).toFixed(1)}" font-size="10.5" fill="${cssVar("--muted")}">${ax(v)}</text>`);
+      const tagC = cssVar((rec?.chg ?? 0) < 0 ? "--bad" : "--good"), yl = Y(px), lbl = big ? (px / 1000).toFixed(1) + "k" : px.toFixed(d.dec);
+      const tag = `<line x1="0" x2="${PW}" y1="${yl.toFixed(1)}" y2="${yl.toFixed(1)}" stroke="${tagC}" stroke-width="0.9" stroke-dasharray="3 3"/>` +
+        `<rect x="${PW + 2}" y="${(yl - 8).toFixed(1)}" width="${AX - 4}" height="16" rx="3" fill="${tagC}"/><text x="${PW + 6}" y="${(yl + 3.5).toFixed(1)}" font-size="10.5" font-weight="700" fill="#fff">${lbl}</text>`;
+      // 52-week range from daily highs / lows
+      const cut = new Date(Date.now() - 364 * 864e5).toISOString().slice(0, 10), yr = d.bars.filter((b) => b[0] >= cut);
+      const hi = Math.max(...yr.map((b) => b[2]), px), lo = Math.min(...yr.map((b) => b[3]), px), offHi = (px / hi - 1) * 100;
+      const rng = (v) => big ? (v / 1000).toFixed(1) + "k" : Math.round(v);
       const fmt = (v) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d.dec, maximumFractionDigits: d.dec });
       const chg = rec?.chg, cc = chg > 0 ? "good" : chg < 0 ? "bad" : "";
+      const x = rec?.ext, ext = x ? `<span class="ext" title="${x.session === "pre" ? "Pre-market" : "After-hours"} · ${new Date(x.time).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })} · vs the regular close">${x.session === "pre" ? "PM" : "AH"} <b>${fmt(x.price)}</b> <span class="${x.chg > 0 ? "good" : x.chg < 0 ? "bad" : ""}">${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}%</span></span>` : "";
       c.title = qInfo(rec) + "\nClick for the full chart";
       c.innerHTML = `<div class="miniTop">${rec?.dot ? DOTS_MINI[rec.dot] : ""}<span class="nm">${esc(key)}</span><span class="px">${fmt(px)}</span>` +
         `<span class="${cc}">${chg == null ? "" : (chg > 0 ? "+" : "") + chg.toFixed(2) + "%"}</span>` +
-        (rec?.stage ? `<span class="st" title="${STAGE_FULL[rec.stage] || ""}">${esc(rec.stage)}</span>` : "") + `</div>` +
-        `<div class="miniSub">${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · ${esc(name)}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
-        `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}</svg>` +
-        `<div class="miniLeg"><span class="lg px">weekly close</span><span class="lg ema">10w</span><span class="lg sma50">30w</span><span class="r">52 weeks · click for candles</span></div>`;
+        (rec?.stage ? `<span class="st" title="${STAGE_FULL[rec.stage] || ""}">${esc(rec.stage)}</span>` : "") + ext + `</div>` +
+        `<div class="miniSub">${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · 52w range ${rng(lo)} – ${rng(hi)} · ${Math.abs(offHi) < 0.05 ? "at the high" : Math.abs(offHi).toFixed(0) + "% off high"}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
+        `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${tag}</svg>` +
+        `<div class="miniLeg"><span class="lg px">weekly close</span><span class="lg ema">10w</span><span class="lg sma50">30w</span><span class="r">52 weeks · ${esc(name)} · click for candles</span></div>`;
     } catch (e) { c.innerHTML = `<div class="miniSub">${esc(key)} · chart data not available yet</div>`; }
   }
 }
