@@ -26,13 +26,12 @@ button:hover{border-color:var(--accent)}
 .pageTitle b{font-size:22px;font-weight:800}.pageTitle .sub{font-size:12px}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
 .marketStat{color:var(--muted);font-size:15px}
-.q .ext{margin-left:6px;font-size:12px;color:var(--muted);white-space:nowrap}.q .ext.pos{color:var(--good)}.q .ext.neg{color:var(--bad)}.marketStat b{color:var(--text)}
+.marketStat b{color:var(--text)}
 .topRight{min-width:0}
 .topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
 .mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,48vw,680px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
 .mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0;overflow:hidden}
 .mktStrip .q{display:inline-block;will-change:transform,opacity,filter}
-.mktStrip .pg{display:flex;gap:4px;flex:0 0 auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:3px}
@@ -809,22 +808,18 @@ function initUI() {
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
   // market strip: renders from market.json (see loadMarket); rebuilt by .github/workflows/quotes.yml every 15 min in US hours, 30 min otherwise
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
-  // shown in groups, rotating every 6 s; hover pauses, click jumps to the next group
-  const GROUPS = [["QQQ", "VIX"], ["SXR8", "BTC", "GOLD"], ["BRENT", "US10Y", "EURUSD"]];   // QQQ gets room for its pre-market / after-hours quote
+  // shown in groups, rotating every 10 s; hover pauses, click jumps to the next group
+  const GROUPS = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD"], ["BRENT", "EURUSD"]];   // each ETF next to its index future
   let qItems = [], qPage = 0, qPaused = false;
   const qEl = (it) => {
     const q = document.createElement("span"); q.className = "q" + (qStale(it) ? " stale" : ""); q.dataset.label = it.label; q.title = qInfo(it) + "\nClick for chart";
-    const chg = it.chg == null ? "" : (it.chg > 0 ? "+" : "") + it.chg.toFixed(2) + "%";
+    const c = it.eth ? it.eth.chg : it.chg;   // NQ outside cash hours: move since the 16:00 ET close
+    const chg = c == null ? "" : (c > 0 ? "+" : "") + c.toFixed(2) + "%";
     q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
-    const b = document.createElement("b"); b.textContent = Number(it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
+    const b = document.createElement("b"); b.textContent = Number(it.eth ? it.eth.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
     q.append(b, " " + chg);
     if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
-    if (it.ext) {   // pre-market / after-hours trade
-      const x = document.createElement("span"); x.className = "ext " + (it.ext.chg > 0 ? "pos" : it.ext.chg < 0 ? "neg" : "");
-      x.textContent = (it.ext.session === "pre" ? "PM " : "AH ") + Number(it.ext.price).toFixed(it.dec) + (it.ext.chg == null ? "" : " " + (it.ext.chg > 0 ? "+" : "") + it.ext.chg.toFixed(2) + "%");
-      x.title = (it.ext.session === "pre" ? "Pre-market" : "After-hours") + " · " + new Date(it.ext.time).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) + " · change vs the regular close " + Number(it.price).toFixed(it.dec);
-      q.append(x);
-    }
+    if (it.eth) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.eth.session === "pre" ? "PM" : "AH"; q.append(st); }
     return q;
   };
   const pages = () => {
@@ -839,8 +834,7 @@ function initUI() {
     const draw = () => {
       el.textContent = "";
       const g = document.createElement("span"); g.className = "grp"; ps[qPage].forEach((it) => g.append(qEl(it)));
-      const pg = document.createElement("span"); pg.className = "pg"; ps.forEach((_, i) => { const d = document.createElement("i"); if (i === qPage) d.className = "on"; pg.append(d); });
-      el.append(g, pg);
+      el.append(g);
       // shrink a crowded group (e.g. SXR8 / BTC / GOLD with stage badges) until it fits instead of clipping it
       for (let fs = 14, gap = 18; g.scrollWidth > g.clientWidth + 1 && fs > 11; ) { fs -= 0.5; gap = Math.max(10, gap - 2); g.style.fontSize = fs + "px"; g.style.gap = gap + "px"; }
     };
@@ -862,7 +856,7 @@ function initUI() {
   const strip = $("mktStrip");
   strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
   strip.onclick = (e) => { const q = e.target.closest(".q"); if (q && q.dataset.label) return openChart(q.dataset.label); qPage++; showPage(true); };
-  setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 6000);
+  setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 10000);
   mktListeners.push((changed, err) => {
     const el = $("mktStrip");
     if (err || !MKT) { el.classList.add("stale"); return; }
@@ -872,7 +866,7 @@ function initUI() {
     el.classList.toggle("stale", age > 90);
     el.title = "Market strip · " + MKT.source + " · built " + new Date(MKT.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
-      "\nClick a ticker for its chart · click the dots for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
+      "\nClick a ticker for its chart · click between tickers for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
   });
 }
 
@@ -1030,7 +1024,10 @@ function qStale(r) { return !!r && (r.stale || (r.open && r.asOf && Date.now() -
 function qInfo(r) {
   if (!r) return "";
   const t = r.asOf ? new Date(r.asOf).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "?";
-  return `${r.name} (${r.symbol}) · ${r.source || "Yahoo Finance"} · as of ${t}` + (r.warn ? "\n⚠ " + r.warn.join("\n⚠ ") : "") + (qStale(r) ? "\n⚠ stale" : "");
+  const ses = (x) => x.session === "pre" ? "Pre-market" : "After-hours";
+  const x = r.ext ? `\n${ses(r.ext)} ${Number(r.ext.price).toFixed(r.dec)} (${r.ext.chg > 0 ? "+" : ""}${r.ext.chg.toFixed(2)}% vs close)` : "";
+  const e = r.eth ? `\n${ses(r.eth)} ${r.eth.price}: ${r.eth.chg > 0 ? "+" : ""}${r.eth.chg.toFixed(2)}% since the 16:00 ET cash close (${r.eth.ref}) · settlement ${r.price} (${r.chg > 0 ? "+" : ""}${r.chg.toFixed(2)}%)` : "";
+  return `${r.name} (${r.symbol}) · ${r.source || "Yahoo Finance"} · as of ${t}` + x + e + (r.warn ? "\n⚠ " + r.warn.join("\n⚠ ") : "") + (qStale(r) ? "\n⚠ stale" : "");
 }
 async function loadMarket() {
   try {

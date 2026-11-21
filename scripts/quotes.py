@@ -36,6 +36,8 @@ SOURCE = "Yahoo Finance"
 # key, yahoo symbol, display name, decimals, stage?, dot rule, max |1D| %
 MARKETS = [
     ("QQQ", "QQQ", "QQQ", 2, True, "ema", 12),
+    ("NQ", "NQ=F", "Nasdaq 100 futures", 2, False, None, 12),
+    ("ES", "ES=F", "S&P 500 futures", 2, False, None, 12),
     ("SXR8", "SXR8.DE", "SXR8", 2, True, None, 12),
     ("BTC", "BTC-USD", "BTC", 0, True, None, 25),
     ("GOLD", "GC=F", "GOLD", 2, True, None, 12),
@@ -54,9 +56,11 @@ THEMES = [  # industry / theme ETFs that often lead rotations
     ("Uranium & Nuclear", "URA"), ("Gold Miners", "GDX"), ("Homebuilders", "XHB"), ("Regional Banks", "KRE"),
     ("Solar", "TAN"), ("China Internet", "KWEB"),
 ]
-STRIP = ["QQQ", "VIX", "SXR8", "BTC", "GOLD", "BRENT", "US10Y", "EURUSD"]
+STRIP = ["QQQ", "NQ", "VIX", "SXR8", "ES", "BTC", "GOLD", "BRENT", "US10Y", "EURUSD"]
 PERIODS = [("1W", 5), ("1M", 21), ("3M", 63), ("6M", 126)]
 EXT_HOURS = {"QQQ"}          # US-listed: also show the pre-market / after-hours price
+NEAR_23H = {"NQ", "ES"}           # ~23h futures: outside US cash hours show the move since the 16:00 ET cash close
+US_CASH = {}                # filled by the QQQ fetch: open flag, last cash close, today's open time
 MAX_AGE_OPEN = 30 * 60       # seconds; older than this while the market is open = stale
 
 
@@ -115,6 +119,25 @@ def ext_quote(t, reg_price: float, reg: dict, dec: int):
     return {"session": "pre" if last_ts < start else "post", "price": round(last, dec),
             "chg": round((last / reg_price - 1) * 100, 2),
             "time": datetime.fromtimestamp(last_ts, timezone.utc).isoformat(timespec="minutes")}
+
+
+def since_cash_close(t, dec: int, now):
+    """Futures move since the last US cash close (16:00 ET) = clean pre-market / after-hours sentiment.
+    Yahoo's futures 1D is vs the prior settlement, which between 16:00 and 18:00 ET still contains the whole cash day.
+    Uses 1-minute trades: Yahoo stamps the settlement price on the 16:59 ET bar (CME halt), so that bar is dropped."""
+    close = US_CASH["close"]
+    df = t.history(period="5d", interval="1m").dropna(subset=["Close"])
+    et = df.index.tz_convert("America/New_York")
+    df = df[~((et.hour == 16) & (et.minute == 59))]
+    secs = df.index.map(lambda i: i.timestamp())
+    ref, after = df[secs < close - 59], df[secs >= close]                   # 15:59 bar closes at 16:00
+    if ref.empty or after.empty:
+        return None
+    r, last = float(ref["Close"].iloc[-1]), float(after["Close"].iloc[-1])
+    start = US_CASH.get("start")
+    return {"session": "pre" if (start and now.timestamp() < start) else "post", "price": round(last, dec), "chg": pct(last, r),
+            "ref": round(r, dec), "refTime": datetime.fromtimestamp(close, timezone.utc).isoformat(timespec="minutes"),
+            "time": after.index[-1].tz_convert("UTC").isoformat(timespec="minutes")}
 
 
 def pct(a: float, b: float):
@@ -176,6 +199,15 @@ def fetch(key, sym, name, dec, want_stage, dot_rule, max_chg, now):
         rec["dot"] = vix_dot(price)
     if want_stage:
         rec["stage"] = stage(s)
+    if key == "QQQ":
+        US_CASH.update(open=open_now, close=as_of, start=start)
+    if key in NEAR_23H and US_CASH and not US_CASH["open"] and US_CASH.get("close"):
+        try:
+            x = since_cash_close(t, dec, now)
+            if x:
+                rec["eth"] = x
+        except Exception as exc:
+            print(f"{key} since cash close: {exc}")
     if key in EXT_HOURS:
         try:
             x = ext_quote(t, price, reg, dec)
