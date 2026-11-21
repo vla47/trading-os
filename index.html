@@ -39,7 +39,7 @@ button:hover{border-color:var(--accent)}
 .mktStrip .st{font-size:inherit;font-weight:700;padding:0 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:4px}
 .mktStrip.stale{opacity:.55}.mktStrip .q.stale{opacity:.45}.mktStrip .q.stale b::after{content:" ⚠";font-size:11px}
 .userMenu{position:relative}
-.topDropdown{position:absolute;right:0;top:38px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:236px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
+.topDropdown{position:absolute;right:0;top:38px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:290px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
 .menuStatus{font-size:12px;color:var(--muted);padding:7px 10px 6px;line-height:1.35}
 .themeRow{display:flex;gap:8px;padding:4px 10px 8px}
 .sw{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--muted);background:var(--a);box-shadow:none;cursor:pointer}
@@ -199,6 +199,13 @@ details.more[open]>summary{margin-bottom:6px}
 @media(max-width:1000px){.secCols{grid-template-columns:1fr}}
 .topbar .seg{padding:2px}.topbar .seg button{padding:3px 12px;font-size:13px;border-radius:7px}
 .userMenuBtn svg{width:17px;height:17px}
+/* colorblind-safe up/down (Okabe-Ito blue / vermillion) - Settings > Colors */
+html[data-cb="1"]{--good:#0072b2;--bad:#d55e00}
+html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
+.dt{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:1px}.dt.red{background:var(--bad)}.dt.yellow{background:var(--warn)}.dt.green{background:var(--good)}
+.miniTop .dt{width:10px;height:10px;margin-right:2px;align-self:center}
+.setRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.setRow .seg button{padding:3px 9px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -220,6 +227,8 @@ details.more[open]>summary{margin-bottom:6px}
           <button type="button" class="sw" data-theme="dark" title="Dark" aria-label="Dark theme" style="--a:#0b0f14"></button>
           <select id="theme" class="hidden" aria-hidden="true"><option value="light">Light</option><option value="dark">Dark</option></select>
         </div>
+        <div class="setRow"><span>Text size</span><span class="seg small" id="setZoom"><button type="button" data-v="1">A</button><button type="button" data-v="1.1" style="font-size:14px">A</button><button type="button" data-v="1.2" style="font-size:15.5px">A</button></span></div>
+        <div class="setRow"><span>Up / down colors</span><span class="seg small" id="setCb"><button type="button" data-v="0" title="Green / red">Standard</button><button type="button" data-v="1" title="Blue / orange - easier for red-green colour blindness">Colorblind</button></span></div>
         <div class="menuSep"></div>
         <button id="menuOpen" class="mItem"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open journal…</button>
         <button id="pkSetup" class="mItem hidden"><svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11c0 3-1 6-3 8M8 6a6 6 0 0 1 10 4c0 3-.5 6-2 8.5M5 9.5a7.5 7.5 0 0 1 .5-3M12 15c0 2-.5 3.5-1.5 5M16 13c0 1-.1 2-.3 3"/></svg>Set up Touch ID</button>
@@ -857,6 +866,17 @@ function initUI() {
   let theme = "light"; try { theme = localStorage.getItem("theme") || "light"; } catch (e) {}
   if (!["light", "dark"].includes(theme)) theme = "dark";   // old "forest" choice -> dark
   $("theme").value = theme; document.documentElement.dataset.theme = theme;
+  // text size (whole page zoom) and colorblind-safe up/down colours, remembered per device
+  const setPref = (id, key, apply) => {
+    let v = null; try { v = localStorage.getItem(key); } catch (e) {}
+    const btns = document.querySelectorAll("#" + id + " button"), cur = v ?? btns[0].dataset.v;
+    const mark = (x) => btns.forEach((b) => b.classList.toggle("on", b.dataset.v === x));
+    apply(cur); mark(cur);
+    btns.forEach((b) => b.onclick = (e) => { e.stopPropagation(); apply(b.dataset.v); mark(b.dataset.v); try { localStorage.setItem(key, b.dataset.v); } catch (err) {}
+      if (lastText) render(parseJournal(lastText), lastName); dispatchEvent(new Event("resize")); });
+  };
+  setPref("setZoom", "tradingOS.zoom", (v) => { document.documentElement.style.zoom = v === "1" ? "" : v; });
+  setPref("setCb", "tradingOS.cb", (v) => { if (v === "1") document.documentElement.dataset.cb = "1"; else delete document.documentElement.dataset.cb; });
   const markSw = () => document.querySelectorAll(".sw").forEach((b) => b.classList.toggle("on", b.dataset.theme === $("theme").value));
   document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { $("theme").value = b.dataset.theme; $("theme").onchange({ target: $("theme") }); markSw(); });
   markSw();
@@ -1314,7 +1334,7 @@ function usCashOpen(now = new Date()) {
   return !["Sat", "Sun"].includes(p.weekday) && m >= 570 && m < 960;
 }
 const STAGE_FULL = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
-const DOTS_MINI = { red: "🔴", yellow: "🟡", green: "🟢" };
+const DOTS_MINI = { red: '<i class="dt red" title="21ema mode: red"></i>', yellow: '<i class="dt yellow" title="21ema mode: yellow"></i>', green: '<i class="dt green" title="21ema mode: green"></i>' };
 document.querySelectorAll(".miniCard").forEach((c) => {
   const go = () => openChart(c.dataset.key, c.dataset.name);
   c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
@@ -1389,7 +1409,7 @@ async function drawInlineNow() {
     } catch (e) { c.innerHTML = `<div class="miniSub">${esc(key)} · chart data not available yet</div>`; }
   }
 }
-new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHeatmap(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHeatmap(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-cb"] });
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
