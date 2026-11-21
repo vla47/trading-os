@@ -203,8 +203,7 @@ details.more[open]>summary{margin-bottom:6px}
   <div class="topMid"><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
   <div class="topRight">
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
-    <div class="marketStat">◷ <b id="clock">--:--</b></div>
-    <div class="marketStat">▣ <b id="today">---</b></div>
+    <div class="marketStat"><b id="clock">--- -- ---  --:--</b></div>
     <div class="userMenu">
       <button id="userMenuBtn" class="userMenuBtn" title="Settings" aria-haspopup="true" aria-expanded="false" aria-label="Settings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7 7 0 00-1.65-.96L14.5 2h-5l-.38 2.79c-.59.23-1.13.54-1.65.96l-2.39-.96a.5.5 0 00-.6.22L1.58 8.48a.5.5 0 00.12.64L3.73 10.7c-.04.31-.06.63-.06.94s.02.63.06.94L1.58 14.16a.5.5 0 00-.12.64l1.92 3.32c.14.24.44.34.69.22l2.39-.96c.52.42 1.06.73 1.65.96L9.5 22h5l.38-2.79c.59-.23 1.13-.54 1.65-.96l2.39.96c.25.1.55.02.69-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
@@ -859,7 +858,9 @@ function initUI() {
   try { if (localStorage.getItem("tradingOS.moreOpen") === "1") $("moreStats").open = true; } catch (e) {}
   let rzT; addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(() => { if (lastText) drawCharts(metrics(parseJournal(lastText))); }, 150); });
   // clock + weather (Sofia)
-  const tick = () => { const d = new Date(); $("clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); $("today").textContent = d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }); };
+  // one item, macOS menu-bar style: "Sat 21 Nov  22:42"
+  const tick = () => { const d = new Date();
+    $("clock").textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "") + "\u2002" + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); };
   tick(); setInterval(tick, 15000);
   fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia")
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
