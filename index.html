@@ -20,12 +20,12 @@ button:hover{border-color:var(--accent)}
 .hidden{display:none!important}
 /* header */
 .topWrap{position:sticky;top:0;z-index:50}
-.topbar{min-height:48px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:16px}
+.topbar{min-height:40px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:16px}
 .pageTitle{display:flex;align-items:center;gap:10px;min-width:0}.pageTitle .seg{margin-left:16px}
-.appLogo{width:28px;height:28px;flex:0 0 28px}
-.pageTitle b{font-size:18px;font-weight:800}.pageTitle .sub{font-size:12px}
+.appLogo{width:24px;height:24px;flex:0 0 24px}
+.pageTitle b{font-size:16px;font-weight:800}.pageTitle .sub{font-size:12px}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
-.marketStat{color:var(--muted);font-size:15px}
+.marketStat{color:var(--muted);font-size:13.5px}
 .marketStat b{color:var(--text)}
 .topRight{min-width:0}
 .tickerBar{height:32px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:0 8px}
@@ -39,7 +39,7 @@ button:hover{border-color:var(--accent)}
 .mktStrip .st{font-size:inherit;font-weight:700;padding:0 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:4px}
 .mktStrip.stale{opacity:.55}.mktStrip .q.stale{opacity:.45}.mktStrip .q.stale b::after{content:" ⚠";font-size:11px}
 .userMenu{position:relative}
-.topDropdown{position:absolute;right:0;top:52px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:236px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
+.topDropdown{position:absolute;right:0;top:38px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:236px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
 .menuStatus{font-size:12px;color:var(--muted);padding:7px 10px 6px;line-height:1.35}
 .themeRow{display:flex;gap:8px;padding:4px 10px 8px}
 .sw{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--muted);background:var(--a);box-shadow:none;cursor:pointer}
@@ -50,7 +50,7 @@ button:hover{border-color:var(--accent)}
 .mItem.danger{color:var(--bad)}
 .mi{width:17px;height:17px;flex:0 0 17px;opacity:.85}
 
-.userMenuBtn{width:44px;height:44px;padding:0;border-radius:10px;background:var(--panel2);display:grid;place-items:center}
+.userMenuBtn{width:30px;height:30px;padding:0;border-radius:8px;background:var(--panel2);display:grid;place-items:center}
 /* load bar */
 .main{padding:12px 18px 28px;max-width:1700px;margin:auto}
 .loadBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
@@ -197,6 +197,8 @@ details.more[open]>summary{margin-bottom:6px}
 .secColT{font-size:13.5px;font-weight:800;margin:0 0 4px 6px}
 .secCols .bRow{grid-template-columns:150px minmax(0,1fr) 64px}
 @media(max-width:1000px){.secCols{grid-template-columns:1fr}}
+.topbar .seg{padding:2px}.topbar .seg button{padding:3px 12px;font-size:13px;border-radius:7px}
+.userMenuBtn svg{width:17px;height:17px}
 </style>
 </head>
 <body>
