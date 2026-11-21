@@ -147,7 +147,7 @@ canvas{width:100%;height:230px;display:block}
 .assetFoot{margin-top:10px;line-height:1.5}
 @media(max-width:800px){.assetCols,.aRow{grid-template-columns:120px 70px 1fr 50px}}
 /* dashboard: hero metrics, alerts, progressive disclosure */
-.hero{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:4px 0 10px}
+.hero{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:4px 0 10px}.hero.six{grid-template-columns:repeat(6,minmax(0,1fr))}
 .heroCard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
 .heroCard .hl{font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.02em}
 .heroCard .hv{font-size:30px;font-weight:800;margin-top:6px;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -166,8 +166,8 @@ details.more>summary::-webkit-details-marker{display:none}
 details.more>summary span:first-child::before{content:"▸ ";color:var(--muted)}
 details.more[open]>summary span:first-child::before{content:"▾ "}
 details.more[open]>summary{margin-bottom:6px}
-@media(max-width:1100px){.hero{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:640px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.heroCard .hv{font-size:24px}}
+@media(max-width:1100px){.hero,.hero.six{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.hero,.hero.six{grid-template-columns:repeat(2,minmax(0,1fr))}.heroCard .hv{font-size:24px}}
 .aRow.stale{opacity:.5}.aRow .pos{color:var(--good)}.aRow .neg{color:var(--bad)}
 </style>
 </head>
@@ -249,10 +249,10 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="metricGroup" id="kpiEdge"></div>
       <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub" id="ddSub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
       </div>
     <div class="section two">
-      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win%</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
+      <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win% · account return</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>P/L per trade</h2><span class="sub">Each closed trade in exit order · green win, red loss</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="tradeBars"></canvas></div></div>
     </div>
 
@@ -331,6 +331,7 @@ function money(x, cur = "USD", dp = 0) {
   return (x < 0 ? MINUS : "") + s + Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
 }
 const pct = (x, dp = 0) => (Number.isFinite(x) ? (x * 100).toFixed(dp) + "%" : "—");
+const spct = (x, dp = 1) => (Number.isFinite(x) ? (x >= 0 ? "+" : MINUS) + Math.abs(x * 100).toFixed(dp) + "%" : "—");
 const fmtR = (x) => (Number.isFinite(x) ? (x >= 0 ? "+" : MINUS) + Math.abs(x).toFixed(2) + "R" : "—");
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
 const sum = (a) => a.reduce((x, y) => x + y, 0);
@@ -349,7 +350,7 @@ const days = (a, b) => (Date.parse(b) - Date.parse(a)) / 86400000;
 // Markdown table rows -> trade groups. A blank table row ends a trade;
 // a ticker going back to flat also ends it (in case blank rows were removed).
 function parseJournal(text) {
-  const out = { trades: [], nlv: null, nlvCur: "USD", sync: null, rows: 0 };
+  const out = { trades: [], nlv: null, nlvCur: "USD", sync: null, rows: 0, acct: [] };
   const nlvM = text.match(/Account NLV:\s*\$([\d,.]+)/);
   if (nlvM) out.nlv = num(nlvM[1]);
   const syncM = text.match(/Last sync:\s*(\d{4}-\d{2}-\d{2})/);
@@ -358,8 +359,13 @@ function parseJournal(text) {
   const close = () => { if (group && group.rows.length) out.trades.push(group); group = null; };
   for (const line of text.split(/\r?\n/)) {
     const t = line.trim();
-    if (t.startsWith("## ")) { close(); section = /etf|long/i.test(t) ? "etf" : "swing"; cols = null; continue; }
+    if (t.startsWith("## ")) { close(); section = /account history/i.test(t) ? "acct" : /etf|long/i.test(t) ? "etf" : "swing"; cols = null; continue; }
     if (!t.startsWith("|")) continue;
+    if (section === "acct") { // | Date | NAV | Day return |  (daily IBKR NAV, deposit-free time-weighted return)
+      const c = t.replace(/^\|/, "").replace(/\|$/, "").split("|").map((x) => x.trim());
+      if (/^\d{4}-\d{2}-\d{2}$/.test(c[0]) && Number.isFinite(num(c[2]))) out.acct.push({ date: c[0], nav: num(c[1]), r: num(c[2]) / 100 });
+      continue;
+    }
     const cells = t.replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
     const low = cells.map((c) => c.toLowerCase());
     if (low.includes("ticker") && low.includes("side")) {
@@ -478,7 +484,26 @@ function metrics(j) {
   const unreal = sum(openT.map((t) => t.unrealized || 0));
   const openRisk = openT.every((t) => t.riskToStop != null) ? sum(openT.map((t) => t.riskToStop)) : null;
   const etf = all.filter((t) => t.section === "etf");
+  // account (mark-to-market, incl. open positions): chain the deposit-free daily returns
+  let acct = null;
+  if (j.acct && j.acct.length) {
+    const h = [...j.acct].sort((a, b) => a.date.localeCompare(b.date));
+    let idx = 1, pk = 1, pkD = h[0].date, pkNav = h[0].nav, mdd = 0, from = null, to = null, mddNav = null;
+    const series = [], mon = {};
+    for (const r of h) {
+      idx *= 1 + r.r;
+      if (idx >= pk) { pk = idx; pkD = r.date; pkNav = r.nav; }
+      const d = idx / pk - 1;
+      if (d < mdd) { mdd = d; from = pkD; to = r.date; mddNav = pkNav; }
+      series.push({ date: r.date, idx, dd: d });
+      const k = r.date.slice(0, 7); mon[k] = (mon[k] ?? 1) * (1 + r.r);
+    }
+    const last = series[series.length - 1];
+    acct = { series, ret: idx - 1, mdd, from, to, mddEur: mddNav != null ? mdd * mddNav : null, cur: last.dd, start: h[0].date, nav: h[h.length - 1].nav,
+      mon: Object.fromEntries(Object.entries(mon).map(([k, v]) => [k, v - 1])) };
+  }
   return {
+    acct,
     all, swing, closed, openT, eq, dd, maxDD, maxStreak, breakers,
     net: e, wr: closed.length ? wins.length / closed.length : NaN, pf: gl ? gw / gl : null,
     exp: avg(pn), aw: avg(wins.map((t) => t.realized)), al: avg(losses.map((t) => t.realized)),
@@ -508,6 +533,9 @@ function render(j, sourceName) {
   // ---- hero row: the five numbers that say whether the edge works (TradeZella-style top section)
   {
     const tot = m.net + m.unreal, pay = m.al ? m.aw / Math.abs(m.al) : null, hasR0 = m.withR.length > 0;
+    const A = m.acct, thisMon = A ? A.mon[A.series[A.series.length - 1].date.slice(0, 7)] : null;
+    $("hero").classList.toggle("six", !!A);
+    const sd = (d, monOnly) => new Date(d + "T00:00:00").toLocaleDateString("en-US", monOnly ? { month: "short" } : { month: "short", day: "numeric" });
     // tiny inline charts so each headline number has a picture
     const W = 132, H = 40;
     const spark = (vals, color, fill) => {
@@ -529,10 +557,12 @@ function render(j, sourceName) {
     const hc = (l, v, c, h, viz, side) => `<div class="heroCard${side ? " side" : ""}"><div class="hl">${esc(l)}</div><div class="hrow"><div class="hv ${c}">${v}</div>${side ? viz : ""}</div>${side ? "" : `<div class="hviz">${viz}</div>`}<div class="hh">${h}</div></div>`;
     $("hero").innerHTML = [
       hc("Net P/L", money(tot), cls(tot), `${money(m.net)} realized · ${money(m.unreal)} open`, spark(m.eq, "var(--accent)", true)),
+      A ? hc("Account return", spct(A.ret), cls(A.ret), `${sd(A.series[A.series.length - 1].date, true)} ${spct(thisMon)} · since ${sd(A.start)}`, spark(A.series.map((x) => x.idx - 1), "var(--accent)", true)) : "",
       hasR0 ? hc("Expectancy", fmtR(m.expR), cls(m.expR), `per trade · last 24 trades`, bars(m.pn)) : hc("Expectancy", money(m.exp), cls(m.exp), "per trade · last 24 trades", bars(m.pn)),
       hc("Win rate", pct(m.wr), "", `${m.closed.filter((t) => t.realized > 0).length}W / ${m.closed.filter((t) => t.realized <= 0).length}L of ${m.closed.length} trades`, ring(m.wr), true),
       hc("Payoff", pay ? pay.toFixed(2) + "×" : "—", pay != null && pay < 1 ? "bad" : "", `avg win ${money(m.aw)} · avg loss ${money(m.al)}`, pair(m.aw, m.al)),
-      hc("Max drawdown", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "realized, peak → trough", spark(m.dd, "var(--bad)", true)),
+      A ? hc("Max drawdown", spct(A.mdd), A.mdd < -0.05 ? "bad" : "", `${sd(A.from)} → ${sd(A.to)} · now ${spct(A.cur)}`, spark(A.series.map((x) => x.dd), "var(--bad)", true))
+        : hc("Max drawdown", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "realized, peak → trough", spark(m.dd, "var(--bad)", true)),
     ].join("");
     // alerts: only what breaks a rule gets colour (Von Restorff)
     const al = [], orP = m.openRisk != null && j.nlv ? m.openRisk / j.nlv : null;
@@ -548,6 +578,8 @@ function render(j, sourceName) {
   const avgHold = avg(m.closed.map((t) => t.hold).filter(Number.isFinite));
   $("kpiPerf").innerHTML = [
     card("Net realized P/L", money(m.net), cls(m.net), `${n} closed trades`),
+    m.acct ? card("Account drawdown", spct(m.acct.mdd), m.acct.mdd < -0.05 ? "bad" : "", `Daily NAV incl. open · ${m.acct.from} → ${m.acct.to}${m.acct.mddEur != null ? " · ≈ " + money(m.acct.mddEur, "EUR") : ""}`) : "",
+    m.acct ? card("Max drawdown (realized)", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "Closed trades only, peak → trough") : "",
     card("Profit factor", m.pf?.toFixed(2) ?? "—", m.pf >= 1.5 ? "good" : m.pf >= 1 ? "warn" : "bad", "Gross profit ÷ gross loss"),
     card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
   ].join("");
@@ -621,10 +653,10 @@ function render(j, sourceName) {
   const byMon = {}; for (const t of m.closed) (byMon[t.exitDate.slice(0, 7)] ??= []).push(t);
   const mons = Object.entries(byMon).sort((a, b) => a[0].localeCompare(b[0]));
   const mMax = Math.max(1, ...mons.map(([, ts]) => Math.abs(sum(ts.map((t) => t.realized)))));
-  $("monthTbl").innerHTML = mons.length ? `<table class="monthT"><tr><th class="l">Month</th><th class="l bars">P/L</th><th>Trades</th><th>Win%</th></tr>` +
+  $("monthTbl").innerHTML = mons.length ? `<table class="monthT"><tr><th class="l">Month</th><th class="l bars">P/L</th><th>Trades</th><th>Win%</th>${m.acct ? "<th>Account</th>" : ""}</tr>` +
     mons.map(([k, ts]) => { const p = sum(ts.map((t) => t.realized));
       const lbl = new Date(k + "-01T00:00:00").toLocaleDateString(undefined, { month: "short", year: "numeric" });
-      return `<tr><td class="l">${esc(lbl)}</td><td class="l bars"><div class="mbar"><span class="${p >= 0 ? "pos" : "neg"}" style="width:${(Math.abs(p) / mMax * 100).toFixed(1)}%"></span><b class="${cls(p)}">${money(p)}</b></div></td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td></tr>`; }).join("") + `</table>` : `<div class="empty">No closed trades.</div>`;
+      return `<tr><td class="l">${esc(lbl)}</td><td class="l bars"><div class="mbar"><span class="${p >= 0 ? "pos" : "neg"}" style="width:${(Math.abs(p) / mMax * 100).toFixed(1)}%"></span><b class="${cls(p)}">${money(p)}</b></div></td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td>${m.acct ? `<td class="${cls(m.acct.mon[k])}">${spct(m.acct.mon[k])}</td>` : ""}</tr>`; }).join("") + `</table>` : `<div class="empty">No closed trades.</div>`;
 
   // open positions
   $("openTbl").innerHTML = m.openT.length ? `<table><tr><th>Ticker</th><th>Shares</th><th>Avg cost</th><th>Last</th><th>Stop</th><th>Unrealized</th><th>Risk to stop</th><th>% of NLV</th><th class="l">Flags</th></tr>` +
@@ -669,7 +701,8 @@ function render(j, sourceName) {
 
 function drawCharts(m) {
   drawEquity($("equity"), m.eq, m.dd);
-  drawDD($("drawdown"), m.dd);
+  if (m.acct) { drawDD($("drawdown"), m.acct.series.map((x) => x.dd), (v) => spct(v, 0)); $("ddSub").textContent = "Account, daily, incl. open positions · % below peak"; }
+  else { drawDD($("drawdown"), m.dd); $("ddSub").textContent = "Realized only · distance below the equity peak"; }
   drawBars($("tradeBars"), m.pn);
 }
 function chartCtx(canvas, h = 230) {
@@ -678,14 +711,14 @@ function chartCtx(canvas, h = 230) {
   const css = getComputedStyle(document.documentElement);
   return { ctx, w, h, col: (v) => css.getPropertyValue(v).trim() };
 }
-function drawDD(canvas, dd) {
+function drawDD(canvas, dd, fmt = money) {
   const { ctx, w, h, col } = chartCtx(canvas);
   if (dd.length < 2) return;
-  const min = Math.min(-1, ...dd), pad = 14, X = (i) => (i / (dd.length - 1)) * (w - 2) + 1, Y = (v) => pad + (v / min) * (h - 2 * pad);
+  const min = Math.min(fmt === money ? -1 : -0.01, ...dd), pad = 14, X = (i) => (i / (dd.length - 1)) * (w - 2) + 1, Y = (v) => pad + (v / min) * (h - 2 * pad);
   ctx.fillStyle = col("--bad"); ctx.globalAlpha = 0.18; ctx.beginPath(); ctx.moveTo(X(0), Y(0));
   dd.forEach((v, i) => ctx.lineTo(X(i), Y(v))); ctx.lineTo(X(dd.length - 1), Y(0)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
   ctx.strokeStyle = col("--bad"); ctx.lineWidth = 2; ctx.beginPath(); dd.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)))); ctx.stroke();
-  ctx.fillStyle = col("--muted"); ctx.font = "12px Inter, system-ui"; ctx.fillText("$0", 4, 12); ctx.fillText(money(min), 4, h - 2);
+  ctx.fillStyle = col("--muted"); ctx.font = "12px Inter, system-ui"; ctx.fillText(fmt === money ? "$0" : "0%", 4, 12); ctx.fillText(fmt(min), 4, h - 2);
 }
 function drawBars(canvas, pn) {
   const { ctx, w, h, col } = chartCtx(canvas);
