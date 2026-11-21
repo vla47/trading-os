@@ -235,7 +235,7 @@ def fetch(key, sym, name, dec, want_stage, dot_rule, max_chg, now):
     else:
         o, h, lo, v = prev, price, price, 0
     bars.append([session.strftime("%Y-%m-%d"), r(o), r(max(h, price)), r(min(lo, price)), r(price), int(v) if v == v else 0])
-    chart = {"key": key, "symbol": sym, "dec": dec, "asOf": rec["asOf"], "bars": bars[-400:]}  # 400 bars: 200 SMA spans the view
+    chart = {"key": key, "symbol": sym, "dec": dec, "asOf": rec["asOf"], "bars": bars[-800:]}  # ~2 years: 200 SMA spans the daily view, 52 weeks + 30w SMA on the weekly mini charts
     return rec, chart
 
 
