@@ -19,17 +19,20 @@ button:hover{border-color:var(--accent)}
 .good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.muted,.sub{color:var(--muted)}
 .hidden{display:none!important}
 /* header */
-.topbar{min-height:68px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:16px}
+.topWrap{position:sticky;top:0;z-index:50}
+.topbar{min-height:48px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:16px}
 .pageTitle{display:flex;align-items:center;gap:10px;min-width:0}.pageTitle .seg{margin-left:16px}
-.appLogo{width:34px;height:34px;flex:0 0 34px}
-.pageTitle b{font-size:22px;font-weight:800}.pageTitle .sub{font-size:12px}
+.appLogo{width:28px;height:28px;flex:0 0 28px}
+.pageTitle b{font-size:18px;font-weight:800}.pageTitle .sub{font-size:12px}
 .topRight{display:flex;align-items:center;gap:14px;white-space:nowrap}
 .marketStat{color:var(--muted);font-size:15px}
 .marketStat b{color:var(--text)}
 .topRight{min-width:0}
-.topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
-.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,48vw,680px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
+.tickerBar{height:32px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:0 8px}
+.mktStrip{display:flex;align-items:center;justify-content:center;gap:18px;width:100%;flex:1 1 auto;overflow:hidden;font-size:13px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
 .mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0;overflow:hidden}
+.mktStrip .dt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}.mktStrip .dt.red{background:var(--bad)}.mktStrip .dt.yellow{background:var(--warn)}.mktStrip .dt.green{background:var(--good)}
+.mktStrip.full{gap:9px;font-size:12px}.mktStrip.full .st{padding:0 3px;margin-left:3px}.mktStrip .sep{width:1px;height:14px;background:var(--line);flex:0 0 auto}
 .mktStrip .q{display:inline-block;will-change:transform,opacity,filter}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
@@ -96,7 +99,7 @@ canvas{width:100%;height:230px;display:block}
 .dq{font-size:14px;line-height:1.6}
 @media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.four{grid-template-columns:1fr}}
-@media(max-width:700px){.marketStat,.mktStrip,.topMid{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
+@media(max-width:700px){.marketStat,.tickerBar{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
 @media(max-width:420px){.metricGroup{grid-template-columns:1fr}}
 /* segmented control (header views, sector groups) */
 .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
@@ -197,10 +200,10 @@ details.more[open]>summary{margin-bottom:6px}
 </style>
 </head>
 <body>
+<div class="topWrap">
 <header class="topbar">
   <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b>
   <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button></nav></div>
-  <div class="topMid"><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
   <div class="topRight">
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
     <div class="marketStat"><b id="clock">--- -- ---  --:--</b></div>
@@ -226,6 +229,8 @@ details.more[open]>summary{margin-bottom:6px}
     </div>
   </div>
 </header>
+<div class="tickerBar"><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
+</div>
 
 <main class="main">
  <div id="journalView">
@@ -868,14 +873,19 @@ function initUI() {
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
   const STAGE_NAME = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
   // shown in groups, rotating every 10 s; hover pauses, click jumps to the next group
-  const GROUPS = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD"], ["BRENT", "EURUSD"]];   // each ETF next to its index future
+  const GROUPS = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD"], ["BRENT", "EURUSD"]];   // rotation pages (narrow screens)
+  const FULL = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD", "BRENT", "EURUSD"]];   // one line, no rotation, when it fits
+  let qFull = false;   // each ETF next to its index future
   let qItems = [], qPage = 0, qPaused = false;
   const qEl = (it) => {
     const q = document.createElement("span"); q.className = "q" + (qStale(it) ? " stale" : ""); q.dataset.label = it.label; q.title = qInfo(it) + "\nClick for chart";
     const c = it.eth ? it.eth.chg : it.chg;   // NQ outside cash hours: move since the 16:00 ET close
     const chg = c == null ? "" : (c > 0 ? "+" : "") + c.toFixed(2) + "%";
-    q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
-    const b = document.createElement("b"); b.textContent = Number(it.eth ? it.eth.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
+    q.textContent = "";
+    if (it.dot) { const d = document.createElement("i"); d.className = "dt " + it.dot; d.title = it.label === "VIX" ? "VIX level: " + it.dot : "21ema mode: " + it.dot; q.append(d); }
+    q.append(it.label + " ");
+    const pv = it.eth ? it.eth.price : it.price, dd = pv >= 1000 ? 0 : it.dec;   // strip: no decimals above 1,000 (NQ, ES, gold) - full price on hover / in the chart
+    const b = document.createElement("b"); b.textContent = Number(pv).toLocaleString("en-US", { minimumFractionDigits: dd, maximumFractionDigits: dd });
     const cs = document.createElement("span"); cs.className = c > 0 ? "good" : c < 0 ? "bad" : ""; cs.textContent = chg;
     q.append(b, " ", cs);
     if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; st.title = STAGE_NAME[it.stage] || ""; q.append(st); }
@@ -890,13 +900,26 @@ function initUI() {
   };
   const showPage = (fade) => {
     const el = $("mktStrip"), ps = pages(); if (!ps.length) return;
+    // wide screen: every ticker on one line, grouped, nothing rotates
+    if (!fade || qFull) {
+      const by = Object.fromEntries(qItems.map((it) => [it.label, it])), used = new Set(FULL.flat());
+      const gs = [...FULL.map((g) => g.map((l) => by[l]).filter(Boolean)), qItems.filter((it) => !used.has(it.label))].filter((g) => g.length);
+      el.textContent = ""; el.classList.add("full");
+      gs.forEach((g, i) => { if (i) { const sp = document.createElement("span"); sp.className = "sep"; el.append(sp); } g.forEach((it) => el.append(qEl(it))); });
+      el.style.fontSize = ""; el.style.gap = "";
+      for (let fs = 12, gap = 9; el.scrollWidth > el.clientWidth + 1 && fs > 11; ) { fs -= 0.25; gap = Math.max(6, gap - 1); el.style.fontSize = fs + "px"; el.style.gap = gap + "px"; }   // squeeze a little before giving up
+      qFull = el.scrollWidth <= el.clientWidth + 1;
+      if (!qFull) { el.style.fontSize = ""; el.style.gap = ""; }
+      if (qFull) return;
+      el.classList.remove("full");
+    }
     qPage %= ps.length;
     const draw = () => {
       el.textContent = "";
       const g = document.createElement("span"); g.className = "grp"; ps[qPage].forEach((it) => g.append(qEl(it)));
       el.append(g);
       // shrink a crowded group (e.g. SXR8 / BTC / GOLD with stage badges) until it fits instead of clipping it
-      for (let fs = 14, gap = 18; g.scrollWidth > g.clientWidth + 1 && fs > 11; ) { fs -= 0.5; gap = Math.max(10, gap - 2); g.style.fontSize = fs + "px"; g.style.gap = gap + "px"; }
+      for (let fs = 13, gap = 18; g.scrollWidth > g.clientWidth + 1 && fs > 11; ) { fs -= 0.5; gap = Math.max(10, gap - 2); g.style.fontSize = fs + "px"; g.style.gap = gap + "px"; }
     };
     // blur-slide with per-ticker stagger: old quotes rise out, new ones rise in from below
     const cur = el.querySelector(".grp");
@@ -915,8 +938,9 @@ function initUI() {
   };
   const strip = $("mktStrip");
   strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
-  strip.onclick = (e) => { const q = e.target.closest(".q"); if (q && q.dataset.label) return openChart(q.dataset.label); qPage++; showPage(true); };
-  setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 10000);
+  strip.onclick = (e) => { const q = e.target.closest(".q"); if (q && q.dataset.label) return openChart(q.dataset.label); if (!qFull) { qPage++; showPage(true); } };
+  setInterval(() => { if (!qPaused && !qFull && !document.hidden) { qPage++; showPage(true); } }, 10000);
+  let qRz; addEventListener("resize", () => { clearTimeout(qRz); qRz = setTimeout(() => showPage(false), 200); });
   mktListeners.push((changed, err) => {
     const el = $("mktStrip");
     if (err || !MKT) { el.classList.add("stale"); return; }
@@ -926,7 +950,7 @@ function initUI() {
     el.classList.toggle("stale", age > 90);
     el.title = "Market strip · " + MKT.source + " · built " + new Date(MKT.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
-      "\nClick a ticker for its chart · click between tickers for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
+      "\nClick a ticker for its chart\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
   });
 }
 
