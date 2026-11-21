@@ -315,7 +315,7 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="assetCols muted small hidden" id="secCols"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
     <div id="secRows" class="secCols"><div><div class="secColT">Sectors</div><div id="secRowsS"></div></div><div><div class="secColT">Themes</div><div id="secRowsT"></div></div></div>
     <div id="secHeat" class="heatEl hidden"></div>
-    <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart</div>
+    <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart · <span id="mktChecks"></span></div>
   </div>
  </section>
 </main>
@@ -1144,6 +1144,12 @@ function renderSectors() {
   $("secPeriodLbl").textContent = PERIOD_LBL[secPeriod];
   $("secUpdated").textContent = "Updated " + new Date(secData.updated).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) +
     " · S&P 500 " + fmtPct(secData.benchmark?.[0]?.[secPeriod]) + " (" + PERIOD_LBL[secPeriod].toLowerCase() + ")";
+  const ck = MKT?.checks, ce = $("mktChecks");
+  if (ce) {
+    if (!ck) ce.textContent = "";
+    else if (!ck.failed.length) { ce.className = "good"; ce.textContent = `✓ ${ck.passed} price checks passed`; ce.title = "Every price, % change, 21ema dot, stage and AH/PM value re-derived from the chart data at " + new Date(ck.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    else { ce.className = "bad"; ce.textContent = `⚠ ${ck.failed.length} price check${ck.failed.length > 1 ? "s" : ""} failed`; ce.title = ck.failed.join("\n"); }
+  }
   // one bar scale for both columns, so a sector and a theme compare at a glance
   const abs = groups.flatMap(([rows]) => rows.map((r) => Math.abs(r[secPeriod]))).sort((a, b) => a - b);
   const med = abs[Math.floor(abs.length / 2)] || 1, max = Math.max(Math.min(abs[abs.length - 1] || 1, med * 4), 0.01);  // one outlier doesn't flatten the rest

@@ -31,6 +31,8 @@ jobs:
       - run: pip install yfinance pandas
       # one source, one pass; if the whole run fails, republish the live site's last snapshot instead of none
       - run: python scripts/quotes.py || python scripts/quotes.py --restore || echo "no market data this run"
+      # re-derive every number from its chart file; results go into market.json and show on the page (never blocks publishing)
+      - run: "[ -f market.json ] && python scripts/check_market.py || true"
       - name: Assemble site
         run: |
           mkdir _site
