@@ -1223,7 +1223,7 @@ async function drawChart(el, key, tf = "D") {
     else { line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7"); }
     // pre-market / after-hours: dashed line at the latest extended-hours trade (QQQ), refreshed with the chart
     {
-      const x = rec?.ext;
+      const x = rec?.ext && !usCashOpen() ? rec.ext : null;
       if (x) c.createPriceLine({ price: x.price, color: cssVar("--accent"), lineWidth: 1, lineStyle: 2, axisLabelVisible: true,
         title: (x.session === "pre" ? "PM " : "AH ") + (x.chg > 0 ? "+" : "") + x.chg.toFixed(2) + "%" });
     }
@@ -1255,6 +1255,12 @@ $("chartTf").querySelectorAll("button").forEach((b) => b.onclick = () => {
   chartTfNow = b.dataset.tf; try { localStorage.setItem("tradingOS.chartTfModal", chartTfNow); } catch (e) {}
   if (chartKey) openChart(chartKey, chartName);
 });
+// US cash session (Mon-Fri 9:30-16:00 New York): extended-hours prices are hidden while it is open
+function usCashOpen(now = new Date()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(now).map((x) => [x.type, x.value]));
+  const m = +p.hour * 60 + +p.minute;
+  return !["Sat", "Sun"].includes(p.weekday) && m >= 570 && m < 960;
+}
 const STAGE_FULL = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
 const DOTS_MINI = { red: "🔴", yellow: "🟡", green: "🟢" };
 document.querySelectorAll(".miniCard").forEach((c) => {
@@ -1288,7 +1294,7 @@ async function drawInlineNow() {
       let grid = "";
       for (let v = Math.ceil(mn / step) * step; v <= mx; v += step)
         grid += `<line x1="0" x2="${PW}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${cssVar("--line")}" stroke-width="0.6"/>` +
-          (Math.abs(Y(v) - Y(px)) < 14 || (rec?.ext && Math.abs(Y(v) - Y(rec.ext.price)) < 22) ? "" : `<text x="${PW + 6}" y="${(Y(v) + 3.5).toFixed(1)}" font-size="10.5" fill="${cssVar("--muted")}">${ax(v)}</text>`);
+          (Math.abs(Y(v) - Y(px)) < 14 || (rec?.ext && !usCashOpen() && Math.abs(Y(v) - Y(rec.ext.price)) < 22) ? "" : `<text x="${PW + 6}" y="${(Y(v) + 3.5).toFixed(1)}" font-size="10.5" fill="${cssVar("--muted")}">${ax(v)}</text>`);
       const tagC = cssVar((rec?.chg ?? 0) < 0 ? "--bad" : "--good"), yl = Y(px), lbl = big ? (px / 1000).toFixed(1) + "k" : px.toFixed(d.dec);
       const tag = `<line x1="0" x2="${PW}" y1="${yl.toFixed(1)}" y2="${yl.toFixed(1)}" stroke="${tagC}" stroke-width="0.9" stroke-dasharray="3 3"/>` +
         `<rect x="${PW + 2}" y="${(yl - 8).toFixed(1)}" width="${AX - 4}" height="16" rx="3" fill="${tagC}"/><text x="${PW + 6}" y="${(yl + 3.5).toFixed(1)}" font-size="10.5" font-weight="700" fill="#fff">${lbl}</text>`;
@@ -1299,7 +1305,7 @@ async function drawInlineNow() {
       const fmt = (v) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d.dec, maximumFractionDigits: d.dec });
       const chg = rec?.chg, cc = chg > 0 ? "good" : chg < 0 ? "bad" : "";
       // pre-market / after-hours (QQQ): accent dashed line at that price + its own tag, nudged off the price tag if they'd overlap
-      const x = rec?.ext; let ext = "";
+      const x = rec?.ext && !usCashOpen() ? rec.ext : null; let ext = "";
       if (x) {
         const acc = cssVar("--accent"), ye = Y(x.price), yt = Math.abs(ye - yl) < 17 ? (ye < yl ? yl - 17 : yl + 17) : ye;
         ext = `<line x1="0" x2="${PW}" y1="${ye.toFixed(1)}" y2="${ye.toFixed(1)}" stroke="${acc}" stroke-width="0.9" stroke-dasharray="2 3"/>` +
@@ -1309,7 +1315,7 @@ async function drawInlineNow() {
       c.innerHTML = `<div class="miniTop">${rec?.dot ? DOTS_MINI[rec.dot] : ""}<span class="nm">${esc(key)}</span><span class="px">${fmt(px)}</span>` +
         `<span class="${cc}">${chg == null ? "" : (chg > 0 ? "+" : "") + chg.toFixed(2) + "%"}</span>` +
         (rec?.stage ? `<span class="st" title="${STAGE_FULL[rec.stage] || ""}">${esc(rec.stage)}</span>` : "") + `</div>` +
-        `<div class="miniSub">${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · 52w range ${rng(lo)} – ${rng(hi)} · ${Math.abs(offHi) < 0.05 ? "at the high" : Math.abs(offHi).toFixed(0) + "% off high"}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
+        `<div class="miniSub">${x ? `<b style="color:var(--accent)">${x.session === "pre" ? "PM" : "AH"} ${fmt(x.price)}</b> <span class="${x.chg > 0 ? "good" : x.chg < 0 ? "bad" : ""}">${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}%</span> · ` : ""}${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · 52w range ${rng(lo)} – ${rng(hi)} · ${Math.abs(offHi) < 0.05 ? "at the high" : Math.abs(offHi).toFixed(0) + "% off high"}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
         `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${tag}${ext}</svg>` +
         `<div class="miniLeg"><span class="lg px">weekly close</span><span class="lg ema">10w</span><span class="lg sma50">30w</span><span class="r">52 weeks · ${esc(name)} · click for candles</span></div>`;
     } catch (e) { c.innerHTML = `<div class="miniSub">${esc(key)} · chart data not available yet</div>`; }
