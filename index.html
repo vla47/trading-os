@@ -1228,6 +1228,20 @@ async function drawChart(el, key, tf = "D") {
         title: (x.session === "pre" ? "PM " : "AH ") + (x.chg > 0 ? "+" : "") + x.chg.toFixed(2) + "%" });
     }
     chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - (tf === "W" ? 80 : 130)), to: d.bars.length + 3 });
+    // visible-range high / low (Binance-style): arrow + price on the highest high and lowest low on screen, follows zoom / scroll
+    {
+      const mk = L.createSeriesMarkers(c, []), mu = cssVar("--muted");
+      const fp = (v) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d.dec, maximumFractionDigits: d.dec });
+      const upd = (r) => {
+        if (!r) return;
+        const a = Math.max(0, Math.ceil(r.from)), b = Math.min(d.bars.length - 1, Math.floor(r.to));
+        if (b < a) return mk.setMarkers([]);
+        let hi = a, lo = a; for (let i = a; i <= b; i++) { if (d.bars[i][2] > d.bars[hi][2]) hi = i; if (d.bars[i][3] < d.bars[lo][3]) lo = i; }
+        mk.setMarkers([{ time: d.bars[hi][0], position: "aboveBar", shape: "arrowDown", color: mu, text: fp(d.bars[hi][2]), size: 0.6 },
+          { time: d.bars[lo][0], position: "belowBar", shape: "arrowUp", color: mu, text: fp(d.bars[lo][3]), size: 0.6 }].sort((x, y) => x.time < y.time ? -1 : x.time > y.time ? 1 : 0));
+      };
+      chartObj.timeScale().subscribeVisibleLogicalRangeChange(upd); upd(chartObj.timeScale().getVisibleLogicalRange());
+    }
   const px = rec ? Number(rec.price).toLocaleString("en-US", { minimumFractionDigits: rec.dec, maximumFractionDigits: rec.dec }) : d.bars[d.bars.length - 1][4];
   const asOf = rec?.asOf ? " · " + new Date(rec.asOf).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
   el.title = qInfo(rec);
@@ -1284,8 +1298,10 @@ async function drawInlineNow() {
       const w = toWeekly(d.bars), m10 = maLine(w, 10, false), m30 = maLine(w, 30, false), N = 53;
       const ws = w.slice(-N), t0 = ws[0][0], f = (a) => a.filter((x) => x.time >= t0).map((x) => x.value);
       const cl = ws.map((b) => b[4]); cl[cl.length - 1] = px;
-      const a10 = f(m10), a30 = f(m30), all = [...cl, ...a10, ...a30];
-      const mn = Math.min(...all) * 0.99, mx = Math.max(...all) * 1.01, AX = 52, W = Math.max(200, (c.clientWidth || 600) - 32), PW = W - AX, H = 190;
+      const a10 = f(m10), a30 = f(m30);
+      let hiI = 0, loI = 0; ws.forEach((b, i) => { if (b[2] > ws[hiI][2]) hiI = i; if (b[3] < ws[loI][3]) loI = i; });
+      const hiV = Math.max(ws[hiI][2], px), loV = Math.min(ws[loI][3], px), all = [...cl, ...a10, ...a30, hiV, loV], sp = Math.max(...all) - Math.min(...all);
+      const mn = Math.min(...all) - sp * 0.07, mx = Math.max(...all) + sp * 0.07, AX = 52, W = Math.max(200, (c.clientWidth || 600) - 32), PW = W - AX, H = 190;
       const X = (i) => i / (cl.length - 1) * PW, Y = (v) => H - 4 - (v - mn) / (mx - mn || 1) * (H - 8);
       const pts = (a) => { const off = cl.length - a.length; return a.map((v, i) => `${X(i + off).toFixed(1)},${Y(v).toFixed(1)}`).join(" "); };
       const line = (a, col, sw) => `<polyline points="${pts(a)}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round"/>`;
@@ -1298,12 +1314,16 @@ async function drawInlineNow() {
       const tagC = cssVar((rec?.chg ?? 0) < 0 ? "--bad" : "--good"), yl = Y(px), lbl = big ? (px / 1000).toFixed(1) + "k" : px.toFixed(d.dec);
       const tag = `<line x1="0" x2="${PW}" y1="${yl.toFixed(1)}" y2="${yl.toFixed(1)}" stroke="${tagC}" stroke-width="0.9" stroke-dasharray="3 3"/>` +
         `<rect x="${PW + 2}" y="${(yl - 8).toFixed(1)}" width="${AX - 4}" height="16" rx="3" fill="${tagC}"/><text x="${PW + 6}" y="${(yl + 3.5).toFixed(1)}" font-size="10.5" font-weight="700" fill="#fff">${lbl}</text>`;
-      // 52-week range from daily highs / lows
-      const cut = new Date(Date.now() - 364 * 864e5).toISOString().slice(0, 10), yr = d.bars.filter((b) => b[0] >= cut);
-      const hi = Math.max(...yr.map((b) => b[2]), px), lo = Math.min(...yr.map((b) => b[3]), px), offHi = (px / hi - 1) * 100;
+      const hi = hiV, lo = loV, offHi = (px / hi - 1) * 100;
       const rng = (v) => big ? (v / 1000).toFixed(1) + "k" : Math.round(v);
       const fmt = (v) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d.dec, maximumFractionDigits: d.dec });
       const chg = rec?.chg, cc = chg > 0 ? "good" : chg < 0 ? "bad" : "";
+      // 52-week high / low markers (Binance-style): dot at the traded extreme, short pointer, price · week; flips left near the right edge
+      const wk = (t) => new Date(t + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+      const mark = (i, v) => { const x0 = X(i), y0 = Y(v), lf = x0 > PW * 0.7, dx = lf ? -14 : 14, mu = cssVar("--muted");
+        return `<circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="2.3" fill="${mu}"/><line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x0 + dx).toFixed(1)}" y2="${y0.toFixed(1)}" stroke="${mu}" stroke-width="0.8"/>` +
+          `<text x="${(x0 + dx + (lf ? -3 : 3)).toFixed(1)}" y="${(y0 + 3.5).toFixed(1)}" font-size="10.5" fill="${mu}" text-anchor="${lf ? "end" : "start"}">${fmt(v)} · ${wk(ws[i][0])}</text>`; };
+      const marks = mark(hiI, ws[hiI][2]) + mark(loI, ws[loI][3]);
       // pre-market / after-hours (QQQ): accent dashed line at that price + its own tag, nudged off the price tag if they'd overlap
       const x = rec?.ext && !usCashOpen() ? rec.ext : null; let ext = "";
       if (x) {
@@ -1316,7 +1336,7 @@ async function drawInlineNow() {
         `<span class="${cc}">${chg == null ? "" : (chg > 0 ? "+" : "") + chg.toFixed(2) + "%"}</span>` +
         (rec?.stage ? `<span class="st" title="${STAGE_FULL[rec.stage] || ""}">${esc(rec.stage)}</span>` : "") + `</div>` +
         `<div class="miniSub">${x ? `<b style="color:var(--accent)">${x.session === "pre" ? "PM" : "AH"} ${fmt(x.price)}</b> <span class="${x.chg > 0 ? "good" : x.chg < 0 ? "bad" : ""}">${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}%</span> · ` : ""}${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · 52w range ${rng(lo)} – ${rng(hi)} · ${Math.abs(offHi) < 0.05 ? "at the high" : Math.abs(offHi).toFixed(0) + "% off high"}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
-        `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${tag}${ext}</svg>` +
+        `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${marks}${tag}${ext}</svg>` +
         `<div class="miniLeg"><span class="lg px">weekly close</span><span class="lg ema">10w</span><span class="lg sma50">30w</span><span class="r">52 weeks · ${esc(name)} · click for candles</span></div>`;
     } catch (e) { c.innerHTML = `<div class="miniSub">${esc(key)} · chart data not available yet</div>`; }
   }
