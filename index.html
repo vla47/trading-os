@@ -36,7 +36,7 @@ button:hover{border-color:var(--accent)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:3px}
-.mktStrip.stale{opacity:.55}
+.mktStrip.stale{opacity:.55}.mktStrip .q.stale{opacity:.45}.mktStrip .q.stale b::after{content:" ⚠";font-size:11px}
 .userMenu{position:relative}
 .topDropdown{position:absolute;right:0;top:52px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:236px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
 .menuStatus{font-size:12px;color:var(--muted);padding:7px 10px 6px;line-height:1.35}
@@ -169,7 +169,7 @@ details.more[open]>summary span:first-child::before{content:"▾ "}
 details.more[open]>summary{margin-bottom:6px}
 @media(max-width:1100px){.hero{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:640px){.hero{grid-template-columns:repeat(2,minmax(0,1fr))}.heroCard .hv{font-size:24px}}
-.aRow .pos{color:var(--good)}.aRow .neg{color:var(--bad)}
+.aRow.stale{opacity:.5}.aRow .pos{color:var(--good)}.aRow .neg{color:var(--bad)}
 </style>
 </head>
 <body>
@@ -807,22 +807,21 @@ function initUI() {
   tick(); setInterval(tick, 15000);
   fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia")
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
-  // market strip: quotes.json deployed with the site by .github/workflows/quotes.yml (15 min in US hours, hourly otherwise) (same rules as the menu bar)
-  const QUOTES = location.protocol === "file:" ? "https://vla47.github.io/trading-os/quotes.json" : "quotes.json";
+  // market strip: renders from market.json (see loadMarket); rebuilt by .github/workflows/quotes.yml every 15 min in US hours, 30 min otherwise
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
   // shown in groups, rotating every 6 s; hover pauses, click jumps to the next group
   const GROUPS = [["QQQ", "VIX"], ["SXR8", "BTC", "GOLD"], ["BRENT", "US10Y", "EURUSD"]];   // QQQ gets room for its pre-market / after-hours quote
   let qItems = [], qPage = 0, qPaused = false;
   const qEl = (it) => {
-    const q = document.createElement("span"); q.className = "q"; q.dataset.label = it.label; q.title = it.label + " — click for chart";
+    const q = document.createElement("span"); q.className = "q" + (qStale(it) ? " stale" : ""); q.dataset.label = it.label; q.title = qInfo(it) + "\nClick for chart";
     const chg = it.chg == null ? "" : (it.chg > 0 ? "+" : "") + it.chg.toFixed(2) + "%";
     q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
-    const b = document.createElement("b"); b.textContent = Number(it.ext ? it.ext.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
+    const b = document.createElement("b"); b.textContent = Number(it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
     q.append(b, " " + chg);
     if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
     if (it.ext) {   // pre-market / after-hours trade
       const x = document.createElement("span"); x.className = "ext " + (it.ext.chg > 0 ? "pos" : it.ext.chg < 0 ? "neg" : "");
-      x.textContent = (it.ext.session === "pre" ? "PM" : "AH") + (it.ext.chg == null ? "" : " " + (it.ext.chg > 0 ? "+" : "") + it.ext.chg.toFixed(2) + "%");
+      x.textContent = (it.ext.session === "pre" ? "PM " : "AH ") + Number(it.ext.price).toFixed(it.dec) + (it.ext.chg == null ? "" : " " + (it.ext.chg > 0 ? "+" : "") + it.ext.chg.toFixed(2) + "%");
       x.title = (it.ext.session === "pre" ? "Pre-market" : "After-hours") + " · " + new Date(it.ext.time).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) + " · change vs the regular close " + Number(it.price).toFixed(it.dec);
       q.append(x);
     }
@@ -864,21 +863,17 @@ function initUI() {
   strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
   strip.onclick = (e) => { const q = e.target.closest(".q"); if (q && q.dataset.label) return openChart(q.dataset.label); qPage++; showPage(true); };
   setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 6000);
-  const liveBtc = () => btcCandles().then((cs) => {
-    const it = qItems.find((i) => i.label === "BTC"); if (!it || !cs.length) return;
-    const [, , , open, close] = cs[0];   // today's UTC daily candle: open = previous close
-    it.price = Math.round(close); it.chg = Math.round((close / open - 1) * 10000) / 100;
-    const q = $("mktStrip").querySelector('.q[data-label="BTC"]'); if (q) q.replaceWith(qEl(it));
-  }).catch(() => {});
-  setInterval(() => { if (!document.hidden) liveBtc(); }, 60000);
-  const loadQuotes = () => fetch(QUOTES + "?t=" + Date.now()).then((r) => r.json()).then((j) => {
-    const el = $("mktStrip"); qItems = j.items || []; showPage(false); liveBtc();
-    const age = (Date.now() - Date.parse(j.updated)) / 60000;
-    el.classList.toggle("stale", age > 60);
-    el.title = "Market strip · updated " + new Date(j.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 60 ? " (stale)" : "") +
+  mktListeners.push((changed, err) => {
+    const el = $("mktStrip");
+    if (err || !MKT) { el.classList.add("stale"); return; }
+    qItems = MKT.strip.map((k) => MKT.quotes[k] && { ...MKT.quotes[k], label: k }).filter(Boolean);
+    showPage(false);
+    const age = (Date.now() - Date.parse(MKT.updated)) / 60000;
+    el.classList.toggle("stale", age > 90);
+    el.title = "Market strip · " + MKT.source + " · built " + new Date(MKT.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
+      (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
       "\nClick a ticker for its chart · click the dots for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
-  }).catch(() => {});
-  loadQuotes(); setInterval(loadQuotes, 5 * 60000);
+  });
 }
 
 // Two automatic sources, both written by the daily sync:
@@ -1025,8 +1020,26 @@ async function autoRefresh() {
   } else await loadEncrypted();
 }
 
-// ---- Views: Journal | Sectors ------------------------------------------------
+// ---- Market snapshot: ONE file (market.json), one source (Yahoo), all numbers computed by scripts/quotes.py ----
+// Strip, Markets / Sectors / Themes bars and chart captions all render from the same loaded copy, so they cannot disagree.
 const DATA_BASE = location.protocol === "file:" ? "https://vla47.github.io/trading-os/" : "";
+let MKT = null;
+const mktListeners = [];
+// stale = the builder marked it (not refreshed / old while open) or it is now >45 min old while its market was open
+function qStale(r) { return !!r && (r.stale || (r.open && r.asOf && Date.now() - Date.parse(r.asOf) > 45 * 60000)); }
+function qInfo(r) {
+  if (!r) return "";
+  const t = r.asOf ? new Date(r.asOf).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "?";
+  return `${r.name} (${r.symbol}) · ${r.source || "Yahoo Finance"} · as of ${t}` + (r.warn ? "\n⚠ " + r.warn.join("\n⚠ ") : "") + (qStale(r) ? "\n⚠ stale" : "");
+}
+async function loadMarket() {
+  try {
+    const j = await (await fetch(DATA_BASE + "market.json?t=" + Date.now())).json();
+    if (!j || !j.quotes) throw new Error("bad snapshot");
+    const changed = !MKT || MKT.updated !== j.updated; MKT = j;
+    mktListeners.forEach((f) => f(changed));
+  } catch (e) { mktListeners.forEach((f) => f(false, e)); }
+}
 function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
   $("journalView").classList.toggle("hidden", v !== "journal");
@@ -1083,20 +1096,27 @@ function renderSectors() {
   for (const r of rows) {
     const v = r[secPeriod], over = Math.abs(v) > max, w = Math.max(0.6, Math.min(1, Math.abs(v) / max) * span * 0.78);
     const left = v >= 0 ? zero : zero - w, valPos = v >= 0 ? `left:calc(${zero + w}% + 5px)` : `right:calc(${100 - (zero - w)}% + 5px)`;
-    const row = document.createElement("div"); row.className = "aRow"; row.title = `${r.name} (${r.symbol}) — click for chart`;
+    const row = document.createElement("div"); row.className = "aRow" + (qStale(r.q) ? " stale" : ""); row.title = qInfo(r.q) + "\nClick for chart";
     row.onclick = () => openChart(r.chart || r.symbol, r.name);
     const rot = !showRot || !r.rot ? "–" : r.rot > 0 ? `<span class="pos">▲ ${r.rot}</span>` : `<span class="neg">▼ ${-r.rot}</span>`;
-    row.innerHTML = `<span class="nm"><b>${esc(r.name)}</b>${r.name !== r.symbol && !r.chart ? `<span class="muted">${esc(r.symbol)}</span>` : ""}</span>` +
+    row.innerHTML = `<span class="nm"><b>${esc(r.name)}</b>${secGroup !== "markets" && r.name !== r.symbol ? `<span class="muted">${esc(r.symbol)}</span>` : ""}</span>` +
       `<span class="tr">${DOTS[r.dot] || ""}${r.stage ? `<span class="st">${esc(r.stage)}</span>` : ""}</span>` +
       `<span class="barTrack"><span class="bar" style="left:${left}%;width:${w}%;background:${barColor(v, max)}"></span><span class="barVal" style="${valPos}">${fmtPct(v)}${over ? " »" : ""}</span></span>` +
       `<span class="rot">${rot}</span>`;
     box.append(row);
   }
 }
-async function loadSectors() {
-  try { secData = await (await fetch(DATA_BASE + "sectors.json?t=" + Date.now())).json(); renderSectors(); }
-  catch (e) { $("secUpdated").textContent = "Sector data not available yet (it is published by the 15-minute market job)."; }
+// rows for the bar card, straight from the snapshot (no maths here)
+function secRows(g) {
+  return (MKT?.groups?.[g] || []).map(({ key, rot }) => { const r = MKT.quotes[key]; return r && { ...r.perf, name: r.name, symbol: r.symbol, chart: key, dot: r.dot, stage: r.stage, rot, q: r }; }).filter(Boolean);
 }
+mktListeners.push((changed, err) => {
+  if (err || !MKT) { if (!secData) $("secUpdated").textContent = "Market data not available yet (published by the market job)."; return; }
+  secData = { updated: MKT.updated, markets: secRows("markets"), sectors: secRows("sectors"), themes: secRows("themes"),
+    benchmark: MKT.benchmark ? [MKT.quotes[MKT.benchmark].perf] : [] };
+  if (!$("sectorsView").classList.contains("hidden")) { renderSectors(); if (changed) drawInline(); }
+});
+function loadSectors() { if (secData) renderSectors(); }
 
 // ---- TradingView Lightweight Charts™ (loaded on first use) -------------------
 let lwcLoading = null, chartObj = null;
@@ -1125,26 +1145,12 @@ function toWeekly(bars) {
   }
   return out;
 }
-// BTC trades 24/7: live daily candles from Coinbase ([time, low, high, open, close, volume], newest first), cached 30 s
-let btcCache = null;
-function btcCandles() {
-  if (btcCache && Date.now() - btcCache.t < 30000) return btcCache.p;
-  const p = fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400").then((r) => r.ok ? r.json() : Promise.reject(r.status));
-  btcCache = { t: Date.now(), p }; p.catch(() => { btcCache = null; });
-  return p;
-}
 async function drawChart(el, key, tf = "D") {
-  let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
+  if (!MKT) await loadMarket();
+  const rec = MKT?.quotes?.[key];
+  // chart files come from the same run as market.json; their last bar closes at the snapshot price
+  let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?v=" + encodeURIComponent(MKT?.updated || Date.now())).then((r) => r.json()), loadLwc()]);
   const L = window.LightweightCharts;
-  if (key === "BTC") try {   // replace / append the days the GitHub job hasn't caught yet
-    const cs = await btcCandles(), lastDay = d.bars[d.bars.length - 1][0], bars = d.bars.slice();
-    for (const [t, lo, hi, o, c, v] of cs.slice().reverse()) {
-      const day = new Date(t * 1000).toISOString().slice(0, 10); if (day < lastDay) continue;
-      const b = [day, o, hi, lo, c, Math.round(v)];
-      if (bars[bars.length - 1][0] === day) bars[bars.length - 1] = b; else bars.push(b);
-    }
-    d = { ...d, bars };
-  } catch (e) {}
   if (tf === "W") d = { ...d, bars: toWeekly(d.bars) };
   el.textContent = "";
     const chartObj = L.createChart(el, { autoSize: true,
@@ -1165,15 +1171,16 @@ async function drawChart(el, key, tf = "D") {
     if (tf === "W") { line(maLine(d.bars, 10, false), "#3b82f6"); line(maLine(d.bars, 30, false), "#f59e0b"); }
     else { line(maLine(d.bars, 21, true), "#3b82f6"); line(maLine(d.bars, 50, false), "#f59e0b"); line(maLine(d.bars, 200, false), "#a855f7"); }
     // pre-market / after-hours: dashed line at the latest extended-hours trade (QQQ), refreshed with the chart
-    try {
-      const q = await fetch(DATA_BASE + "quotes.json?t=" + Date.now()).then((r) => r.json());
-      const x = (q.items || []).find((i) => i.label === key)?.ext;
+    {
+      const x = rec?.ext;
       if (x) c.createPriceLine({ price: x.price, color: cssVar("--accent"), lineWidth: 1, lineStyle: 2, axisLabelVisible: true,
         title: (x.session === "pre" ? "PM " : "AH ") + (x.chg > 0 ? "+" : "") + x.chg.toFixed(2) + "%" });
-    } catch (e) {}
+    }
     chartObj.timeScale().setVisibleLogicalRange({ from: Math.max(0, d.bars.length - (tf === "W" ? 80 : 130)), to: d.bars.length + 3 });
-  const last = d.bars[d.bars.length - 1], prev = d.bars[d.bars.length - 2];
-  return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · last ${last[4]} (${fmtPct((last[4] / prev[4] - 1) * 100)})` };
+  const px = rec ? Number(rec.price).toLocaleString("en-US", { minimumFractionDigits: rec.dec, maximumFractionDigits: rec.dec }) : d.bars[d.bars.length - 1][4];
+  const asOf = rec?.asOf ? " · " + new Date(rec.asOf).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+  el.title = qInfo(rec);
+  return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · ${px} (${fmtPct(rec?.chg)})${qStale(rec) ? " ⚠ stale" : ""}`, asOf };
 }
 async function openChart(key, name) {
   $("chartModal").classList.remove("hidden"); $("chartTitle").textContent = key; $("chartSub").textContent = name && name !== key ? name : "Loading…";
@@ -1181,7 +1188,7 @@ async function openChart(key, name) {
     if (chartObj) { chartObj.remove(); chartObj = null; }
     const r = await drawChart($("chartEl"), key);
     chartObj = r.chart;
-    $("chartSub").textContent = `${name && name !== key ? name + " · " : ""}${r.sub}`;
+    $("chartSub").textContent = `${name && name !== key ? name + " · " : ""}${r.sub}${r.asOf}`;
   } catch (e) { $("chartSub").textContent = "Chart data not available yet."; }
 }
 // always-visible QQQ / BTC charts at the top of the Assets page
@@ -1228,7 +1235,7 @@ function initViews() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeChart(); });
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
-  setInterval(() => { if (!$("sectorsView").classList.contains("hidden") && !document.hidden) { loadSectors(); drawInline(); } }, 5 * 60000);
+  loadMarket(); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
 }
 
 async function boot() {

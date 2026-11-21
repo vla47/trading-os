@@ -1,6 +1,6 @@
 name: Market strip + deploy
 
-# Builds the GitHub Pages site from main and adds a fresh quotes.json (no commits).
+# Builds the GitHub Pages site from main and adds a fresh market.json + charts/ (no commits).
 # Requires: Settings → Pages → Source = "GitHub Actions".
 on:
   schedule:
@@ -29,12 +29,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install yfinance pandas
-      - run: python scripts/quotes.py || echo "quotes failed, deploying without fresh data"
+      # one source, one pass; if the whole run fails, republish the live site's last snapshot instead of none
+      - run: python scripts/quotes.py || python scripts/quotes.py --restore || echo "no market data this run"
       - name: Assemble site
         run: |
           mkdir _site
           cp -r index.html assets journal.enc.json _site/
-          for f in quotes.json sectors.json; do [ -f "$f" ] && cp "$f" _site/ || true; done
+          for f in market.json; do [ -f "$f" ] && cp "$f" _site/ || true; done
           [ -d charts ] && cp -r charts _site/ || true
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
