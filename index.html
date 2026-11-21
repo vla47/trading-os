@@ -136,7 +136,7 @@ canvas{width:100%;height:230px;display:block}
 .miniTop .nm{font-weight:800;font-size:16px;color:var(--text)}.miniTop .px{font-weight:800;font-size:22px;color:var(--text);font-variant-numeric:tabular-nums}
 .miniTop .st{font-size:13px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--panel2);color:var(--text)}
 .miniSub{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.miniSvg{width:100%;height:190px;display:block;margin-top:8px}
+.miniSvg{width:100%;height:204px;display:block;margin-top:8px}
 .miniTop .ext{font-size:13px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--panel2);color:var(--muted)}.miniTop .ext b{color:var(--text)}
 .miniLeg{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin-top:4px}.miniLeg .lg::before{width:12px;height:2px}.miniLeg .r{margin-left:auto}
 .lg.px::before{background:var(--text)}
@@ -314,7 +314,7 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="assetCols muted small hidden" id="secCols"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
     <div id="secRows" class="secCols"><div><div class="secColT">Sectors</div><div id="secRowsS"></div></div><div><div class="secColT">Themes</div><div id="secRowsT"></div></div></div>
     <div id="secHeat" class="heatEl hidden"></div>
-    <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart · <span id="mktChecks"></span></div>
+    <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart<span id="mktChecks"></span></div>
   </div>
  </section>
 </main>
@@ -1148,8 +1148,8 @@ function renderSectors() {
   const ck = MKT?.checks, ce = $("mktChecks");
   if (ce) {
     if (!ck) ce.textContent = "";
-    else if (!ck.failed.length) { ce.className = "good"; ce.textContent = `✓ ${ck.passed} price checks passed`; ce.title = "Every price, % change, 21ema dot, stage and AH/PM value re-derived from the chart data at " + new Date(ck.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
-    else { ce.className = "bad"; ce.textContent = `⚠ ${ck.failed.length} price check${ck.failed.length > 1 ? "s" : ""} failed`; ce.title = ck.failed.join("\n"); }
+    else if (!ck.failed.length) { ce.className = "good"; ce.textContent = ` · ✓ ${ck.passed} price checks passed`; ce.title = "Every price, % change, 21ema dot, stage and AH/PM value re-derived from the chart data at " + new Date(ck.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    else { ce.className = "bad"; ce.textContent = ` · ⚠ ${ck.failed.length} price check${ck.failed.length > 1 ? "s" : ""} failed`; ce.title = ck.failed.join("\n"); }
   }
   // one bar scale for both columns, so a sector and a theme compare at a glance
   const abs = groups.flatMap(([rows]) => rows.map((r) => Math.abs(r[secPeriod]))).sort((a, b) => a - b);
@@ -1313,7 +1313,7 @@ async function drawInlineNow() {
       const a10 = f(m10), a30 = f(m30);
       let hiI = 0, loI = 0; ws.forEach((b, i) => { if (b[2] > ws[hiI][2]) hiI = i; if (b[3] < ws[loI][3]) loI = i; });
       const hiV = Math.max(ws[hiI][2], px), loV = Math.min(ws[loI][3], px), all = [...cl, ...a10, ...a30, hiV, loV], sp = Math.max(...all) - Math.min(...all);
-      const mn = Math.min(...all) - sp * 0.07, mx = Math.max(...all) + sp * 0.07, AX = 52, W = Math.max(200, (c.clientWidth || 600) - 32), PW = W - AX, H = 190;
+      const mn = Math.min(...all) - sp * 0.07, mx = Math.max(...all) + sp * 0.07, AX = 52, W = Math.max(200, (c.clientWidth || 600) - 32), PW = W - AX, H = 190, TL = 14;
       const X = (i) => i / (cl.length - 1) * PW, Y = (v) => H - 4 - (v - mn) / (mx - mn || 1) * (H - 8);
       const pts = (a) => { const off = cl.length - a.length; return a.map((v, i) => `${X(i + off).toFixed(1)},${Y(v).toFixed(1)}`).join(" "); };
       const line = (a, col, sw) => `<polyline points="${pts(a)}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round"/>`;
@@ -1323,6 +1323,16 @@ async function drawInlineNow() {
       for (let v = Math.ceil(mn / step) * step; v <= mx; v += step)
         grid += `<line x1="0" x2="${PW}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${cssVar("--line")}" stroke-width="0.6"/>` +
           (Math.abs(Y(v) - Y(px)) < 14 || (rec?.ext && !usCashOpen() && Math.abs(Y(v) - Y(rec.ext.price)) < 22) ? "" : `<text x="${PW + 6}" y="${(Y(v) + 3.5).toFixed(1)}" font-size="10.5" fill="${cssVar("--muted")}">${ax(v)}</text>`);
+      // time axis: a faint vertical line + label at the first week of every 2nd month ("Jan '26" at the turn of the year)
+      let tl = "";
+      ws.forEach((b, i) => {
+        if (!i) return;
+        const m = +b[0].slice(5, 7), pm = +ws[i - 1][0].slice(5, 7);
+        if (m === pm || m % 2 === 0 || X(i) > PW - 18) return;
+        const lbl = new Date(b[0] + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + (m === 1 ? " '" + b[0].slice(2, 4) : "");
+        tl += `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="0" y2="${H}" stroke="${cssVar("--line")}" stroke-width="0.6"/>` +
+          `<text x="${X(i).toFixed(1)}" y="${H + TL - 2}" font-size="10.5" text-anchor="middle" fill="${cssVar("--muted")}">${lbl}</text>`;
+      });
       const tagC = cssVar((rec?.chg ?? 0) < 0 ? "--bad" : "--good"), yl = Y(px), lbl = big ? (px / 1000).toFixed(1) + "k" : px.toFixed(d.dec);
       const tag = `<line x1="0" x2="${PW}" y1="${yl.toFixed(1)}" y2="${yl.toFixed(1)}" stroke="${tagC}" stroke-width="0.9" stroke-dasharray="3 3"/>` +
         `<rect x="${PW + 2}" y="${(yl - 8).toFixed(1)}" width="${AX - 4}" height="16" rx="3" fill="${tagC}"/><text x="${PW + 6}" y="${(yl + 3.5).toFixed(1)}" font-size="10.5" font-weight="700" fill="#fff">${lbl}</text>`;
@@ -1348,7 +1358,7 @@ async function drawInlineNow() {
         `<span class="${cc}">${chg == null ? "" : (chg > 0 ? "+" : "") + chg.toFixed(2) + "%"}</span>` +
         (rec?.stage ? `<span class="st" title="${STAGE_FULL[rec.stage] || ""}">${esc(rec.stage)}</span>` : "") + `</div>` +
         `<div class="miniSub">${x ? `<b style="color:var(--accent)">${x.session === "pre" ? "PM" : "AH"} ${fmt(x.price)}</b> <span class="${x.chg > 0 ? "good" : x.chg < 0 ? "bad" : ""}">${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}%</span> · ` : ""}${dist > 0 ? "+" : ""}${dist.toFixed(1)}% vs 21ema · 21ema ${e5 != null && eN > e5 ? "rising" : "falling"} · 52w range ${rng(lo)} – ${rng(hi)} · ${Math.abs(offHi) < 0.05 ? "at the high" : Math.abs(offHi).toFixed(0) + "% off high"}${qStale(rec) ? " · ⚠ stale" : ""}</div>` +
-        `<svg class="miniSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${marks}${tag}${ext}</svg>` +
+        `<svg class="miniSvg" viewBox="0 0 ${W} ${H + TL}" width="${W}" height="${H + TL}">${tl}${grid}${line(a30, "#f59e0b", 1.5)}${line(a10, "#3b82f6", 1.5)}${line(cl, cssVar("--text"), 1.8)}${marks}${tag}${ext}</svg>` +
         `<div class="miniLeg"><span class="lg px">weekly close</span><span class="lg ema">10w</span><span class="lg sma50">30w</span><span class="r">52 weeks · ${esc(name)} · click for candles</span></div>`;
     } catch (e) { c.innerHTML = `<div class="miniSub">${esc(key)} · chart data not available yet</div>`; }
   }
