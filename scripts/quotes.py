@@ -17,8 +17,7 @@ Checks before publishing (a failed ticker keeps its last good value from the liv
 Rules (Tradelion rules.md):
   QQQ / ETF dot (21ema): red below | yellow fresh reclaim (<5 days) or 21ema not rising | green above rising
   VIX dot  : red >25 | yellow 15-25 | green <15
-  Stage    (weekly bars): S2 U above rising 30w + 10w rising | S4 D below falling 30w + 10w falling
-           mixed: below 30w and >15% lower than 13 weeks ago = S4 D; within 20% of 52w high and 30w not falling = S3 T, else S1 B
+  Stage    : see stage() - S1 Base / S2 Advance / S3 Top / S4 Decline, only from the TraderLion stage-analysis rules
 """
 import json
 import math
@@ -83,21 +82,32 @@ def vix_dot(v: float) -> str:
 
 
 def stage(close: pd.Series) -> str:
-    w = close.resample("W").last().dropna()  # calendar weeks, current week = latest price
-    if len(w) < 45:
+    """Weinstein stage, only from Tradelion rules.md / TraderLion Ultimate Trading Guide (Stage Analysis, pp. 22-32).
+    Weekly closes; 30w (150d) and 40w (200d) MAs (rule 2.2). "Rising" / "falling" = this week's MA vs last week's.
+      S2 Advance : price above the rising 30w AND the rising 40w          (rule 4.1, guide p. 27)
+      S4 Decline : price below the falling 30w AND the falling 40w        (rule 6.1, guide p. 31: Stage 2 flipped)
+      otherwise the long-term MAs are flattening / price whips around them (rule 5.4, guide p. 30):
+      S3 Top     : if the last stage was S2 or S3   (cycle 2 -> 3 -> 4 -> 1, guide p. 24)
+      S1 Base    : if the last stage was S4 or S1
+    The stage is walked forward week by week so S3 vs S1 knows what came before."""
+    w = close.resample("W").last().dropna()   # calendar weeks, current week = latest price
+    if len(w) < 42:
         return ""
-    ma, ma4 = w.iloc[-30:].mean(), w.iloc[-34:-4].mean()
-    f, f4 = w.iloc[-10:].mean(), w.iloc[-14:-4].mean()
-    hi, p = w.iloc[-52:].max(), w.iloc[-1]
-    up, dn = ma > ma4 * 1.005, ma < ma4 * 0.995
-    fup, fdn = f > f4 * 1.005, f < f4 * 0.995
-    if p >= ma and up and fup:
-        return "S2 U"
-    if p < ma and dn and fdn:
-        return "S4 D"
-    if p < ma and len(w) > 13 and w.iloc[-14] > p * 1.15:
-        return "S4 D"   # fresh breakdown: >15% lower than 13 weeks ago while the 30w is still turning
-    return "S3 T" if (p > hi * 0.80 and ma >= ma4) else "S1 B"
+    m30, m40 = w.rolling(30).mean(), w.rolling(40).mean()
+    st = None
+    for i in range(40, len(w)):
+        p, a30, a40 = w.iloc[i], m30.iloc[i], m40.iloc[i]
+        up = a30 > m30.iloc[i - 1] and a40 > m40.iloc[i - 1]
+        dn = a30 < m30.iloc[i - 1] and a40 < m40.iloc[i - 1]
+        if p > a30 and p > a40 and up:
+            st = "S2"
+        elif p < a30 and p < a40 and dn:
+            st = "S4"
+        elif st in ("S2", "S3"):
+            st = "S3"
+        elif st in ("S4", "S1"):
+            st = "S1"
+    return st or ""
 
 
 def ts(v):

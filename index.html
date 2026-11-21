@@ -291,7 +291,7 @@ details.more[open]>summary{margin-bottom:6px}
     <div class="assetCols muted small" id="secCols"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
     <div id="secRows"></div>
     <div id="secHeat" class="heatEl hidden"></div>
-    <div class="muted small assetFoot" id="secFoot">Bars: return over the selected period. Trend: 🔴🟡🟢 21ema rule and stage (S1 B base · S2 U up · S3 T top · S4 D down). Rotation ▲ = climbing the 1-month ranking vs 3 months (money flowing in). Click a row for the chart.</div>
+    <div class="muted small assetFoot" id="secFoot">Bars: return over the selected period. Trend: 🔴🟡🟢 21ema rule and stage (S1 Base · S2 Advance · S3 Top · S4 Decline, TraderLion stage analysis). Rotation ▲ = climbing the 1-month ranking vs 3 months (money flowing in). Click a row for the chart.</div>
   </div>
  </section>
 </main>
@@ -841,6 +841,7 @@ function initUI() {
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
   // market strip: renders from market.json (see loadMarket); rebuilt by .github/workflows/quotes.yml every 15 min in US hours, 30 min otherwise
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
+  const STAGE_NAME = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
   // shown in groups, rotating every 10 s; hover pauses, click jumps to the next group
   const GROUPS = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD"], ["BRENT", "EURUSD"]];   // each ETF next to its index future
   let qItems = [], qPage = 0, qPaused = false;
@@ -851,7 +852,7 @@ function initUI() {
     q.textContent = (it.dot ? DOT[it.dot] + " " : "") + it.label + " ";
     const b = document.createElement("b"); b.textContent = Number(it.eth ? it.eth.price : it.price).toLocaleString("en-US", { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec });
     q.append(b, " " + chg);
-    if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; q.append(st); }
+    if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; st.title = STAGE_NAME[it.stage] || ""; q.append(st); }
     if (it.eth) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.eth.session === "pre" ? "PM" : "AH"; q.append(st); }
     return q;
   };
@@ -899,7 +900,7 @@ function initUI() {
     el.classList.toggle("stale", age > 90);
     el.title = "Market strip · " + MKT.source + " · built " + new Date(MKT.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
-      "\nClick a ticker for its chart · click between tickers for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 B / S2 U / S3 T / S4 D = stage";
+      "\nClick a ticker for its chart · click between tickers for the next group · hover pauses\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
   });
 }
 
