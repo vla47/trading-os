@@ -4,9 +4,9 @@ name: Market strip + deploy
 # Requires: Settings → Pages → Source = "GitHub Actions".
 on:
   schedule:
-    - cron: "*/15 9-23 * * 1-5"    # every 15 min from US pre-market to after-hours (UTC)
-    - cron: "*/15 0 * * 2-6"       # after-hours runs until 01:00 UTC in winter
-    - cron: "0 * * * *"            # hourly otherwise (BTC, FX, futures)
+    - cron: "2-59/15 9-23 * * 1-5"    # every 15 min from US pre-market to after-hours (UTC)
+    - cron: "2-59/15 0 * * 2-6"       # after-hours runs until 01:00 UTC in winter
+    - cron: "2,32 * * * *"         # every 30 min otherwise (FX, futures); off :00, where GitHub drops scheduled runs
   push:
     branches: [main]               # journal sync pushes deploy right away
   workflow_dispatch:

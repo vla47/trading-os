@@ -29,8 +29,8 @@ button:hover{border-color:var(--accent)}
 .q .ext{margin-left:6px;font-size:12px;color:var(--muted);white-space:nowrap}.q .ext.pos{color:var(--good)}.q .ext.neg{color:var(--bad)}.marketStat b{color:var(--text)}
 .topRight{min-width:0}
 .topMid{flex:1 1 auto;min-width:0;display:flex;justify-content:center}
-.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,44vw,620px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
-.mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0}
+.mktStrip{display:flex;align-items:center;justify-content:flex-start;gap:18px;width:clamp(300px,48vw,680px);flex:0 0 auto;overflow:hidden;font-size:14px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
+.mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0;overflow:hidden}
 .mktStrip .q{display:inline-block;will-change:transform,opacity,filter}
 .mktStrip .pg{display:flex;gap:4px;flex:0 0 auto}.mktStrip .pg i{width:5px;height:5px;border-radius:50%;background:var(--line)}.mktStrip .pg i.on{background:var(--muted)}
 .mktStrip::-webkit-scrollbar{display:none}
@@ -842,6 +842,8 @@ function initUI() {
       const g = document.createElement("span"); g.className = "grp"; ps[qPage].forEach((it) => g.append(qEl(it)));
       const pg = document.createElement("span"); pg.className = "pg"; ps.forEach((_, i) => { const d = document.createElement("i"); if (i === qPage) d.className = "on"; pg.append(d); });
       el.append(g, pg);
+      // shrink a crowded group (e.g. SXR8 / BTC / GOLD with stage badges) until it fits instead of clipping it
+      for (let fs = 14, gap = 18; g.scrollWidth > g.clientWidth + 1 && fs > 11; ) { fs -= 0.5; gap = Math.max(10, gap - 2); g.style.fontSize = fs + "px"; g.style.gap = gap + "px"; }
     };
     // blur-slide with per-ticker stagger: old quotes rise out, new ones rise in from below
     const cur = el.querySelector(".grp");
@@ -862,8 +864,15 @@ function initUI() {
   strip.onmouseenter = () => { qPaused = true; }; strip.onmouseleave = () => { qPaused = false; };
   strip.onclick = (e) => { const q = e.target.closest(".q"); if (q && q.dataset.label) return openChart(q.dataset.label); qPage++; showPage(true); };
   setInterval(() => { if (!qPaused && !document.hidden) { qPage++; showPage(true); } }, 6000);
+  const liveBtc = () => btcCandles().then((cs) => {
+    const it = qItems.find((i) => i.label === "BTC"); if (!it || !cs.length) return;
+    const [, , , open, close] = cs[0];   // today's UTC daily candle: open = previous close
+    it.price = Math.round(close); it.chg = Math.round((close / open - 1) * 10000) / 100;
+    const q = $("mktStrip").querySelector('.q[data-label="BTC"]'); if (q) q.replaceWith(qEl(it));
+  }).catch(() => {});
+  setInterval(() => { if (!document.hidden) liveBtc(); }, 60000);
   const loadQuotes = () => fetch(QUOTES + "?t=" + Date.now()).then((r) => r.json()).then((j) => {
-    const el = $("mktStrip"); qItems = j.items || []; showPage(false);
+    const el = $("mktStrip"); qItems = j.items || []; showPage(false); liveBtc();
     const age = (Date.now() - Date.parse(j.updated)) / 60000;
     el.classList.toggle("stale", age > 60);
     el.title = "Market strip · updated " + new Date(j.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 60 ? " (stale)" : "") +
@@ -1116,9 +1125,26 @@ function toWeekly(bars) {
   }
   return out;
 }
+// BTC trades 24/7: live daily candles from Coinbase ([time, low, high, open, close, volume], newest first), cached 30 s
+let btcCache = null;
+function btcCandles() {
+  if (btcCache && Date.now() - btcCache.t < 30000) return btcCache.p;
+  const p = fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400").then((r) => r.ok ? r.json() : Promise.reject(r.status));
+  btcCache = { t: Date.now(), p }; p.catch(() => { btcCache = null; });
+  return p;
+}
 async function drawChart(el, key, tf = "D") {
   let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?t=" + Date.now()).then((r) => r.json()), loadLwc()]);
   const L = window.LightweightCharts;
+  if (key === "BTC") try {   // replace / append the days the GitHub job hasn't caught yet
+    const cs = await btcCandles(), lastDay = d.bars[d.bars.length - 1][0], bars = d.bars.slice();
+    for (const [t, lo, hi, o, c, v] of cs.slice().reverse()) {
+      const day = new Date(t * 1000).toISOString().slice(0, 10); if (day < lastDay) continue;
+      const b = [day, o, hi, lo, c, Math.round(v)];
+      if (bars[bars.length - 1][0] === day) bars[bars.length - 1] = b; else bars.push(b);
+    }
+    d = { ...d, bars };
+  } catch (e) {}
   if (tf === "W") d = { ...d, bars: toWeekly(d.bars) };
   el.textContent = "";
     const chartObj = L.createChart(el, { autoSize: true,
