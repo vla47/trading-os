@@ -2,7 +2,7 @@
 // GET /quotes -> current price for every ticker on the page, from Yahoo Finance, with the SAME rules as scripts/quotes.py:
 //   1D = price / prevClose - 1 | 1W/1M/3M/6M = price / close 5/21/63/126 sessions back | YTD = vs last close of the previous year
 //   21ema dot, VIX dot, |1D| limit, stale > 30 min while open, QQQ pre/after-hours, NQ/ES move since the 16:00 ET cash close.
-// Daily closes come from live_base.json (written by quotes.py on each site build); only the live price is fetched here.
+// Daily history comes from live_base.json (written by quotes.py on each site build), topped up with Yahoo's last 5 daily bars here.
 // Responses are cached 60 s at the edge, so Yahoo sees at most one round of requests per minute however often the page asks.
 
 const SITE = "https://vla47.github.io/trading-os/";
@@ -47,22 +47,27 @@ export async function buildQuotes(now = new Date()) {
 }
 
 async function liveQuote(key, t, base, cash, nowS) {
-  const r = await chart(t.symbol, "range=1d&interval=1m&includePrePost=true");
-  const m = r.meta || {}, dec = t.dec;
+  const fut = t.symbol.endsWith("=F"), wantExt = base.ext.includes(key);
+  // last 5 daily bars from Yahoo: fills any day a missed site build left out, and gives the previous close
+  const [daily, intra] = await Promise.all([chart(t.symbol, "range=5d&interval=1d"),
+    fut || wantExt ? chart(t.symbol, "range=1d&interval=1m&includePrePost=true") : null]);
+  const m = (intra || daily).meta || {}, dec = t.dec;
   const price = num(m.regularMarketPrice), asOf = m.regularMarketTime || null;
   const tz = m.exchangeTimezoneName || "UTC", reg = (m.currentTradingPeriod || {}).regular || {};
-  // ---- checks (same as quotes.py) ----
-  let prev = num(m.chartPreviousClose);
-  if (!(price > 0 && prev > 0)) throw new Error(`bad price ${price} / prev ${prev}`);
+  if (!(price > 0)) throw new Error(`bad price ${price}`);
   const session = asOf ? ymd(asOf, tz) : t.closes[t.closes.length - 1][0];
-  const done = t.closes.filter(([d]) => d < session);          // completed sessions only
+  const byDate = new Map(t.closes);
+  const dc = ((daily.indicators || {}).quote || [{}])[0].close || [];
+  (daily.timestamp || []).forEach((s, i) => { if (dc[i] != null) byDate.set(ymd(s, tz), dc[i]); });
+  const done = [...byDate].filter(([d]) => d < session).sort((a, b) => (a[0] < b[0] ? -1 : 1));   // completed sessions only
   if (!done.length) throw new Error("no daily history");
-  const warn = [];
-  const lastDone = done[done.length - 1][1];
-  if (Math.abs(lastDone / prev - 1) > 0.01) {
-    // Yahoo's previous-close field sometimes lags a day (seen on ^VIX); outside futures the last daily close is the truth
-    if (!t.symbol.endsWith("=F")) { warn.push(`Yahoo prev close ${prev.toFixed(dec)} ≠ last daily close ${lastDone.toFixed(dec)}; using the daily close`); prev = lastDone; }
-    else warn.push(`previous bar ${lastDone.toFixed(dec)} ≠ prev close ${prev.toFixed(dec)} (contract roll / data gap)`);
+  const lastDone = done[done.length - 1][1], warn = [];
+  // futures: 1D vs the exchange settlement (as quotes.py); everything else: vs the last daily close
+  let prev = lastDone;
+  if (fut) {
+    prev = num(m.chartPreviousClose);
+    if (!(prev > 0)) throw new Error(`bad prev ${prev}`);
+    if (Math.abs(lastDone / prev - 1) > 0.01) warn.push(`previous bar ${lastDone.toFixed(dec)} ≠ prev close ${prev.toFixed(dec)} (contract roll / data gap)`);
   }
   const chg = pct(price, prev);
   if (Math.abs(chg) > t.max) throw new Error(`1D ${chg}% beyond ±${t.max}%`);
@@ -83,7 +88,7 @@ async function liveQuote(key, t, base, cash, nowS) {
   if (t.dot === "ema") rec.dot = emaDot(s);
   else if (t.dot === "vix") rec.dot = price > 25 ? "red" : price >= 15 ? "yellow" : "green";
   if (key === base.cash) Object.assign(cash, { open, close: asOf, start });
-  if (base.ext.includes(key)) rec.ext = extQuote(r, price, reg, dec);
+  if (wantExt && intra) rec.ext = extQuote(intra, price, reg, dec);
   if (base.near23h.includes(key) && cash.close && !cash.open) {
     try { rec.eth = await sinceCashClose(t.symbol, dec, cash, nowS); } catch (e) { /* keep the settlement view */ }
   }
