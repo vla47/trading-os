@@ -1147,7 +1147,7 @@ async function loadMarket() {
 // ---- Live prices: Cloudflare Worker (worker/worker.js), same source (Yahoo) and same rules as quotes.py ----
 // Overlays price / % changes / dots / PM-AH on the market.json snapshot every 60 s; stage, rotation and charts stay from the build.
 // Empty LIVE_URL = snapshot only (as before).
-const LIVE_URL = "";
+const LIVE_URL = "https://trading-os-quotes.vladko-ict.workers.dev/quotes";
 let LIVE = null;
 function applyLive() {
   for (const [k, l] of Object.entries(LIVE.quotes)) {
