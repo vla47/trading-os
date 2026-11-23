@@ -37,6 +37,9 @@ button:hover{border-color:var(--accent)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:inherit;font-weight:700;padding:0 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:4px}
+.liveTag{flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;margin-right:6px;white-space:nowrap;cursor:help}
+.liveTag.live{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.liveTag.live::before{content:"● "}
+.liveTag.delayed{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
 .mktStrip.stale{opacity:.55}.mktStrip .q.stale{opacity:.45}.mktStrip .q.stale b::after{content:" ⚠";font-size:11px}
 .userMenu{position:relative}
 .topDropdown{position:absolute;right:0;top:38px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:60;width:290px;box-shadow:0 12px 36px rgba(0,0,0,.18);display:grid;gap:1px}
@@ -240,7 +243,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     </div>
   </div>
 </header>
-<div class="tickerBar"><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
+<div class="tickerBar"><span id="liveTag" class="liveTag hidden"></span><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
 </div>
 
 <main class="main">
@@ -970,6 +973,7 @@ function initUI() {
     showPage(false);
     const at = MKT.liveAt || MKT.updated, age = (Date.now() - Date.parse(at)) / 60000;
     el.classList.toggle("stale", age > 90);
+    liveTagUpdate();
     el.title = "Market strip · " + MKT.source + (MKT.liveAt ? " · live, updated " : " · built ") + new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
       "\nClick a ticker for its chart\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
@@ -1149,6 +1153,16 @@ async function loadMarket() {
 // Empty LIVE_URL = snapshot only (as before).
 const LIVE_URL = "https://trading-os-quotes.vladko-ict.workers.dev/quotes";
 let LIVE = null;
+// LIVE = Worker prices fetched in the last 3 min; DELAYED = showing the last build (Worker or Yahoo not answering)
+function liveTagUpdate() {
+  const t = $("liveTag"); if (!t || !MKT || !LIVE_URL) return;
+  const live = !!MKT.liveAt && Date.now() - Date.parse(MKT.liveAt) < 3 * 60000;
+  const hm = (x) => new Date(x).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  t.classList.remove("hidden"); t.classList.toggle("live", live); t.classList.toggle("delayed", !live);
+  t.textContent = live ? "LIVE" : "DELAYED";
+  t.title = live ? "Live prices (Yahoo Finance via the Cloudflare Worker), updated " + hm(MKT.liveAt) + " · refresh every 60 s"
+    : "Live prices not answering — showing " + (MKT.liveAt ? "the last live update from " + hm(MKT.liveAt) : "the site build from " + hm(MKT.updated));
+}
 function applyLive() {
   for (const [k, l] of Object.entries(LIVE.quotes)) {
     const b = MKT.quotes[k]; if (!b) continue;
@@ -1244,7 +1258,7 @@ function secRows(g) {
 }
 mktListeners.push((changed, err) => {
   if (err || !MKT) { if (!secData) $("secUpdated").textContent = "Market data not available yet (published by the market job)."; return; }
-  secData = { updated: MKT.updated, markets: secRows("markets"), sectors: secRows("sectors"), themes: secRows("themes"),
+  secData = { updated: MKT.liveAt || MKT.updated, markets: secRows("markets"), sectors: secRows("sectors"), themes: secRows("themes"),
     benchmark: MKT.benchmark ? [MKT.quotes[MKT.benchmark].perf] : [] };
   if (!$("sectorsView").classList.contains("hidden")) { renderSectors(); if (changed) drawInline(); }
 });
@@ -1285,9 +1299,9 @@ async function drawChart(el, key, tf = "D") {
   const L = window.LightweightCharts;
   // live price: today's bar closes at it (new session -> new bar from the previous close)
   if (rec?.session && rec.price) {
-    const last = d.bars[d.bars.length - 1], hi = Math.max(rec.price, rec.day?.high || 0), lo = Math.min(rec.price, rec.day?.low || Infinity);
-    if (rec.session === last[0]) { last[4] = rec.price; last[2] = Math.max(last[2], hi); last[3] = Math.min(last[3], lo); }
-    else if (rec.session > last[0]) d.bars.push([rec.session, rec.prevClose, hi, lo, rec.price, 0]);
+    const last = d.bars[d.bars.length - 1], px = rec.price;
+    if (rec.session === last[0]) { last[4] = px; last[2] = Math.max(last[2], px); last[3] = Math.min(last[3], px); }
+    else if (rec.session > last[0]) d.bars.push([rec.session, rec.prevClose, Math.max(px, rec.prevClose), Math.min(px, rec.prevClose), px, 0]);
   }
   if (tf === "W") d = { ...d, bars: toWeekly(d.bars) };
   el.textContent = "";
@@ -1454,7 +1468,7 @@ function initViews() {
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
   loadMarket().then(loadLive); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
-  setInterval(() => { if (!document.hidden) loadLive(); }, 60000);
+  setInterval(() => { if (!document.hidden) loadLive(); liveTagUpdate(); }, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) loadLive(); });
 }
 

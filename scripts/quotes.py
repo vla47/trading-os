@@ -55,6 +55,7 @@ THEMES = [  # industry / theme ETFs that often lead rotations
     ("Uranium & Nuclear", "URA"), ("Gold Miners", "GDX"), ("Homebuilders", "XHB"), ("Regional Banks", "KRE"),
     ("Solar", "TAN"), ("China Internet", "KWEB"),
 ]
+WIDE_1D = {"SMH": 25, "XBI": 25, "URA": 25, "TAN": 25}   # volatile theme ETFs: data sanity limit for |1D| %, default 15
 STRIP = ["QQQ", "NQ", "VIX", "SXR8", "ES", "BTC", "GOLD", "BRENT", "US10Y", "EURUSD"]
 PERIODS = [("1W", 5), ("1M", 21), ("3M", 63), ("6M", 126)]
 EXT_HOURS = {"QQQ"}          # US-listed: also show the pre-market / after-hours price
@@ -175,9 +176,6 @@ def fetch(key, sym, name, dec, want_stage, dot_rule, max_chg, now):
     # ---- checks ----
     if not (math.isfinite(price) and price > 0 and math.isfinite(prev) and prev > 0):
         raise ValueError(f"bad price {price} / prev {prev}")
-    chg = pct(price, prev)
-    if abs(chg) > max_chg:
-        raise ValueError(f"1D {chg}% beyond ±{max_chg}%")
     df = df.dropna(subset=["Close"])
     if df.empty:
         raise ValueError("no daily history")
@@ -187,7 +185,15 @@ def fetch(key, sym, name, dec, want_stage, dot_rule, max_chg, now):
     today = df[df.index.normalize() == session]
     warn = []
     if len(done) and abs(done["Close"].iloc[-1] / prev - 1) > 0.01:
-        warn.append(f"previous bar {done['Close'].iloc[-1]:.{dec}f} ≠ prev close {prev:.{dec}f} (contract roll / data gap)")
+        last_done = float(done["Close"].iloc[-1])
+        if not sym.endswith("=F"):   # Yahoo's previous-close field sometimes lags a day (seen on ^VIX): the daily close is the truth
+            warn.append(f"Yahoo prev close {prev:.{dec}f} ≠ last daily close {last_done:.{dec}f}; using the daily close")
+            prev = last_done
+        else:
+            warn.append(f"previous bar {last_done:.{dec}f} ≠ prev close {prev:.{dec}f} (contract roll / data gap)")
+    chg = pct(price, prev)
+    if abs(chg) > max_chg:
+        raise ValueError(f"1D {chg}% beyond ±{max_chg}%")
     start, end = ts(reg.get("start")), ts(reg.get("end"))
     open_now = bool(start and end and start <= now.timestamp() < end)
     age = now.timestamp() - as_of if as_of else None
@@ -266,7 +272,7 @@ def main() -> int:
     prev_snap = previous_site("market.json") or {}
     prev_quotes = prev_snap.get("quotes", {})
     os.makedirs("charts", exist_ok=True)
-    universe = MARKETS + [(sym, sym, name, 2, True, "ema", 15) for name, sym in SECTORS + THEMES] + [("SPY", "SPY", "S&P 500", 2, True, "ema", 12)]
+    universe = MARKETS + [(sym, sym, name, 2, True, "ema", WIDE_1D.get(sym, 15)) for name, sym in SECTORS + THEMES] + [("SPY", "SPY", "S&P 500", 2, True, "ema", 12)]
     quotes, fresh, failed = {}, 0, []
     for key, sym, name, dec, want_stage, dot_rule, max_chg in universe:
         try:

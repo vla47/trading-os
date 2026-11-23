@@ -49,18 +49,23 @@ export async function buildQuotes(now = new Date()) {
 async function liveQuote(key, t, base, cash, nowS) {
   const r = await chart(t.symbol, "range=1d&interval=1m&includePrePost=true");
   const m = r.meta || {}, dec = t.dec;
-  const price = num(m.regularMarketPrice), prev = num(m.chartPreviousClose), asOf = m.regularMarketTime || null;
+  const price = num(m.regularMarketPrice), asOf = m.regularMarketTime || null;
   const tz = m.exchangeTimezoneName || "UTC", reg = (m.currentTradingPeriod || {}).regular || {};
   // ---- checks (same as quotes.py) ----
+  let prev = num(m.chartPreviousClose);
   if (!(price > 0 && prev > 0)) throw new Error(`bad price ${price} / prev ${prev}`);
-  const chg = pct(price, prev);
-  if (Math.abs(chg) > t.max) throw new Error(`1D ${chg}% beyond ±${t.max}%`);
   const session = asOf ? ymd(asOf, tz) : t.closes[t.closes.length - 1][0];
   const done = t.closes.filter(([d]) => d < session);          // completed sessions only
   if (!done.length) throw new Error("no daily history");
   const warn = [];
   const lastDone = done[done.length - 1][1];
-  if (Math.abs(lastDone / prev - 1) > 0.01) warn.push(`previous bar ${lastDone.toFixed(dec)} ≠ prev close ${prev.toFixed(dec)} (contract roll / data gap)`);
+  if (Math.abs(lastDone / prev - 1) > 0.01) {
+    // Yahoo's previous-close field sometimes lags a day (seen on ^VIX); outside futures the last daily close is the truth
+    if (!t.symbol.endsWith("=F")) { warn.push(`Yahoo prev close ${prev.toFixed(dec)} ≠ last daily close ${lastDone.toFixed(dec)}; using the daily close`); prev = lastDone; }
+    else warn.push(`previous bar ${lastDone.toFixed(dec)} ≠ prev close ${prev.toFixed(dec)} (contract roll / data gap)`);
+  }
+  const chg = pct(price, prev);
+  if (Math.abs(chg) > t.max) throw new Error(`1D ${chg}% beyond ±${t.max}%`);
   const start = reg.start, end = reg.end;
   const open = !!(start && end && start <= nowS && nowS < end);
   const age = asOf ? nowS - asOf : null;
@@ -74,8 +79,7 @@ async function liveQuote(key, t, base, cash, nowS) {
   let py = -1; for (let i = dates.length - 1; i >= 0; i--) if (dates[i].slice(0, 4) < yr) { py = i; break; }
   perf.YTD = py >= 0 ? pct(price, s[py]) : null;
   const rec = { price: rnd(price, dec), prevClose: rnd(prev, dec), chg, perf, asOf: asOf ? iso(asOf, "seconds") : null,
-    open, stale, session, warn: warn.length ? warn : null, ext: null, eth: null,
-    day: { high: num(m.regularMarketDayHigh) || null, low: num(m.regularMarketDayLow) || null } };
+    open, stale, session, warn: warn.length ? warn : null, ext: null, eth: null };
   if (t.dot === "ema") rec.dot = emaDot(s);
   else if (t.dot === "vix") rec.dot = price > 25 ? "red" : price >= 15 ? "yellow" : "green";
   if (key === base.cash) Object.assign(cash, { open, close: asOf, start });

@@ -1,12 +1,14 @@
 name: Market strip + deploy
 
-# Builds the GitHub Pages site from main and adds a fresh market.json + charts/ (no commits).
+# Builds the GitHub Pages site from main and adds a fresh market.json + live_base.json + charts/ (no commits).
 # Requires: Settings → Pages → Source = "GitHub Actions".
 on:
   schedule:
-    - cron: "2-59/15 9-23 * * 1-5"    # every 15 min from US pre-market to after-hours (UTC)
-    - cron: "2-59/15 0 * * 2-6"       # after-hours runs until 01:00 UTC in winter
-    - cron: "2,32 * * * *"         # every 30 min otherwise (FX, futures); off :00, where GitHub drops scheduled runs
+    # prices are live from the Cloudflare Worker (worker/); this build only refreshes daily data:
+    # chart history, stages, rotation, checks and live_base.json. Off :00, where GitHub drops scheduled runs.
+    - cron: "17 21 * * 1-5"         # after the US close (21:00 UTC winter / 20:00 summer): final daily bars
+    - cron: "17 12 * * 1-5"         # before the US open: overnight futures / FX / BTC bars
+    - cron: "17 12 * * 0,6"         # weekends: BTC daily bars
   push:
     branches: [main]               # journal sync pushes deploy right away
   workflow_dispatch:
