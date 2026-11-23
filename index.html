@@ -28,11 +28,11 @@ button:hover{border-color:var(--accent)}
 .marketStat{color:var(--muted);font-size:13.5px}
 .marketStat b{color:var(--text)}
 .topRight{min-width:0}
-.tickerBar{height:32px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:0 8px}
+.tickerBar{min-height:34px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:0 8px}
 .mktStrip{display:flex;align-items:center;justify-content:center;gap:18px;width:100%;flex:1 1 auto;overflow:hidden;font-size:13px;color:var(--muted);cursor:pointer;user-select:none;max-width:100%}
 .mktStrip .grp{display:flex;gap:18px;flex:1 1 auto;justify-content:center;min-width:0;overflow:hidden}
 .mktStrip .dt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}.mktStrip .dt.red{background:var(--bad)}.mktStrip .dt.yellow{background:var(--warn)}.mktStrip .dt.green{background:var(--good)}
-.mktStrip.full{gap:9px;font-size:12px}.mktStrip.full .st{padding:0 3px;margin-left:3px}.mktStrip .sep{width:1px;height:14px;background:var(--line);flex:0 0 auto}
+.mktStrip.full{gap:14px;font-size:14px}.mktStrip.wrap{flex-wrap:wrap;row-gap:3px;column-gap:30px!important;padding:4px 0}.mktStrip .fg{display:flex;align-items:center;gap:inherit;flex:0 0 auto}.mktStrip .fg+.fg{border-left:1px solid var(--line);padding-left:var(--sepPad,14px)}.mktStrip.wrap .fg{border-left:0;padding-left:0}.mktStrip.full .st{padding:0 3px;margin-left:3px}.mktStrip .sep{width:1px;height:14px;background:var(--line);flex:0 0 auto}
 .mktStrip .q{display:inline-block;will-change:transform,opacity,filter}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
@@ -929,11 +929,13 @@ function initUI() {
     if (!fade || qFull) {
       const by = Object.fromEntries(qItems.map((it) => [it.label, it])), used = new Set(FULL.flat());
       const gs = [...FULL.map((g) => g.map((l) => by[l]).filter(Boolean)), qItems.filter((it) => !used.has(it.label))].filter((g) => g.length);
-      el.textContent = ""; el.classList.add("full");
-      gs.forEach((g, i) => { if (i) { const sp = document.createElement("span"); sp.className = "sep"; el.append(sp); } g.forEach((it) => el.append(qEl(it))); });
+      el.textContent = ""; el.classList.add("full"); el.classList.remove("wrap");
+      gs.forEach((g) => { const f = document.createElement("span"); f.className = "fg"; g.forEach((it) => f.append(qEl(it))); el.append(f); });   // a group wraps as one unit
       el.style.fontSize = ""; el.style.gap = "";
-      for (let fs = 12, gap = 9; el.scrollWidth > el.clientWidth + 1 && fs > 11; ) { fs -= 0.25; gap = Math.max(6, gap - 1); el.style.fontSize = fs + "px"; el.style.gap = gap + "px"; }   // squeeze a little before giving up
+      for (let fs = 14, gap = 14; el.scrollWidth > el.clientWidth + 1 && fs > 13; ) { fs -= 0.25; gap = Math.max(9, gap - 1); el.style.fontSize = fs + "px"; el.style.gap = gap + "px"; }   // squeeze a little first
       qFull = el.scrollWidth <= el.clientWidth + 1;
+      // computer screens: never hide tickers - wrap onto a second line instead of rotating groups
+      if (!qFull && innerWidth > 700) { el.style.fontSize = ""; el.style.gap = ""; el.classList.add("wrap"); qFull = true; return; }
       if (!qFull) { el.style.fontSize = ""; el.style.gap = ""; }
       if (qFull) return;
       el.classList.remove("full");
