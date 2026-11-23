@@ -891,7 +891,7 @@ function initUI() {
   tick(); setInterval(tick, 15000);
   fetch("https://api.open-meteo.com/v1/forecast?latitude=42.6977&longitude=23.3219&current=temperature_2m&timezone=Europe%2FSofia")
     .then((r) => r.json()).then((j) => { if (Number.isFinite(j?.current?.temperature_2m)) $("weatherTemp").textContent = Math.round(j.current.temperature_2m) + "°C"; }).catch(() => {});
-  // market strip: renders from market.json (see loadMarket); rebuilt by .github/workflows/quotes.yml every 15 min in US hours, 30 min otherwise
+  // market strip: renders from market.json (see loadMarket) plus the live Worker prices every 60 s (see loadLive)
   const DOT = { red: "🔴", yellow: "🟡", green: "🟢" };
   const STAGE_NAME = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
   // shown in groups, rotating every 10 s; hover pauses, click jumps to the next group
@@ -968,9 +968,9 @@ function initUI() {
     if (err || !MKT) { el.classList.add("stale"); return; }
     qItems = MKT.strip.map((k) => MKT.quotes[k] && { ...MKT.quotes[k], label: k }).filter(Boolean);
     showPage(false);
-    const age = (Date.now() - Date.parse(MKT.updated)) / 60000;
+    const at = MKT.liveAt || MKT.updated, age = (Date.now() - Date.parse(at)) / 60000;
     el.classList.toggle("stale", age > 90);
-    el.title = "Market strip · " + MKT.source + " · built " + new Date(MKT.updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
+    el.title = "Market strip · " + MKT.source + (MKT.liveAt ? " · live, updated " : " · built ") + new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
       "\nClick a ticker for its chart\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
   });
@@ -1140,8 +1140,31 @@ async function loadMarket() {
     const j = await (await fetch(DATA_BASE + "market.json?t=" + Date.now())).json();
     if (!j || !j.quotes) throw new Error("bad snapshot");
     const changed = !MKT || MKT.updated !== j.updated; MKT = j;
+    if (LIVE && LIVE.updated > MKT.updated) applyLive();
     mktListeners.forEach((f) => f(changed));
   } catch (e) { mktListeners.forEach((f) => f(false, e)); }
+}
+// ---- Live prices: Cloudflare Worker (worker/worker.js), same source (Yahoo) and same rules as quotes.py ----
+// Overlays price / % changes / dots / PM-AH on the market.json snapshot every 60 s; stage, rotation and charts stay from the build.
+// Empty LIVE_URL = snapshot only (as before).
+const LIVE_URL = "";
+let LIVE = null;
+function applyLive() {
+  for (const [k, l] of Object.entries(LIVE.quotes)) {
+    const b = MKT.quotes[k]; if (!b) continue;
+    const r = { ...b, ...l, perf: { ...b.perf, ...l.perf }, source: "Yahoo Finance · live" };
+    for (const f of ["warn", "ext", "eth"]) if (l[f] == null) delete r[f];
+    MKT.quotes[k] = r;
+  }
+  MKT.liveAt = LIVE.updated;
+}
+async function loadLive() {
+  if (!LIVE_URL || !MKT) return;
+  try {
+    const j = await (await fetch(LIVE_URL, { cache: "no-store" })).json();
+    if (!j || !j.quotes || (LIVE && LIVE.updated === j.updated)) return;
+    LIVE = j; applyLive(); mktListeners.forEach((f) => f(true));
+  } catch (e) { /* keep the snapshot */ }
 }
 function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
@@ -1260,6 +1283,12 @@ async function drawChart(el, key, tf = "D") {
   // chart files come from the same run as market.json; their last bar closes at the snapshot price
   let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?v=" + encodeURIComponent(MKT?.updated || Date.now())).then((r) => r.json()), loadLwc()]);
   const L = window.LightweightCharts;
+  // live price: today's bar closes at it (new session -> new bar from the previous close)
+  if (rec?.session && rec.price) {
+    const last = d.bars[d.bars.length - 1], hi = Math.max(rec.price, rec.day?.high || 0), lo = Math.min(rec.price, rec.day?.low || Infinity);
+    if (rec.session === last[0]) { last[4] = rec.price; last[2] = Math.max(last[2], hi); last[3] = Math.min(last[3], lo); }
+    else if (rec.session > last[0]) d.bars.push([rec.session, rec.prevClose, hi, lo, rec.price, 0]);
+  }
   if (tf === "W") d = { ...d, bars: toWeekly(d.bars) };
   el.textContent = "";
     const chartObj = L.createChart(el, { autoSize: true,
@@ -1424,7 +1453,9 @@ function initViews() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeChart(); });
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
-  loadMarket(); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
+  loadMarket().then(loadLive); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
+  setInterval(() => { if (!document.hidden) loadLive(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadLive(); });
 }
 
 async function boot() {

@@ -61,6 +61,7 @@ EXT_HOURS = {"QQQ"}          # US-listed: also show the pre-market / after-hours
 NEAR_23H = {"NQ", "ES"}           # ~23h futures: outside US cash hours show the move since the 16:00 ET cash close
 US_CASH = {}                # filled by the QQQ fetch: open flag, last cash close, today's open time
 MAX_AGE_OPEN = 30 * 60       # seconds; older than this while the market is open = stale
+LIVE_BASE = {}               # key -> config + daily closes for the live-price Worker (worker/worker.js)
 
 
 def ema(s: pd.Series, n: int = 21) -> pd.Series:
@@ -165,6 +166,11 @@ def fetch(key, sym, name, dec, want_stage, dot_rule, max_chg, now):
     as_of = ts(meta.get("regularMarketTime"))
     tzname = meta.get("exchangeTimezoneName") or "UTC"
     reg = (meta.get("currentTradingPeriod") or {}).get("regular") or {}
+    # daily closes for the live-price Worker, saved before the checks so a ticker failing this run can still go live later
+    d = df.dropna(subset=["Close"]).tail(420)                # 420 days: covers YTD + 6M even for 7-day markets (BTC)
+    if len(d):
+        LIVE_BASE[key] = {"symbol": sym, "dec": dec, "dot": dot_rule, "max": max_chg,
+                          "closes": [[i.strftime("%Y-%m-%d"), round(float(c), dec + 2)] for i, c in zip(d.index.tz_convert(tzname), d["Close"])]}
 
     # ---- checks ----
     if not (math.isfinite(price) and price > 0 and math.isfinite(prev) and prev > 0):
@@ -296,6 +302,10 @@ def main() -> int:
     }
     with open("market.json", "w") as fh:
         json.dump(snap, fh, indent=1)
+    # live_base.json: what the live-price Worker needs to apply the same rules between builds (daily closes per ticker)
+    with open("live_base.json", "w") as fh:
+        json.dump({"updated": snap["updated"], "ext": sorted(EXT_HOURS), "near23h": sorted(NEAR_23H), "cash": "QQQ",
+                   "maxAgeOpen": MAX_AGE_OPEN, "periods": PERIODS, "tickers": LIVE_BASE}, fh, separators=(",", ":"))
     print(f"quotes: {len(quotes)} ({fresh} fresh)  failed: {len(failed)}", *failed, sep="\n  ")
     return 0
 
@@ -308,6 +318,10 @@ def restore() -> int:
     os.makedirs("charts", exist_ok=True)
     with open("market.json", "w") as fh:
         json.dump(snap, fh, indent=1)
+    base = previous_site("live_base.json")
+    if base:
+        with open("live_base.json", "w") as fh:
+            json.dump(base, fh, separators=(",", ":"))
     for key in snap.get("quotes", {}):
         chart = previous_site(f"charts/{key}.json")
         if chart:
