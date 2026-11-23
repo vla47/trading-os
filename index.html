@@ -102,7 +102,7 @@ canvas{width:100%;height:230px;display:block}
 .dq{font-size:14px;line-height:1.6}
 @media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.four{grid-template-columns:1fr}}
-@media(max-width:700px){.marketStat{display:none}.tickerBar{padding:0 2px}.liveTag{font-size:0;padding:2px;margin-right:2px}.liveTag.live::before,.liveTag.delayed::before{content:"●";font-size:10px}.mktStrip .st{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
+@media(max-width:700px){.marketStat{display:none}.tickerBar{padding:0 2px}.liveTag{font-size:0;padding:2px;margin-right:2px}.liveTag.peek{font-size:10px;padding:2px 6px}.liveTag.live::before,.liveTag.delayed::before{content:"●";font-size:10px}.mktStrip .st{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
 @media(max-width:420px){.metricGroup{grid-template-columns:1fr}}
 /* segmented control (header views, sector groups) */
 .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
@@ -1157,9 +1157,9 @@ let LIVE = null;
 function liveTagUpdate() {
   const t = $("liveTag"); if (!t || !MKT || !LIVE_URL) return;
   const live = !!MKT.liveAt && Date.now() - Date.parse(MKT.liveAt) < 3 * 60000;
-  const hm = (x) => new Date(x).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const hm = (x) => new Date(x).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   t.classList.remove("hidden"); t.classList.toggle("live", live); t.classList.toggle("delayed", !live);
-  t.textContent = live ? "LIVE" : "DELAYED";
+  t.textContent = (live ? "LIVE " : "DELAYED ") + hm(MKT.liveAt || MKT.updated);
   t.title = live ? "Live prices (Yahoo Finance via the Cloudflare Worker), updated " + hm(MKT.liveAt) + " · refresh every 60 s"
     : "Live prices not answering — showing " + (MKT.liveAt ? "the last live update from " + hm(MKT.liveAt) : "the site build from " + hm(MKT.updated));
 }
@@ -1469,6 +1469,7 @@ function initViews() {
   showView(v);
   loadMarket().then(loadLive); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
   setInterval(() => { if (!document.hidden) loadLive(); liveTagUpdate(); }, 60000);
+  $("liveTag").onclick = () => { const t = $("liveTag"); t.classList.add("peek"); clearTimeout(t._pk); t._pk = setTimeout(() => t.classList.remove("peek"), 4000); };
   document.addEventListener("visibilitychange", () => { if (!document.hidden) loadLive(); });
 }
 
