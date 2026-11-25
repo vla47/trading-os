@@ -1264,7 +1264,7 @@ function renderLeaders() {
   renderLeadersMini();
   const when = (s) => s ? new Date(s).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
   const c = LD.counts || {};
-  $("ldUpdated").textContent = (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
+  $("ldUpdated").textContent = (LD.preview ? "PREVIEW: biggest US stocks, not the filter · " : "") + (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
     "updated " + when(LD.updated) + (c.universe ? ` · ${c.passed} of ${c.universe} US stocks pass (${c.momentum} in the top 2%)` : "");
   const st = $("ldStale");
   st.classList.toggle("hidden", LD.status !== "stale");
