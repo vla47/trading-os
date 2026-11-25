@@ -285,7 +285,7 @@ def scan(hist, names):
         gap = (O[t] / C[t].shift(1) - 1).iloc[-63:] * 100
         vx = (V[t] / V[t].rolling(50, min_periods=20).mean()).iloc[-63:]
         epd = gap[(gap >= 10) & (vx >= 2)]
-        rows.append(dict(t=t, name=names.get(t, ""), rsr=int(rsr[t]), price=round(p, 2),
+        rows.append(dict(t=t, name=names.get(t, ""), rsr=int(rsr[t]), price=round(p, 2), d1=r1((p / c.iloc[-2] - 1) * 100),
                          p1=r1(P.at[t, "1M"]), p3=r1(P.at[t, "3M"]), p6=r1(P.at[t, "6M"]),
                          adr=round(adr, 1), dv=round(dv, 1), rsoff=round(rsoff, 1),
                          offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1),

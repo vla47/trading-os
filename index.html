@@ -218,6 +218,13 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.ldCard{margin-bottom:12px}.ldMini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+.lmRow{display:grid;grid-template-columns:62px 1fr 74px 66px 66px 40px 18px;align-items:center;gap:8px;height:28px;padding:0 6px;border-radius:6px;font-size:13px;font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
+.lmRow:hover{background:var(--panel2)}.lmRow a{color:var(--text);font-weight:800;text-decoration:none}.lmRow a:hover{color:var(--accent)}
+.lmRow .n{color:var(--muted);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.lmRow .r{text-align:right}
+.lmRow.h{height:22px;font-size:11.5px;color:var(--muted);border:0}.lmRow.h:hover{background:none}
+.tdot{width:8px;height:8px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
+@media(max-width:1000px){.ldMini{grid-template-columns:1fr}.lmRow{grid-template-columns:58px 1fr 70px 62px 62px 36px 14px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
 </style>
 </head>
@@ -328,9 +335,12 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
  </div>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
-  <div class="miniRow">
-  <div class="miniCard" id="mcQQQ" data-key="QQQ" data-name="Nasdaq 100" role="button" tabindex="0"><div class="miniSub">QQQ · loading…</div></div>
-  <div class="miniCard" id="mcBTC" data-key="BTC" data-name="Bitcoin" role="button" tabindex="0"><div class="miniSub">BTC · loading…</div></div>
+  <div class="panel assetCard ldCard">
+    <div class="assetHead">
+      <div><h2 class="secTitle2">Leaders</h2><div class="muted small" id="ldMiniSub">Loading…</div></div>
+      <button type="button" class="linkBtn" id="ldMiniAll">All leaders →</button>
+    </div>
+    <div id="ldMini" class="ldMini"></div>
   </div>
   <div class="panel assetCard">
     <div class="assetHead">
@@ -1212,10 +1222,28 @@ function showView(v) {
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
   $("leadersView").classList.toggle("hidden", v !== "leaders");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
-  if (v === "sectors") { loadSectors(); drawInline(); }
+  if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
 }
 
+// compact list on the Assets view: top 20 by RS Rating, close price and 1D / 1M / 3M
+function renderLeadersMini() {
+  const rows = (LD.rows || []).slice().sort((a, b) => b.rsr - a.rsr).slice(0, 20);
+  const c = LD.counts || {}, stale = LD.status === "stale";
+  $("ldMiniSub").innerHTML = (LD.preview ? '<span class="warn">Preview: biggest US stocks, not the filter</span> · ' : "") +
+    (stale ? '<span class="bad">⚠ not updated: ' + esc(LD.reason || "") + "</span>" :
+    (LD.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close" : "") +
+    (c.passed != null && !LD.preview ? ` · ${c.passed} pass the filter · sorted by RS Rating` : ""));
+  const p = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
+  const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
+  const head = '<div class="lmRow h"><span>Ticker</span><span></span><span class="r">Price</span><span class="r">1D</span><span class="r">3M</span><span class="r">RS</span><span></span></div>';
+  const half = Math.ceil(rows.length / 2), cols = [rows.slice(0, half), rows.slice(half)];
+  $("ldMini").innerHTML = !rows.length ? '<div class="muted small">No stock passes every filter today.</div>' : cols.map((cr) => "<div>" + head + cr.map((r) =>
+    `<div class="lmRow" title="${esc(r.name)}\n1M ${r.p1 ?? "—"}% · 3M ${r.p3 ?? "—"}% · 6M ${r.p6 ?? "—"}%\n${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}">` +
+    `<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(r.t)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="n">${esc(r.name)}</span>` +
+    `<span class="r">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${p(r.d1)}</span><span class="r">${p(r.p3)}</span>` +
+    `<span class="r"><b>${r.rsr ?? "—"}</b></span><span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier || "")}"></span></div>`).join("") + "</div>").join("");
+}
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
 async function loadLeaders() {
@@ -1224,11 +1252,12 @@ async function loadLeaders() {
     const r = await fetch(DATA_BASE + "leaders.json?t=" + Date.now(), { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     LD = await r.json(); ldAt = Date.now();
-  } catch (e) { if (!LD) { $("ldUpdated").textContent = "Leaders list not published yet (runs after the US close)."; return; } }
+  } catch (e) { if (!LD) { $("ldUpdated").textContent = $("ldMiniSub").textContent = "Leaders list not published yet (runs overnight after the US close)."; return; } }
   renderLeaders();
 }
 function renderLeaders() {
   if (!LD) return;
+  renderLeadersMini();
   const when = (s) => s ? new Date(s).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
   const c = LD.counts || {};
   $("ldUpdated").textContent = (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
@@ -1527,6 +1556,7 @@ new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHea
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
+  $("ldMiniAll").onclick = () => showView("leaders");
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
