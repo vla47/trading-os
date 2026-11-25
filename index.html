@@ -338,7 +338,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
   <div class="panel assetCard ldCard">
     <div class="assetHead">
       <div><h2 class="secTitle2">Leaders</h2><div class="muted small" id="ldMiniSub">Loading…</div></div>
-      <button type="button" class="linkBtn" id="ldMiniAll">All leaders →</button>
+      <button type="button" class="linkBtn" id="ldMiniAll">Show all</button>
     </div>
     <div id="ldMini" class="ldMini"></div>
   </div>
@@ -1226,9 +1226,13 @@ function showView(v) {
   if (v === "leaders") loadLeaders();
 }
 
+let ldMiniAll = false;
 // compact list on the Assets view: top 20 by RS Rating, close price and 1D / 1M / 3M
 function renderLeadersMini() {
-  const rows = (LD.rows || []).slice().sort((a, b) => b.rsr - a.rsr).slice(0, 20);
+  const all = (LD.rows || []).slice().sort((a, b) => b.rsr - a.rsr), rows = ldMiniAll ? all : all.slice(0, 20);
+  const btn = $("ldMiniAll");
+  btn.classList.toggle("hidden", all.length <= 20);
+  btn.textContent = ldMiniAll ? "Show top 20" : `Show all ${all.length}`;
   const c = LD.counts || {}, stale = LD.status === "stale";
   $("ldMiniSub").innerHTML = (LD.preview ? '<span class="warn">Preview: biggest US stocks, not the filter</span> · ' : "") +
     (stale ? '<span class="bad">⚠ not updated: ' + esc(LD.reason || "") + "</span>" :
@@ -1556,7 +1560,7 @@ new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHea
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
-  $("ldMiniAll").onclick = () => showView("leaders");
+  $("ldMiniAll").onclick = () => { ldMiniAll = !ldMiniAll; renderLeadersMini(); };
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
