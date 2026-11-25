@@ -31,3 +31,7 @@ quotes.json
 sectors.json
 charts/
 live_base.json
+
+# Leaders scan: lives on the data branch
+leaders.json
+data/

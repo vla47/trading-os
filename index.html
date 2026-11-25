@@ -209,13 +209,23 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .miniTop .dt{width:10px;height:10px;margin-right:2px;align-self:center}
 .setRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 10px;font-size:13px;color:var(--muted)}
 .setRow .seg button{padding:3px 9px;font-size:12.5px}
+/* leaders */
+.ldTbl td,.ldTbl th{font-size:13px;padding:6px 6px;font-variant-numeric:tabular-nums}
+.ldTbl th[data-s]{cursor:pointer}.ldTbl th[data-s].on{color:var(--text)}
+.ldTbl a{color:var(--text);font-weight:700;text-decoration:none}.ldTbl a:hover{color:var(--accent)}
+.ldTbl .nmC{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);text-align:left}
+.tier{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px;background:var(--panel2);color:var(--muted);cursor:help}
+.tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
+.ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
 </style>
 </head>
 <body>
 <div class="topWrap">
 <header class="topbar">
   <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b>
-  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button></nav></div>
+  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button><button type="button" data-view="leaders">Leaders</button></nav></div>
   <div class="topRight">
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
     <div class="marketStat"><b id="clock">--- -- ---  --:--</b></div>
@@ -334,6 +344,20 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div id="secRows" class="secCols"><div><div class="secColT">Sectors</div><div id="secRowsS"></div></div><div><div class="secColT">Themes</div><div id="secRowsT"></div></div></div>
     <div id="secHeat" class="heatEl hidden"></div>
     <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart<span id="mktChecks"></span></div>
+  </div>
+ </section>
+
+ <section id="leadersView" class="hidden" aria-label="Leaders">
+  <div class="panel assetCard">
+    <div class="assetHead">
+      <div><h2 class="secTitle2">Leaders</h2><div class="muted small" id="ldUpdated">Loading…</div></div>
+      <div class="assetCtl">
+        <div class="tseg" id="ldTier"><button type="button" data-t="all" class="on">All</button><button type="button" data-t="backed" title="Hide Not backed">Backed</button><button type="button" data-t="real">Real leaders</button></div>
+      </div>
+    </div>
+    <div id="ldStale" class="ldStale hidden"></div>
+    <div class="collapseBody" id="ldBody"></div>
+    <div class="muted small assetFoot" id="ldFoot"></div>
   </div>
  </section>
 </main>
@@ -1186,8 +1210,53 @@ function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
   $("journalView").classList.toggle("hidden", v !== "journal");
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
+  $("leadersView").classList.toggle("hidden", v !== "leaders");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); }
+  if (v === "leaders") loadLeaders();
+}
+
+// ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
+let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
+async function loadLeaders() {
+  if (LD && Date.now() - ldAt < 10 * 60000) return renderLeaders();
+  try {
+    const r = await fetch(DATA_BASE + "leaders.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    LD = await r.json(); ldAt = Date.now();
+  } catch (e) { if (!LD) { $("ldUpdated").textContent = "Leaders list not published yet (runs after the US close)."; return; } }
+  renderLeaders();
+}
+function renderLeaders() {
+  if (!LD) return;
+  const when = (s) => s ? new Date(s).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+  const c = LD.counts || {};
+  $("ldUpdated").textContent = (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
+    "updated " + when(LD.updated) + (c.universe ? ` · ${c.passed} of ${c.universe} US stocks pass (${c.momentum} in the top 2%)` : "");
+  const st = $("ldStale");
+  st.classList.toggle("hidden", LD.status !== "stale");
+  if (LD.status === "stale") st.textContent = "⚠ Not updated (check " + when(LD.checked) + "): " + (LD.reason || "unknown error") + ". Showing the last good list.";
+  const keep = (r) => ldTier === "all" || (ldTier === "real" ? r.tier === "Real leader" : r.tier !== "Not backed");
+  const rows = (LD.rows || []).filter(keep).sort((a, b) => (b[ldSort] ?? -1e9) - (a[ldSort] ?? -1e9) || b.rsr - a.rsr);
+  const p = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
+  const n1 = (v, suf = "") => v == null ? "—" : v.toFixed(1) + suf;
+  const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
+  const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
+  const hd = [["#", null, "l"], ["Ticker", null, "l"], ["Name", null, "l"], ["RS", "rsr"], ["Tier", null], ["1M", "p1"], ["3M", "p3"], ["6M", "p6"], ["ADR", "adr"], ["$Vol M", "dv"], ["RS line vs high", "rsoff"], ["vs 52w high", "offhi"], ["Rev YoY", "revYoY"], ["EP", null]];
+  let h = '<table class="ldTbl"><thead><tr>' + hd.map(([t, k, cl]) => `<th${cl ? ` class="${cl}"` : ""}${k ? ` data-s="${k}"${k === ldSort ? ' class="on"' : ""} title="Sort by ${t}"` : ""}>${t}${k === ldSort ? " ↓" : ""}</th>`).join("") + "</tr></thead><tbody>";
+  rows.forEach((r, i) => {
+    const tip = [r.tier + (r.why ? " — " + r.why : ""), r.revYoY != null ? `Revenue YoY ${r.revYoY}% · QoQ ${r.qoq ?? "—"}% (prev ${r.qoqPrev ?? "—"}%)` : "", r.eps != null ? `EPS ${r.eps} vs ${r.epsYrAgo ?? "—"} a year ago` : "", r.mcapB ? `Market cap $${r.mcapB}B` : "", r.lastQ ? "Last quarter " + r.lastQ : ""].filter(Boolean).join("\n");
+    h += `<tr><td class="l muted">${i + 1}</td><td class="l"><a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(r.t)}" target="_blank" rel="noopener" title="Open in TradingView">${esc(r.t)}</a></td>` +
+      `<td class="nmC" title="${esc(r.name)}">${esc(r.name)}</td><td><span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span></td>` +
+      `<td><span class="tier ${tcls[r.tier] || ""}" title="${esc(tip)}">${esc(r.tier || "—")}</span></td>` +
+      `<td>${p(r.p1)}</td><td>${p(r.p3)}</td><td>${p(r.p6)}</td><td>${n1(r.adr, "%")}</td><td>${r.dv == null ? "—" : Math.round(r.dv).toLocaleString()}</td>` +
+      `<td>${p(r.rsoff)}</td><td>${p(r.offhi)}</td><td>${p(r.revYoY)}</td><td class="muted">${r.ep ? esc(r.ep.slice(5)) : ""}</td></tr>`;
+  });
+  h += "</tbody></table>";
+  $("ldBody").innerHTML = rows.length ? h : '<div class="empty">No stock passes every filter today.</div>';
+  $("ldBody").querySelectorAll("th[data-s]").forEach((th) => th.onclick = () => { ldSort = th.dataset.s; renderLeaders(); });
+  $("ldFoot").innerHTML = "Filters (all must pass) · source:<ol class=\"ldRules\">" + (LD.rules || []).map(([r, s]) => `<li>${esc(r)} <span class="tag">${esc(s)}</span></li>`).join("") +
+    "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a column header to sort, a ticker for its chart. " + esc(LD.source || "");
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
@@ -1458,6 +1527,7 @@ new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHea
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
+  document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
   });

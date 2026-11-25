@@ -1,0 +1,57 @@
+name: Leaders scan
+
+# Daily Leaders list (scripts/leaders.py). Price history, fundamentals cache and leaders.json live on the `data`
+# branch (one commit, force-pushed each run, so the repo does not grow). main and gh-pages are never touched.
+# After a run the Pages deploy is started so the page shows the new list.
+# Needs the repository secret POLYGON_API_KEY.
+on:
+  schedule:
+    - cron: "47 21 * * 1-5"   # after the US close
+    - cron: "47 11 * * 2-6"   # next morning: catches the previous session if it was not published yet
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: leaders
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150      # first run loads ~300 sessions at 5 requests/minute (~65 min)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas pyarrow yfinance
+      - name: Restore cache from the data branch
+        run: |
+          mkdir -p data
+          if git fetch --depth 1 origin data 2>/dev/null; then
+            for f in history.parquet tickers.json state.json fund.json leaders.json; do
+              git show FETCH_HEAD:$f > data/$f 2>/dev/null || rm -f data/$f
+            done
+          fi
+          ls -la data
+      - name: Scan
+        env:
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: python scripts/leaders.py --data data
+      - name: Save to the data branch
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          cd data
+          git init -q && git checkout -q -b data
+          git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "Leaders $(date -u +%F)"
+          AUTH="Authorization: Basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+          git -c http.extraHeader="$AUTH" push -q -f "https://github.com/${{ github.repository }}" data:data
+      - name: Publish (Pages deploy)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run quotes.yml --ref main
