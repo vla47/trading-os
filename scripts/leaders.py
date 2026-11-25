@@ -129,8 +129,23 @@ def update_history(d, state, names):
     missing = [x for x in want if x not in have and x not in holidays]
     print(f"history: {len(have)} sessions cached, fetching {len(missing)}")
     new = []
+    def save():                           # checkpoint: a later failure never loses the sessions already fetched
+        h = pd.concat([hist] + new, ignore_index=True) if new else hist
+        for c in "ohlcv":
+            h[c] = h[c].astype("float32")
+        h.to_parquet(path, index=False)
+        state["holidays"] = sorted(holidays)
+        jsave(os.path.join(d, "state.json"), state)
     for i, ds in enumerate(missing):
-        j = poly(f"/v2/aggs/grouped/locale/us/market/stocks/{ds}", adjusted="true")
+        try:
+            j = poly(f"/v2/aggs/grouped/locale/us/market/stocks/{ds}", adjusted="true")
+        except urllib.error.HTTPError as e:
+            # free plan: a session is published after its end of day (403 NOT_AUTHORIZED before that)
+            if e.code == 403 and date.fromisoformat(ds) >= today - timedelta(days=1):
+                print(f"  {ds} not published yet, next run")
+                continue
+            save()
+            raise
         rows = [r for r in j.get("results") or [] if r.get("T") in keep and r.get("c")]
         if not rows:
             if date.fromisoformat(ds) < today - timedelta(days=3):
@@ -141,6 +156,7 @@ def update_history(d, state, names):
         new.append(df)
         if i % 25 == 0:
             print(f"  {i + 1}/{len(missing)} {ds} {len(df)} stocks", flush=True)
+            save()
     if new:
         hist = pd.concat([hist] + new, ignore_index=True)
     hist = apply_splits(hist, state)

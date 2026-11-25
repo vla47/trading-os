@@ -6,8 +6,9 @@ name: Leaders scan
 # Needs the repository secret POLYGON_API_KEY.
 on:
   schedule:
-    - cron: "47 21 * * 1-5"   # after the US close
-    - cron: "47 11 * * 2-6"   # next morning: catches the previous session if it was not published yet
+    # Polygon free plan publishes a session only after its end of day (~20:00 ET), so the scan runs overnight
+    - cron: "17 1 * * 2-6"    # 03:17 Sofia (20:17 ET): the session that just ended
+    - cron: "47 11 * * 2-6"   # 13:47 Sofia backup, before the US open: catches anything missed
   workflow_dispatch:
 
 permissions:
