@@ -13,9 +13,10 @@ Label only (nothing removed): fundamentals tier Real leader / Leader w/ caveat /
 Data (cached on the `data` branch, see .github/workflows/leaders.yml):
   history.parquet  daily OHLCV of US common stocks + ADRs (Nasdaq/NYSE/AMEX) and SPY, ~300 sessions
   tickers.json     universe from Polygon reference tickers (refreshed weekly)
-  state.json       holidays seen, splits applied
+  state.json       holidays seen, date each session was fetched, splits applied
   fund.json        fundamentals per ticker (refreshed weekly)
   leaders.json     what the page shows
+  lc/<T>.json      daily bars of each listed stock for the page's candle chart (rebuilt every run)
 
 Checks before publishing: SPY and >= 90% of the previous session's stocks have the latest bar, latest bar no older than
 4 days. If a check fails the previous rows are kept and the file is marked stale with the reason.
@@ -123,6 +124,7 @@ def update_history(d, state, names):
     hist = pd.read_parquet(path) if os.path.exists(path) else pd.DataFrame(columns=["d", "T", "o", "h", "l", "c", "v"])
     have = set(hist["d"].unique()) if len(hist) else set()
     holidays = set(state.get("holidays", []))
+    fetched = state.setdefault("fetched", {})
     keep = set(names) | {"SPY"}
     today = date.today()
     want = [x.isoformat() for x in weekdays_back(int(SESSIONS * 7 / 5) + 20)]
@@ -154,6 +156,7 @@ def update_history(d, state, names):
         df = pd.DataFrame(rows)[["T", "o", "h", "l", "c", "v"]]
         df["d"] = ds
         new.append(df)
+        fetched[ds] = today.isoformat()   # Polygon adjusts bars for splits up to this date
         if i % 25 == 0:
             print(f"  {i + 1}/{len(missing)} {ds} {len(df)} stocks", flush=True)
             save()
@@ -162,6 +165,7 @@ def update_history(d, state, names):
     hist = apply_splits(hist, state)
     days = sorted(hist["d"].unique())[-SESSIONS:]
     hist = hist[hist["d"].isin(days)]
+    state["fetched"] = {k: v for k, v in fetched.items() if k in set(days)}
     for c in "ohlcv":
         hist[c] = hist[c].astype("float32")
     hist.to_parquet(path, index=False)
@@ -170,10 +174,17 @@ def update_history(d, state, names):
 
 
 def apply_splits(hist, state):
-    """Bars fetched before a split are on the old share basis: rescale them once per split."""
+    """Rescale bars that are on the old share basis.
+
+    Bars come with adjusted=true, so a bar is already on the new basis if it was fetched on or after the split's
+    execution date. Only bars fetched BEFORE the split are rescaled (state["fetched"] = session -> fetch date).
+    """
     if not len(hist):
         return hist
     done = set(state.get("splits", []))
+    fetched = state.setdefault("fetched", {})
+    if state.get("splits_fix") != 1:
+        hist = undo_double_splits(hist, state, done, fetched)
     first = min(hist["d"])
     j = poly("/v3/reference/splits", **{"execution_date.gte": (date.today() - timedelta(days=30)).isoformat(), "limit": 1000})
     for s in j.get("results", []):
@@ -181,12 +192,36 @@ def apply_splits(hist, state):
         if sid in done or ex > date.today().isoformat() or ex <= first or not s.get("split_from") or not s.get("split_to"):
             continue
         k = s["split_from"] / s["split_to"]          # 1-for-2 split: old prices x 0.5
-        m = (hist["T"] == t) & (hist["d"] < ex)
+        old = {d for d, f in fetched.items() if d < ex and f < ex}
+        m = (hist["T"] == t) & hist["d"].isin(old)
         if m.any():
             hist.loc[m, ["o", "h", "l", "c"]] *= k
             hist.loc[m, "v"] /= k
         done.add(sid)
     state["splits"] = sorted(done)[-2000:]
+    return hist
+
+
+def undo_double_splits(hist, state, done, fetched):
+    """One-time repair (Nov 2026): the first full load fetched every session on 2026-11-25, already split-adjusted,
+    and the old code rescaled the bars again for each split since 2026-10-26. Undo those rescales once."""
+    load = "2026-11-25"
+    for d in hist["d"].unique():
+        fetched.setdefault(d, load)
+    j = poly("/v3/reference/splits", **{"execution_date.gte": "2026-10-01", "limit": 1000})
+    n = 0
+    for s in j.get("results", []):
+        sid, t, ex = s.get("id"), s.get("ticker"), s.get("execution_date", "")
+        if sid not in done or not s.get("split_from") or not s.get("split_to") or ex > load:
+            continue
+        k = s["split_from"] / s["split_to"]
+        m = (hist["T"] == t) & (hist["d"] < ex)
+        if m.any():
+            hist.loc[m, ["o", "h", "l", "c"]] /= k
+            hist.loc[m, "v"] *= k
+            n += 1
+    print(f"split repair: undid {n} double adjustments")
+    state["splits_fix"] = 1
     return hist
 
 
@@ -293,6 +328,19 @@ def scan(hist, names):
     return last, len(live), int(mom.sum()), rows
 
 
+def write_charts(d, hist, tickers):
+    """Candle chart data for the page, same bars the filter used: lc/<T>.json = {symbol, dec, bars: [[d,o,h,l,c,v]]}."""
+    out = os.path.join(d, "lc")
+    os.makedirs(out, exist_ok=True)
+    for f in os.listdir(out):
+        os.remove(os.path.join(out, f))
+    sub = hist[hist["T"].isin(tickers)].sort_values("d")
+    for t, g in sub.groupby("T"):
+        bars = [[r.d, round(float(r.o), 2), round(float(r.h), 2), round(float(r.l), 2), round(float(r.c), 2), int(r.v)]
+                for r in g.itertuples() if r.c == r.c]
+        jsave(os.path.join(out, t + ".json"), {"key": t, "symbol": t, "dec": 2, "bars": bars})
+
+
 def r1(x):
     return None if pd.isna(x) else round(float(x), 1)
 
@@ -341,6 +389,7 @@ def main():
                      eps=f.get("eps"), epsYrAgo=f.get("epsYrAgo"),
                      mcapB=round(f["mcap"] / 1e9, 1) if f.get("mcap") else None, lastQ=f.get("lastQ"))
         rows.sort(key=lambda r: (-r["rsr"], -(r["p3"] or 0)))
+        write_charts(a.data, hist, [r["t"] for r in rows])
         res = {"status": "ok", "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": last,
                "source": "Polygon.io (Massive) daily bars · fundamentals Yahoo Finance",
                "counts": {"universe": n_live, "momentum": n_mom, "passed": len(rows)}, "rules": RULES, "rows": rows}

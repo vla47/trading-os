@@ -218,13 +218,17 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.ldCard{margin-bottom:12px}.ldMini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
-.lmRow{display:grid;grid-template-columns:62px 1fr 74px 66px 66px 40px 18px;align-items:center;gap:8px;height:28px;padding:0 6px;border-radius:6px;font-size:13px;font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
-.lmRow:hover{background:var(--panel2)}.lmRow a{color:var(--text);font-weight:800;text-decoration:none}.lmRow a:hover{color:var(--accent)}
-.lmRow .n{color:var(--muted);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.lmRow .r{text-align:right}
-.lmRow.h{height:22px;font-size:11.5px;color:var(--muted);border:0}.lmRow.h:hover{background:none}
-.tdot{width:8px;height:8px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
-@media(max-width:1000px){.ldMini{grid-template-columns:1fr}.lmRow{grid-template-columns:58px 1fr 70px 62px 62px 36px 14px}}
+.ldList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+.lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
+.lsRow:hover{background:var(--panel2)}.lsRow .r{text-align:right}
+.lsRow .tk{font-size:21px;font-weight:800;line-height:1.1;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
+.lsRow .n{display:block;color:var(--muted);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.lsRow .px{font-weight:700}
+.lsRow.h{min-height:22px;font-size:11.5px;color:var(--muted);border:0;cursor:default}.lsRow.h:hover{background:none}
+.tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
+.ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
+@media(max-width:1200px){.ldList{grid-template-columns:1fr}}
+@media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m{display:none}.lsRow .tk{font-size:19px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
 </style>
 </head>
@@ -335,13 +339,6 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
  </div>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
-  <div class="panel assetCard ldCard">
-    <div class="assetHead">
-      <div><h2 class="secTitle2">Leaders</h2><div class="muted small" id="ldMiniSub">Loading…</div></div>
-      <button type="button" class="linkBtn" id="ldMiniAll">Show all</button>
-    </div>
-    <div id="ldMini" class="ldMini"></div>
-  </div>
   <div class="panel assetCard">
     <div class="assetHead">
       <div><h2 class="secTitle2">Where money is rotating</h2><div class="muted small" id="secUpdated"></div></div>
@@ -366,7 +363,8 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
       </div>
     </div>
     <div id="ldStale" class="ldStale hidden"></div>
-    <div class="collapseBody" id="ldBody"></div>
+    <div id="ldList" class="ldList"></div>
+    <details class="ldDet"><summary class="muted small">Details table (ADR, $ volume, RS line, 52w high, revenue, EP)</summary><div id="ldBody"></div></details>
     <div class="muted small assetFoot" id="ldFoot"></div>
   </div>
  </section>
@@ -1222,32 +1220,10 @@ function showView(v) {
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
   $("leadersView").classList.toggle("hidden", v !== "leaders");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
-  if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
+  if (v === "sectors") { loadSectors(); drawInline(); }
   if (v === "leaders") loadLeaders();
 }
 
-let ldMiniAll = false;
-// compact list on the Assets view: top 20 by RS Rating, close price and 1D / 1M / 3M
-function renderLeadersMini() {
-  const all = (LD.rows || []).slice().sort((a, b) => b.rsr - a.rsr), rows = ldMiniAll ? all : all.slice(0, 20);
-  const btn = $("ldMiniAll");
-  btn.classList.toggle("hidden", all.length <= 20);
-  btn.textContent = ldMiniAll ? "Show top 20" : `Show all ${all.length}`;
-  const c = LD.counts || {}, stale = LD.status === "stale";
-  $("ldMiniSub").innerHTML = (LD.preview ? '<span class="warn">Preview: biggest US stocks, not the filter</span> · ' : "") +
-    (stale ? '<span class="bad">⚠ not updated: ' + esc(LD.reason || "") + "</span>" :
-    (LD.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close" : "") +
-    (c.passed != null && !LD.preview ? ` · ${c.passed} pass the filter · sorted by RS Rating` : ""));
-  const p = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
-  const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const head = '<div class="lmRow h"><span>Ticker</span><span></span><span class="r">Price</span><span class="r">1D</span><span class="r">3M</span><span class="r">RS</span><span></span></div>';
-  const half = Math.ceil(rows.length / 2), cols = [rows.slice(0, half), rows.slice(half)];
-  $("ldMini").innerHTML = !rows.length ? '<div class="muted small">No stock passes every filter today.</div>' : cols.map((cr) => "<div>" + head + cr.map((r) =>
-    `<div class="lmRow" title="${esc(r.name)}\n1M ${r.p1 ?? "—"}% · 3M ${r.p3 ?? "—"}% · 6M ${r.p6 ?? "—"}%\n${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}">` +
-    `<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(r.t)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="n">${esc(r.name)}</span>` +
-    `<span class="r">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${p(r.d1)}</span><span class="r">${p(r.p3)}</span>` +
-    `<span class="r"><b>${r.rsr ?? "—"}</b></span><span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier || "")}"></span></div>`).join("") + "</div>").join("");
-}
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
 async function loadLeaders() {
@@ -1256,12 +1232,11 @@ async function loadLeaders() {
     const r = await fetch(DATA_BASE + "leaders.json?t=" + Date.now(), { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     LD = await r.json(); ldAt = Date.now();
-  } catch (e) { if (!LD) { $("ldUpdated").textContent = $("ldMiniSub").textContent = "Leaders list not published yet (runs overnight after the US close)."; return; } }
+  } catch (e) { if (!LD) { $("ldUpdated").textContent = "Leaders list not published yet (runs overnight after the US close)."; return; } }
   renderLeaders();
 }
 function renderLeaders() {
   if (!LD) return;
-  renderLeadersMini();
   const when = (s) => s ? new Date(s).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
   const c = LD.counts || {};
   $("ldUpdated").textContent = (LD.preview ? "PREVIEW: biggest US stocks, not the filter · " : "") + (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
@@ -1287,9 +1262,20 @@ function renderLeaders() {
   });
   h += "</tbody></table>";
   $("ldBody").innerHTML = rows.length ? h : '<div class="empty">No stock passes every filter today.</div>';
+  // main view: big tickers, click = candle chart (same chart as the top bar)
+  const lhead = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
+  const short = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary Shares.*)$/i, "").replace(/,?\s*Inc\.?$/i, "").trim();
+  const lrow = (r) => `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}\nADR ${n1(r.adr, "%")} · $vol ${r.dv == null ? "—" : Math.round(r.dv)}M · RS line ${r.rsoff ?? "—"}% vs high\nClick for the chart">` +
+    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(short(r.name))}</span></span>` +
+    `<span class="r px">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${p(r.d1)}</span><span class="r c1m">${p(r.p1)}</span><span class="r">${p(r.p3)}</span><span class="r c6m">${p(r.p6)}</span>` +
+    `<span class="r"><span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span></span><span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier || "")}"></span></div>`;
+  const half = Math.ceil(rows.length / 2);
+  $("ldList").innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
+    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + lhead + cr.map(lrow).join("") + "</div>").join("");
+  $("ldList").querySelectorAll(".lsRow[data-t]").forEach((el) => el.onclick = () => openChart(el.dataset.t, el.dataset.n, null, "lc/" + encodeURIComponent(el.dataset.t) + ".json"));
   $("ldBody").querySelectorAll("th[data-s]").forEach((th) => th.onclick = () => { ldSort = th.dataset.s; renderLeaders(); });
   $("ldFoot").innerHTML = "Filters (all must pass) · source:<ol class=\"ldRules\">" + (LD.rules || []).map(([r, s]) => `<li>${esc(r)} <span class="tag">${esc(s)}</span></li>`).join("") +
-    "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a column header to sort, a ticker for its chart. " + esc(LD.source || "");
+    "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a stock for its candle chart; in the details table click a column header to sort. Green dot = Real leader, amber = Leader w/ caveat. " + esc(LD.source || "");
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
@@ -1395,11 +1381,12 @@ function toWeekly(bars) {
   }
   return out;
 }
-async function drawChart(el, key, tf = "D") {
-  if (!MKT) await loadMarket();
-  const rec = MKT?.quotes?.[key];
+async function drawChart(el, key, tf = "D", src) {
+  if (!MKT && !src) await loadMarket();
+  const rec = src ? null : MKT?.quotes?.[key];
   // chart files come from the same run as market.json; their last bar closes at the snapshot price
-  let [d] = await Promise.all([fetch(DATA_BASE + "charts/" + encodeURIComponent(key) + ".json?v=" + encodeURIComponent(MKT?.updated || Date.now())).then((r) => r.json()), loadLwc()]);
+  const url = src ? src + "?v=" + encodeURIComponent(LD?.updated || Date.now()) : "charts/" + encodeURIComponent(key) + ".json?v=" + encodeURIComponent(MKT?.updated || Date.now());
+  let [d] = await Promise.all([fetch(DATA_BASE + url).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }), loadLwc()]);
   const L = window.LightweightCharts;
   // live price: today's bar closes at it (new session -> new bar from the previous close)
   if (rec?.session && rec.price) {
@@ -1447,20 +1434,22 @@ async function drawChart(el, key, tf = "D") {
       };
       chartObj.timeScale().subscribeVisibleLogicalRangeChange(upd); upd(chartObj.timeScale().getVisibleLogicalRange());
     }
-  const px = rec ? Number(rec.price).toLocaleString("en-US", { minimumFractionDigits: rec.dec, maximumFractionDigits: rec.dec }) : d.bars[d.bars.length - 1][4];
+  const lb = d.bars[d.bars.length - 1], pb = d.bars[d.bars.length - 2];
+  const px = rec ? Number(rec.price).toLocaleString("en-US", { minimumFractionDigits: rec.dec, maximumFractionDigits: rec.dec }) : lb[4].toFixed(d.dec);
+  const chg = rec ? rec.chg : pb ? (lb[4] / pb[4] - 1) * 100 : null;
   const asOf = rec?.asOf ? " · " + new Date(rec.asOf).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
   el.title = qInfo(rec);
-  return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · ${px} (${fmtPct(rec?.chg)})${qStale(rec) ? " ⚠ stale" : ""}`, asOf };
+  return { chart: chartObj, d, sub: `${d.symbol} · ${tf === "W" ? "weekly" : "daily"} · ${px} (${fmtPct(chg)})${src ? " · " + lb[0] + " close" : qStale(rec) ? " ⚠ stale" : ""}`, asOf };
 }
-let chartKey = null, chartName = null;
-async function openChart(key, name, tf) {
-  chartKey = key; chartName = name; if (tf) chartTfNow = tf;
+let chartKey = null, chartName = null, chartSrc = null;
+async function openChart(key, name, tf, src) {
+  chartKey = key; chartName = name; chartSrc = src || null; if (tf) chartTfNow = tf;
   $("chartModal").classList.remove("hidden"); $("chartTitle").textContent = key; $("chartSub").textContent = name && name !== key ? name : "Loading…";
   $("chartTf").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.tf === chartTfNow));
   $("chartLeg").innerHTML = LEGEND[chartTfNow];
   try {
     if (chartObj) { chartObj.remove(); chartObj = null; }
-    const r = await drawChart($("chartEl"), key, chartTfNow);
+    const r = await drawChart($("chartEl"), key, chartTfNow, chartSrc);
     chartObj = r.chart;
     $("chartSub").textContent = `${name && name !== key ? name + " · " : ""}${r.sub}${r.asOf}`;
   } catch (e) { $("chartSub").textContent = "Chart data not available yet."; }
@@ -1472,7 +1461,7 @@ let chartTfNow = "W";   // the full chart opens weekly; D/W is remembered
 try { chartTfNow = localStorage.getItem("tradingOS.chartTfModal") || "W"; } catch (e) {}
 $("chartTf").querySelectorAll("button").forEach((b) => b.onclick = () => {
   chartTfNow = b.dataset.tf; try { localStorage.setItem("tradingOS.chartTfModal", chartTfNow); } catch (e) {}
-  if (chartKey) openChart(chartKey, chartName);
+  if (chartKey) openChart(chartKey, chartName, null, chartSrc);
 });
 // US cash session (Mon-Fri 9:30-16:00 New York): extended-hours prices are hidden while it is open
 function usCashOpen(now = new Date()) {
@@ -1560,7 +1549,6 @@ new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHea
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
-  $("ldMiniAll").onclick = () => { ldMiniAll = !ldMiniAll; renderLeadersMini(); };
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();

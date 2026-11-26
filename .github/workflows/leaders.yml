@@ -36,6 +36,7 @@ jobs:
             for f in history.parquet tickers.json state.json fund.json leaders.json; do
               git show FETCH_HEAD:$f > data/$f 2>/dev/null || rm -f data/$f
             done
+            git archive FETCH_HEAD lc 2>/dev/null | tar -x -C data || true   # chart files, kept if the scan fails
           fi
           ls -la data
       - name: Scan

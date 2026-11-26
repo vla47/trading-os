@@ -43,6 +43,8 @@ jobs:
           [ -d charts ] && cp -r charts _site/ || true
           # Leaders list: produced by leaders.yml on the data branch
           git fetch --depth 1 origin data 2>/dev/null && git show FETCH_HEAD:leaders.json > _site/leaders.json || rm -f _site/leaders.json
+          # candle chart data for the listed leaders (lc/<ticker>.json)
+          git archive FETCH_HEAD lc 2>/dev/null | tar -x -C _site || true
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
