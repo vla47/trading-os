@@ -17,6 +17,7 @@ Data (cached on the `data` branch, see .github/workflows/leaders.yml):
   fund.json        fundamentals per ticker (refreshed weekly)
   leaders.json     what the page shows
   lc/<T>.json      daily bars of each listed stock for the page's candle chart (rebuilt every run)
+  spx.json         S&P 500 members (Wikipedia) with market cap (Yahoo), refreshed weekly -> "big" list on Assets
 
 Checks before publishing: SPY and >= 90% of the previous session's stocks have the latest bar, latest bar no older than
 4 days. If a check fails the previous rows are kept and the file is marked stale with the reason.
@@ -265,6 +266,39 @@ def fundamentals(d, tickers):
     return cache
 
 
+def spx(d, n=30):
+    """Top n S&P 500 members by market cap: [(ticker, mcap)]. Members from Wikipedia, market cap from Yahoo, weekly."""
+    path = os.path.join(d, "spx.json")
+    cur = jload(path, {})
+    if cur.get("at", "") < (date.today() - timedelta(days=7)).isoformat() or not cur.get("mcap"):
+        try:
+            import io
+            req = urllib.request.Request("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                                         headers={"User-Agent": "trading-os leaders scan (github.com/vla47/trading-os)"})
+            html = urllib.request.urlopen(req, timeout=60).read().decode()
+            members = pd.read_html(io.StringIO(html), attrs={"id": "constituents"})[0]["Symbol"].astype(str).tolist()
+            if len(members) < 480:
+                raise RuntimeError(f"only {len(members)} S&P 500 members")
+            import yfinance as yf
+
+            def cap(t):
+                try:
+                    return t, float(yf.Ticker(t.replace(".", "-")).fast_info["market_cap"])
+                except Exception:
+                    return t, None
+            with ThreadPoolExecutor(8) as ex:
+                caps = {t: v for t, v in ex.map(cap, members) if v}
+            if len(caps) < 400:
+                raise RuntimeError(f"market cap for only {len(caps)} members")
+            cur = {"at": date.today().isoformat(), "mcap": caps}
+            jsave(path, cur)
+            print("S&P 500 refreshed:", len(caps))
+        except Exception as e:
+            print("S&P 500 refresh failed, keeping the last list:", e)
+    caps = {t: v for t, v in cur.get("mcap", {}).items() if not (t == "GOOG" and "GOOGL" in cur["mcap"])}  # one line per company
+    return sorted(caps.items(), key=lambda x: -x[1])[:n]
+
+
 def tier(f, dv):
     r = f.get("revYoY")
     if r is None or r < 25:
@@ -279,7 +313,7 @@ def tier(f, dv):
 
 
 # ---------------------------------------------------------------- scan
-def scan(hist, names):
+def scan(hist, names, big=()):
     W = lambda col: hist.pivot(index="d", columns="T", values=col).sort_index()
     C, H, L, V, O = W("c"), W("h"), W("l"), W("v"), W("o")
     traded = C.iloc[-1].notna()            # must have a bar on the latest session
@@ -325,7 +359,17 @@ def scan(hist, names):
                          adr=round(adr, 1), dv=round(dv, 1), rsoff=round(rsoff, 1),
                          offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1),
                          ep=str(epd.index[-1]) if len(epd) else None, bars=len(c)))
-    return last, len(live), int(mom.sum()), rows
+    # Biggest S&P 500 stocks (Assets card): no filter, same numbers as the list
+    bigrows = []
+    for t in big:
+        if t not in Cl.columns:
+            continue
+        c = C[t].dropna()
+        p = float(c.iloc[-1])
+        bigrows.append(dict(t=t, name=names.get(t, ""), rsr=int(rsr[t]) if t in rsr.index and rsr[t] == rsr[t] else None,
+                            price=round(p, 2), d1=r1((p / c.iloc[-2] - 1) * 100), p1=r1(P.at[t, "1M"]), p3=r1(P.at[t, "3M"]),
+                            p6=r1(P.at[t, "6M"]), offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1)))
+    return last, len(live), int(mom.sum()), rows, bigrows
 
 
 def write_charts(d, hist, tickers):
@@ -380,7 +424,11 @@ def main():
         bad = checks(hist, last)
         if bad:
             raise RuntimeError("; ".join(bad))
-        last, n_live, n_mom, rows = scan(hist, names)
+        big = spx(a.data)
+        last, n_live, n_mom, rows, bigrows = scan(hist, names, [t for t, _ in big])
+        caps = dict(big)
+        for r in bigrows:
+            r["mcapB"] = round(caps[r["t"]] / 1e9)
         fund = fundamentals(a.data, [r["t"] for r in rows])
         for r in rows:
             f = fund.get(r["t"], {})
@@ -389,10 +437,11 @@ def main():
                      eps=f.get("eps"), epsYrAgo=f.get("epsYrAgo"),
                      mcapB=round(f["mcap"] / 1e9, 1) if f.get("mcap") else None, lastQ=f.get("lastQ"))
         rows.sort(key=lambda r: (-r["rsr"], -(r["p3"] or 0)))
-        write_charts(a.data, hist, [r["t"] for r in rows])
+        write_charts(a.data, hist, [r["t"] for r in rows] + [r["t"] for r in bigrows])
         res = {"status": "ok", "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": last,
                "source": "Polygon.io (Massive) daily bars · fundamentals Yahoo Finance",
-               "counts": {"universe": n_live, "momentum": n_mom, "passed": len(rows)}, "rules": RULES, "rows": rows}
+               "counts": {"universe": n_live, "momentum": n_mom, "passed": len(rows)}, "rules": RULES, "rows": rows,
+               "big": bigrows}
         print(f"{last}: universe {n_live}, momentum {n_mom}, passed {len(rows)}")
     except Exception as e:
         print("LEADERS FAILED:", e, file=sys.stderr)

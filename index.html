@@ -226,7 +226,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .lsRow .px{font-weight:700}
 .lsRow.h{min-height:22px;font-size:11.5px;color:var(--muted);border:0;cursor:default}.lsRow.h:hover{background:none}
 .tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
-.ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
+.bigCard{margin-bottom:12px}.ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
 @media(max-width:1200px){.ldList{grid-template-columns:1fr}}
 @media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m{display:none}.lsRow .tk{font-size:19px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
@@ -339,6 +339,10 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
  </div>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
+  <div class="panel assetCard bigCard">
+    <div class="assetHead"><div><h2 class="secTitle2">Biggest S&amp;P 500 stocks</h2><div class="muted small" id="bigSub">Loading…</div></div></div>
+    <div id="bigList" class="ldList"></div>
+  </div>
   <div class="panel assetCard">
     <div class="assetHead">
       <div><h2 class="secTitle2">Where money is rotating</h2><div class="muted small" id="secUpdated"></div></div>
@@ -1220,10 +1224,33 @@ function showView(v) {
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
   $("leadersView").classList.toggle("hidden", v !== "leaders");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
-  if (v === "sectors") { loadSectors(); drawInline(); }
+  if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
 }
 
+// ---- big-ticker stock list (Leaders tab, Biggest S&P 500 card): click = candle chart, same chart as the top bar ----
+const shortName = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary Shares.*)$/i, "").replace(/,?\s*Inc\.?$/i, "").trim();
+const pctS = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
+const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
+function stockList(el, rows, tip, sub) {
+  const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
+  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
+  const row = (r) => `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}\nClick for the chart">` +
+    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
+    `<span class="r px">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${pctS(r.d1)}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
+    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`;
+  const half = Math.ceil(rows.length / 2);
+  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
+    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + head + cr.map(row).join("") + "</div>").join("");
+  el.querySelectorAll(".lsRow[data-t]").forEach((x) => x.onclick = () => openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"));
+}
+function renderBig() {
+  const rows = LD?.big || [];
+  const d = LD?.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "";
+  $("bigSub").textContent = rows.length ? d + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
+  stockList($("bigList"), rows, (r) => `Market cap $${r.mcapB ?? "—"}B · ${r.offhi ?? "—"}% vs 52w high`,
+    (r) => shortName(r.name) + (r.mcapB ? ` · $${r.mcapB >= 1000 ? (r.mcapB / 1000).toFixed(2) + "T" : r.mcapB + "B"}` : ""));
+}
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
 async function loadLeaders() {
@@ -1237,6 +1264,7 @@ async function loadLeaders() {
 }
 function renderLeaders() {
   if (!LD) return;
+  renderBig();
   const when = (s) => s ? new Date(s).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
   const c = LD.counts || {};
   $("ldUpdated").textContent = (LD.preview ? "PREVIEW: biggest US stocks, not the filter · " : "") + (LD.asof ? "Data " + new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "") +
@@ -1249,7 +1277,6 @@ function renderLeaders() {
   const p = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
   const n1 = (v, suf = "") => v == null ? "—" : v.toFixed(1) + suf;
   const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
   const hd = [["#", null, "l"], ["Ticker", null, "l"], ["Name", null, "l"], ["RS", "rsr"], ["Tier", null], ["1M", "p1"], ["3M", "p3"], ["6M", "p6"], ["ADR", "adr"], ["$Vol M", "dv"], ["RS line vs high", "rsoff"], ["vs 52w high", "offhi"], ["Rev YoY", "revYoY"], ["EP", null]];
   let h = '<table class="ldTbl"><thead><tr>' + hd.map(([t, k, cl]) => `<th${cl ? ` class="${cl}"` : ""}${k ? ` data-s="${k}"${k === ldSort ? ' class="on"' : ""} title="Sort by ${t}"` : ""}>${t}${k === ldSort ? " ↓" : ""}</th>`).join("") + "</tr></thead><tbody>";
   rows.forEach((r, i) => {
@@ -1262,17 +1289,7 @@ function renderLeaders() {
   });
   h += "</tbody></table>";
   $("ldBody").innerHTML = rows.length ? h : '<div class="empty">No stock passes every filter today.</div>';
-  // main view: big tickers, click = candle chart (same chart as the top bar)
-  const lhead = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const short = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary Shares.*)$/i, "").replace(/,?\s*Inc\.?$/i, "").trim();
-  const lrow = (r) => `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}\nADR ${n1(r.adr, "%")} · $vol ${r.dv == null ? "—" : Math.round(r.dv)}M · RS line ${r.rsoff ?? "—"}% vs high\nClick for the chart">` +
-    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(short(r.name))}</span></span>` +
-    `<span class="r px">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${p(r.d1)}</span><span class="r c1m">${p(r.p1)}</span><span class="r">${p(r.p3)}</span><span class="r c6m">${p(r.p6)}</span>` +
-    `<span class="r"><span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span></span><span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier || "")}"></span></div>`;
-  const half = Math.ceil(rows.length / 2);
-  $("ldList").innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
-    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + lhead + cr.map(lrow).join("") + "</div>").join("");
-  $("ldList").querySelectorAll(".lsRow[data-t]").forEach((el) => el.onclick = () => openChart(el.dataset.t, el.dataset.n, null, "lc/" + encodeURIComponent(el.dataset.t) + ".json"));
+  stockList($("ldList"), rows, (r) => `${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}\nADR ${n1(r.adr, "%")} · $vol ${r.dv == null ? "—" : Math.round(r.dv)}M · RS line ${r.rsoff ?? "—"}% vs high`);
   $("ldBody").querySelectorAll("th[data-s]").forEach((th) => th.onclick = () => { ldSort = th.dataset.s; renderLeaders(); });
   $("ldFoot").innerHTML = "Filters (all must pass) · source:<ol class=\"ldRules\">" + (LD.rules || []).map(([r, s]) => `<li>${esc(r)} <span class="tag">${esc(s)}</span></li>`).join("") +
     "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a stock for its candle chart; in the details table click a column header to sort. Green dot = Real leader, amber = Leader w/ caveat. " + esc(LD.source || "");
