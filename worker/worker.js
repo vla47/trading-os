@@ -4,6 +4,10 @@
 //   21ema dot, VIX dot, |1D| limit, stale > 30 min while open, QQQ pre/after-hours, NQ/ES move since the 16:00 ET cash close.
 // Daily history comes from live_base.json (written by quotes.py on each site build), topped up with Yahoo's last 5 daily bars here.
 // Responses are cached 60 s at the edge, so Yahoo sees at most one round of requests per minute however often the page asks.
+//
+// 2026-11-27 fix (error 1102, CPU limit after the US close): ymd()/etHM() built a new Intl.DateTimeFormat on every call,
+// and sinceCashClose() calls etHM() for every 1-minute NQ/ES bar of 5 days (~14,000 formatter builds). Formatters are now
+// built once and reused, and sinceCashClose() asks Yahoo for 2 days of 1-minute bars (4 on Mon/Sun/Sat) instead of 5.
 
 const SITE = "https://vla47.github.io/trading-os/";
 const YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/";
@@ -107,15 +111,16 @@ function extQuote(r, regPrice, reg, dec) {
 
 // futures move since the last US cash close (16:00 ET); the 16:59 ET bar (CME halt, settlement stamp) is dropped
 async function sinceCashClose(sym, dec, cash, nowS) {
-  const r = await chart(sym, "range=5d&interval=1m");
+  // enough 1-minute history to reach back past the last cash close: 2 days, 4 over a weekend (Sat/Sun/Mon)
+  const days = (nowS - cash.close) / 86400 > 1 ? "4d" : "2d";
+  const r = await chart(sym, `range=${days}&interval=1m`);
   const ts = r.timestamp || [], c = ((r.indicators || {}).quote || [{}])[0].close || [];
   let ref = null, last = null, lastT = null;
   for (let i = 0; i < ts.length; i++) {
     if (c[i] == null) continue;
-    const [h, mi] = etHM(ts[i]);
-    if (h === 16 && mi === 59) continue;
-    if (ts[i] < cash.close - 59) ref = c[i];
-    else if (ts[i] >= cash.close) { last = c[i]; lastT = ts[i]; }
+    if (ts[i] < cash.close - 3600) { ref = c[i]; continue; }   // well before the close: no time-of-day check needed
+    if (ts[i] < cash.close - 59) { const [h, mi] = etHM(ts[i]); if (!(h === 16 && mi === 59)) ref = c[i]; continue; }
+    if (ts[i] >= cash.close) { const [h, mi] = etHM(ts[i]); if (!(h === 16 && mi === 59)) { last = c[i]; lastT = ts[i]; } }
   }
   if (ref == null || last == null) return null;
   return { session: cash.start && nowS < cash.start ? "pre" : "post", price: rnd(last, dec), chg: pct(last, ref),
@@ -148,13 +153,17 @@ const num = (v) => (typeof v === "number" && isFinite(v) ? v : NaN);
 const pct = (a, b) => (b ? Math.round((a / b - 1) * 10000) / 100 : null);
 const rnd = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
 const iso = (s, unit) => { const x = new Date(s * 1000).toISOString(); return (unit === "minutes" ? x.slice(0, 16) : x.slice(0, 19)) + "+00:00"; };
+// Intl.DateTimeFormat is expensive to build: one per time zone, built once
+const YMD_FMT = new Map();
 function ymd(s, tz) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" })
-    .formatToParts(new Date(s * 1000)).map((x) => [x.type, x.value]));
+  let f = YMD_FMT.get(tz);
+  if (!f) { f = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }); YMD_FMT.set(tz, f); }
+  const p = Object.fromEntries(f.formatToParts(new Date(s * 1000)).map((x) => [x.type, x.value]));
   return `${p.year}-${p.month}-${p.day}`;
 }
+let ET_FMT = null;
 function etHM(s) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(new Date(s * 1000)).map((x) => [x.type, x.value]));
+  ET_FMT ||= new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const p = Object.fromEntries(ET_FMT.formatToParts(new Date(s * 1000)).map((x) => [x.type, x.value]));
   return [Number(p.hour), Number(p.minute)];
 }

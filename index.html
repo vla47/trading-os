@@ -226,7 +226,13 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .lsRow .px{font-weight:700}
 .lsRow.h{min-height:22px;font-size:11.5px;color:var(--muted);border:0;cursor:default}.lsRow.h:hover{background:none}
 .tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
-.bigCard{margin-bottom:12px}.ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
+.bigCard{margin-bottom:12px}
+/* Assets tab: Biggest S&P 500 card = half the viewport, scrolls inside, so Sectors/Themes show below without page scroll (full HD) */
+.bigCard{height:50vh;min-height:320px;display:flex;flex-direction:column;box-sizing:border-box}
+.bigCard>#bigList{flex:1;min-height:0;overflow-y:auto;align-items:start;overscroll-behavior:contain}
+.bigCard .lsRow.h{position:sticky;top:0;z-index:1;background:var(--panel)}
+@media(max-width:700px){.bigCard{height:auto;min-height:0}.bigCard>#bigList{overflow:visible}}
+.ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
 @media(max-width:1200px){.ldList{grid-template-columns:1fr}}
 @media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m{display:none}.lsRow .tk{font-size:19px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
