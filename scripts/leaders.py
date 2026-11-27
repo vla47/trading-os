@@ -33,6 +33,9 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from quotes import stage as weekly_stage   # S1-S4 from the TraderLion stage-analysis rules, same function as the market strip
 import pandas as pd
 
 API = "https://api.polygon.io"
@@ -313,6 +316,14 @@ def tier(f, dv):
 
 
 # ---------------------------------------------------------------- scan
+def stage_of(c):
+    """Stage of one stock from its daily closes (index = 'YYYY-MM-DD'), same rule as the strip and sector bars."""
+    try:
+        return weekly_stage(pd.Series(c.values, index=pd.to_datetime(c.index))) or None
+    except Exception:
+        return None
+
+
 def scan(hist, names, big=()):
     W = lambda col: hist.pivot(index="d", columns="T", values=col).sort_index()
     C, H, L, V, O = W("c"), W("h"), W("l"), W("v"), W("o")
@@ -358,7 +369,7 @@ def scan(hist, names, big=()):
                          p1=r1(P.at[t, "1M"]), p3=r1(P.at[t, "3M"]), p6=r1(P.at[t, "6M"]),
                          adr=round(adr, 1), dv=round(dv, 1), rsoff=round(rsoff, 1),
                          offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1),
-                         ep=str(epd.index[-1]) if len(epd) else None, bars=len(c)))
+                         ep=str(epd.index[-1]) if len(epd) else None, bars=len(c), stage=stage_of(c)))
     # Biggest S&P 500 stocks (Assets card): no filter, same numbers as the list
     bigrows = []
     for t in big:
@@ -368,7 +379,7 @@ def scan(hist, names, big=()):
         p = float(c.iloc[-1])
         bigrows.append(dict(t=t, name=names.get(t, ""), rsr=int(rsr[t]) if t in rsr.index and rsr[t] == rsr[t] else None,
                             price=round(p, 2), d1=r1((p / c.iloc[-2] - 1) * 100), p1=r1(P.at[t, "1M"]), p3=r1(P.at[t, "3M"]),
-                            p6=r1(P.at[t, "6M"]), offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1)))
+                            p6=r1(P.at[t, "6M"]), offhi=round(float((p / c.iloc[-252:].max() - 1) * 100), 1), stage=stage_of(c)))
     return last, len(live), int(mom.sum()), rows, bigrows
 
 

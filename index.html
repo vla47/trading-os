@@ -37,6 +37,15 @@ button:hover{border-color:var(--accent)}
 .mktStrip::-webkit-scrollbar{display:none}
 .mktStrip .q{white-space:nowrap}.mktStrip .q b{color:var(--text)}
 .mktStrip .st{font-size:inherit;font-weight:700;padding:0 5px;border-radius:6px;background:var(--panel2);color:var(--text);margin-left:4px}
+/* signal = shape + colour (never colour alone): ✓ ok / ! caution / ✕ no */
+.sg{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;font-size:10px;font-weight:800;font-style:normal;margin-right:4px;vertical-align:1px}
+.sg.green{color:var(--good);background:color-mix(in srgb,var(--good) 16%,transparent)}.sg.yellow{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}.sg.red{color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,transparent)}
+.mktStrip .q .pc{font-weight:700;margin-left:4px}.mktStrip .q .px{font-size:.86em;color:var(--muted);margin-left:5px}.mktStrip .q .xs{font-size:.78em;color:var(--muted);margin-left:3px}
+.mktStrip .q .stg{font-size:.8em;color:var(--muted);margin-left:5px}.stg.s2{color:var(--good)!important;font-weight:700}
+.mktStrip .q.mac{font-size:.92em}.mktStrip .q.mac b{font-weight:500;color:var(--muted)}.mktStrip .q.mac .pc{font-weight:500}
+.mktStrip .gl{font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-right:-4px}
+.regime{flex:0 0 auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px;margin-right:8px;white-space:nowrap;cursor:help}
+.regime.green{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.regime.yellow{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}.regime.red{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
 .liveTag{flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;margin-right:6px;white-space:nowrap;cursor:help}
 .liveTag.live{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.liveTag.live::before{content:"● "}
 .liveTag.delayed{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
@@ -102,7 +111,7 @@ canvas{width:100%;height:230px;display:block}
 .dq{font-size:14px;line-height:1.6}
 @media(max-width:1100px){.metricGroup{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.four{grid-template-columns:1fr}}
-@media(max-width:700px){.marketStat{display:none}.tickerBar{padding:0 2px}.liveTag{font-size:0;padding:2px;margin-right:2px}.liveTag.peek{font-size:10px;padding:2px 6px}.liveTag.live::before,.liveTag.delayed::before{content:"●";font-size:10px}.mktStrip .st{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
+@media(max-width:700px){.regime{display:none!important}.mktStrip .gl{display:none}.marketStat{display:none}.tickerBar{padding:0 2px}.liveTag{font-size:0;padding:2px;margin-right:2px}.liveTag.peek{font-size:10px;padding:2px 6px}.liveTag.live::before,.liveTag.delayed::before{content:"●";font-size:10px}.mktStrip .st{display:none}.topbar{padding:8px 12px}.main{padding:10px}.pageTitle .sub{display:none}}
 @media(max-width:420px){.metricGroup{grid-template-columns:1fr}}
 /* segmented control (header views, sector groups) */
 .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
@@ -190,7 +199,8 @@ details.more[open]>summary{margin-bottom:6px}
 .bRow{display:grid;grid-template-columns:170px minmax(0,1fr) 84px;align-items:center;gap:10px;height:24px;cursor:pointer;border-radius:6px;padding:0 6px}
 .bRow:hover{background:var(--panel2)}.bRow.stale{opacity:.5}
 .bRow .nm{font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bRow .bw{display:flex;align-items:center;gap:6px;min-width:0}
+.bRow .bw{display:flex;align-items:center;gap:6px;min-width:0;position:relative}.bRow .ref{position:absolute;top:-4px;bottom:-4px;border-left:1.5px dashed var(--muted);pointer-events:none}
+.bRow .ex .stg{font-size:11px;color:var(--muted);margin-left:5px}.refKey{display:inline-block;width:0;height:11px;border-left:1.5px dashed var(--muted);margin:0 5px -1px 2px}
 .bRow .bb{height:12px;border-radius:3px;opacity:.85;flex:0 0 auto;min-width:2px}
 .bRow .bv{font-size:12px;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}
 .bRow .ex{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}.bRow .ex .st{font-size:11px;font-weight:700;padding:0 5px;border-radius:5px;background:var(--panel2);color:var(--text);margin-left:3px}
@@ -218,15 +228,20 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.ldList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
-.lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 116px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
+/* stock lists (Biggest S&P 500, Leaders): one ranked list, columns by importance, colour only on what moves today */
+.ldList{display:block}
+.lsRow{display:grid;grid-template-columns:22px minmax(150px,1fr) 40px 80px 64px 132px 90px 90px 90px 34px;align-items:center;gap:10px;height:40px;padding:0 8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
 .lsRow:hover{background:var(--panel2)}.lsRow .r{text-align:right}
-.lsRow .tk{font-size:21px;font-weight:800;line-height:1.1;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
-.lsRow .n{display:block;color:var(--muted);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.lsRow .px{font-weight:700}
-.lsRow .cx{white-space:nowrap;font-size:13px}.lsRow .cx .xs{font-size:10.5px;font-weight:700;color:var(--muted);margin-right:4px}
-.lsRow.h{min-height:22px;font-size:11.5px;color:var(--muted);border:0;cursor:default}.lsRow.h:hover{background:none}
-.tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
+.lsRow .sk{display:flex;align-items:baseline;gap:9px;min-width:0;overflow:hidden;white-space:nowrap}
+.lsRow .tk{font-size:17px;font-weight:800;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
+.lsRow .n{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis}
+.lsRow .px{font-weight:600}
+.lsRow .cx{white-space:nowrap}.lsRow .cx .xp{font-size:12px;color:var(--muted);margin-left:6px}
+.lsRow .pb{position:relative;text-align:right;color:var(--muted);font-size:13px}.lsRow .pb i{position:absolute;right:0;top:50%;height:10px;margin-top:-5px;border-radius:2px;background:color-mix(in srgb,var(--muted) 22%,transparent)}.lsRow .pb span{position:relative}
+.lsRow .stc{font-size:12px;color:var(--muted);text-align:right}
+.lsRow.h{height:26px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line);cursor:default}.lsRow.h:hover{background:none}
+.tb{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:4px;font-size:11px;font-weight:800;cursor:help}
+.tb.real{color:var(--good);background:color-mix(in srgb,var(--good) 16%,transparent)}.tb.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
 .bigCard{margin-bottom:12px}
 /* Assets tab: Biggest S&P 500 card = half the viewport, scrolls inside, so Sectors/Themes show below without page scroll (full HD) */
 .bigCard{height:50vh;min-height:320px;display:flex;flex-direction:column;box-sizing:border-box}
@@ -234,8 +249,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .bigCard .lsRow.h{position:sticky;top:0;z-index:1;background:var(--panel)}
 @media(max-width:700px){.bigCard{height:auto;min-height:0}.bigCard>#bigList{overflow:visible}}
 .ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
-@media(max-width:1200px){.ldList{grid-template-columns:1fr}}
-@media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m,.lsRow .cx{display:none}.lsRow .tk{font-size:19px}}
+@media(max-width:640px){.lsRow{grid-template-columns:20px minmax(0,1fr) 34px 64px 56px 60px;gap:6px;padding:0 2px}.lsRow .n,.lsRow .c1m,.lsRow .c6m,.lsRow .cx,.lsRow .stc{display:none}.lsRow .tk{font-size:16px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
 </style>
 </head>
@@ -271,7 +285,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     </div>
   </div>
 </header>
-<div class="tickerBar"><span id="liveTag" class="liveTag hidden"></span><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
+<div class="tickerBar"><span id="liveTag" class="liveTag hidden"></span><span id="regime" class="regime hidden"></span><div id="mktStrip" class="mktStrip" title="Market strip"></div></div>
 </div>
 
 <main class="main">
@@ -361,7 +375,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="assetCols muted small hidden" id="secCols"><span>Asset</span><span>Trend</span><span id="secPeriodLbl">1 week</span><span class="rotH" title="Rank by 1 month vs rank by 3 months">Rotation</span></div>
     <div id="secRows" class="secCols"><div><div class="secColT">Sectors</div><div id="secRowsS"></div></div><div><div class="secColT">Themes</div><div id="secRowsT"></div></div></div>
     <div id="secHeat" class="heatEl hidden"></div>
-    <div class="muted small assetFoot" id="secFoot">Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart<span id="mktChecks"></span></div>
+    <div class="muted small assetFoot" id="secFoot"><span title="Return over the selected period, same bar scale on both sides · ▲▼ rotation (1-month rank vs 3-month) · S1–S4 stage · hover for details, click for the chart" style="cursor:help">ⓘ How to read</span><span id="mktChecks"></span></div>
   </div>
  </section>
 
@@ -942,22 +956,25 @@ function initUI() {
   const STAGE_NAME = { S1: "Stage 1 Base", S2: "Stage 2 Advance", S3: "Stage 3 Top", S4: "Stage 4 Decline" };
   // shown in groups, rotating every 10 s; hover pauses, click jumps to the next group
   const GROUPS = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD"], ["BRENT", "EURUSD"]];   // rotation pages (narrow screens)
-  const FULL = [["QQQ", "NQ", "VIX"], ["SXR8", "ES", "US10Y"], ["BTC", "GOLD", "BRENT", "EURUSD"]];   // one line, no rotation, when it fits
+  const FULL = [["QQQ", "NQ", "VIX"], ["SXR8", "ES"], ["US10Y", "BTC", "GOLD", "BRENT", "EURUSD"]];   // one line, no rotation, when it fits
+  const FULL_LBL = ["US", "Europe", "Macro"];
+  const MACRO = new Set(["US10Y", "BTC", "GOLD", "BRENT", "EURUSD"]);   // context, shown quieter
+  const SIG = { green: "✓", yellow: "!", red: "✕" };
   let qFull = false;   // each ETF next to its index future
   let qItems = [], qPage = 0, qPaused = false;
+  // label, % (the number to read), price (quiet), stage; 21ema / VIX signal as shape + colour
   const qEl = (it) => {
-    const q = document.createElement("span"); q.className = "q" + (qStale(it) ? " stale" : ""); q.dataset.label = it.label; q.title = qInfo(it) + "\nClick for chart";
+    const q = document.createElement("span"); q.className = "q" + (qStale(it) ? " stale" : "") + (MACRO.has(it.label) ? " mac" : ""); q.dataset.label = it.label; q.title = qInfo(it) + "\nClick for chart";
     const c = it.eth ? it.eth.chg : it.chg;   // NQ outside cash hours: move since the 16:00 ET close
-    const chg = c == null ? "" : (c > 0 ? "+" : "") + c.toFixed(2) + "%";
-    q.textContent = "";
-    if (it.dot) { const d = document.createElement("i"); d.className = "dt " + it.dot; d.title = it.label === "VIX" ? "VIX level: " + it.dot : "21ema mode: " + it.dot; q.append(d); }
-    q.append(it.label + " ");
-    const pv = it.eth ? it.eth.price : it.price, dd = pv >= 1000 ? 0 : it.dec;   // strip: no decimals above 1,000 (NQ, ES, gold) - full price on hover / in the chart
-    const b = document.createElement("b"); b.textContent = Number(pv).toLocaleString("en-US", { minimumFractionDigits: dd, maximumFractionDigits: dd });
-    const cs = document.createElement("span"); cs.className = c > 0 ? "good" : c < 0 ? "bad" : ""; cs.textContent = chg;
-    q.append(b, " ", cs);
-    if (it.stage) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.stage; st.title = STAGE_NAME[it.stage] || ""; q.append(st); }
-    if (it.eth) { const st = document.createElement("span"); st.className = "st"; st.textContent = it.eth.session === "pre" ? "PM" : "AH"; q.append(st); }
+    if (it.dot) { const d = document.createElement("i"); d.className = "sg " + it.dot; d.textContent = SIG[it.dot] || "";
+      d.title = it.label === "VIX" ? "VIX level (✓ <15 · ! 15–25 · ✕ >25)" : "21 EMA (✓ above rising · ! fresh reclaim or flat · ✕ below)"; q.append(d); }
+    const b = document.createElement("b"); b.textContent = it.label; q.append(b);
+    const cs = document.createElement("span"); cs.className = "pc " + (c > 0 ? "good" : c < 0 ? "bad" : ""); cs.textContent = c == null ? "" : (c > 0 ? "+" : "") + c.toFixed(2) + "%";
+    const pv = it.eth ? it.eth.price : it.price, dd = pv >= 1000 ? 0 : it.dec;   // no decimals above 1,000 (NQ, ES, gold) - full price on hover / in the chart
+    const px = document.createElement("span"); px.className = "px"; px.textContent = Number(pv).toLocaleString("en-US", { minimumFractionDigits: dd, maximumFractionDigits: dd });
+    if (it.label === "VIX" || it.label === "US10Y") q.append(px, cs); else q.append(cs, px);   // levels read first, the rest by % change
+    if (it.stage) { const st = document.createElement("span"); st.className = "stg" + (it.stage === "S2" ? " s2" : ""); st.textContent = it.stage; st.title = STAGE_NAME[it.stage] || ""; q.append(st); }
+    if (it.eth) { const st = document.createElement("span"); st.className = "xs"; st.textContent = it.eth.session === "pre" ? "PM" : "AH"; st.title = "Move since the 16:00 ET cash close"; q.append(st); }
     return q;
   };
   const pages = () => {
@@ -973,7 +990,9 @@ function initUI() {
       const by = Object.fromEntries(qItems.map((it) => [it.label, it])), used = new Set(FULL.flat());
       const gs = [...FULL.map((g) => g.map((l) => by[l]).filter(Boolean)), qItems.filter((it) => !used.has(it.label))].filter((g) => g.length);
       el.textContent = ""; el.classList.add("full"); el.classList.remove("wrap");
-      gs.forEach((g) => { const f = document.createElement("span"); f.className = "fg"; g.forEach((it) => f.append(qEl(it))); el.append(f); });   // a group wraps as one unit
+      gs.forEach((g, gi) => { const f = document.createElement("span"); f.className = "fg";
+        if (FULL_LBL[gi]) { const l = document.createElement("span"); l.className = "gl"; l.textContent = FULL_LBL[gi]; f.append(l); }
+        g.forEach((it) => f.append(qEl(it))); el.append(f); });   // a group wraps as one unit
       el.style.fontSize = ""; el.style.gap = "";
       for (let fs = 14, gap = 14; el.scrollWidth > el.clientWidth + 1 && fs > 13; ) { fs -= 0.25; gap = Math.max(9, gap - 1); el.style.fontSize = fs + "px"; el.style.gap = gap + "px"; }   // squeeze a little first
       qFull = el.scrollWidth <= el.clientWidth + 1;
@@ -1015,13 +1034,18 @@ function initUI() {
     const el = $("mktStrip");
     if (err || !MKT) { el.classList.add("stale"); return; }
     qItems = MKT.strip.map((k) => MKT.quotes[k] && { ...MKT.quotes[k], label: k }).filter(Boolean);
+    // market regime first: QQQ vs its 21 EMA (same dot rule as the strip, quotes.py ema_dot)
+    const rg = $("regime"), qd = MKT.quotes.QQQ && MKT.quotes.QQQ.dot;
+    rg.classList.toggle("hidden", !qd);
+    if (qd) { rg.className = "regime " + qd; rg.textContent = { green: "✓ QQQ above rising 21 EMA", yellow: "! QQQ: fresh 21 EMA reclaim or flat EMA", red: "✕ QQQ below 21 EMA" }[qd];
+      rg.title = "Market regime · QQQ vs its 21 EMA (Tradelion rules.md)\n✓ above a rising 21 EMA\n! above, but reclaimed in the last 5 sessions or the 21 EMA is not rising\n✕ below the 21 EMA"; }
     showPage(false);
     const at = MKT.liveAt || MKT.updated, age = (Date.now() - Date.parse(at)) / 60000;
     el.classList.toggle("stale", age > 90);
     liveTagUpdate();
     el.title = "Market strip · " + MKT.source + (MKT.liveAt ? " · live, updated " : " · built ") + new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + (age > 90 ? " (stale)" : "") +
       (MKT.failed && MKT.failed.length ? "\n⚠ not refreshed: " + MKT.failed.map((f) => f.split(":")[0]).join(", ") : "") +
-      "\nClick a ticker for its chart\n🔴/🟡/🟢 QQQ = 21ema mode · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
+      "\nClick a ticker for its chart\n✕/!/✓ QQQ = 21 EMA · VIX = stress level · S1 Base / S2 Advance / S3 Top / S4 Decline = stage (price vs rising/falling 30w + 40w)";
   });
 }
 
@@ -1241,19 +1265,28 @@ const shortName = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock
 const pctS = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
 function stockList(el, rows, tip, sub) {
-  const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Pre-market / after-hours: latest trade and % vs the regular-session price">Ext hours</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const row = (r) => { const L = EXT.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
+  const tier = { "Real leader": ["R", "real"], "Leader w/ caveat": ["C", "cav"] };
+  // one header for the whole column: every stock is in the same session
+  const ses = Object.values(EXT.q).map((L) => L && L.ext && L.ext.session).find(Boolean);
+  const xh = ses === "pre" ? "Pre-market" : ses === "post" ? "After-hours" : "Ext hours";
+  // 1M / 3M / 6M: grey numbers with a bar for strength (length, not colour); one outlier doesn't flatten the rest
+  const cap = {};
+  for (const k of ["p1", "p3", "p6"]) { const v = rows.map((r) => r[k]).filter((x) => x > 0).sort((a, b) => a - b);
+    cap[k] = v.length ? Math.max(Math.min(v[v.length - 1], (v[Math.floor(v.length / 2)] || 1) * 3), 1) : 1; }
+  const pb = (v, k, cls) => `<span class="r pb ${cls}">${v > 0 ? `<i style="width:${Math.round(Math.min(1, v / cap[k]) * 100)}%"></i>` : ""}<span>${v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(1) + "%"}</span></span>`;
+  const head = `<div class="lsRow h"><span></span><span>Stock</span><span class="r" title="RS Rating 1–99 vs all US stocks">RS</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Latest pre-market / after-hours trade and % vs the regular-session price">${xh}</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r stc" title="Stage (TraderLion stage analysis): S1 Base · S2 Advance · S3 Top · S4 Decline">Stage</span></div>`;
+  const row = (r) => { const L = EXT.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1, tb = tier[r.tier];
     const xt = x ? `\n${x.session === "pre" ? "Pre-market" : "After-hours"} ${x.price.toFixed(2)} (${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}% vs ${x.session === "pre" ? "previous close" : "close"}) · ${new Date(x.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
-    const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M and RS from the scan` : "";
-    return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
-    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
+    const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M, RS and stage from the scan` : "";
+    return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}${r.stage ? "\n" + esc(STAGE_NAME_ALL[r.stage] || r.stage) : ""}\nClick for the chart">` +
+    `<span>${tb ? `<span class="tb ${tb[1]}" title="${esc(r.tier)}">${tb[0]}</span>` : ""}</span>` +
+    `<span class="sk"><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
+    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span>` +
     `<span class="r px">${px != null ? px.toFixed(2) : "—"}</span><span class="r">${pctS(d1)}</span>` +
-    `<span class="r cx">${x ? `<span class="xs">${x.session === "pre" ? "PM" : "AH"}</span>${x.price.toFixed(2)} ${pctS(x.chg)}` : '<span class="muted">—</span>'}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
-    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`; };
-  const half = Math.ceil(rows.length / 2);
-  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
-    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + head + cr.map(row).join("") + "</div>").join("");
+    `<span class="r cx">${x ? `${pctS(x.chg)}<span class="xp">${x.price.toFixed(2)}</span>` : '<span class="muted">—</span>'}</span>` +
+    pb(r.p1, "p1", "c1m") + pb(r.p3, "p3", "") + pb(r.p6, "p6", "c6m") +
+    `<span class="stc${r.stage === "S2" ? " stg s2" : ""}">${esc(r.stage || "—")}</span></div>`; };
+  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' : head + rows.map(row).join("");
   el.querySelectorAll(".lsRow[data-t]").forEach((x) => x.onclick = () => openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"));
 }
 function renderBig() {
@@ -1364,8 +1397,9 @@ function renderSectors() {
   const get = (g) => (secData[g] || []).filter((r) => r[secPeriod] != null).sort((a, b) => b[secPeriod] - a[secPeriod]);
   const groups = [["sectors", "secRowsS"], ["themes", "secRowsT"]].map(([g, id]) => [get(g), id]);
   $("secPeriodLbl").textContent = PERIOD_LBL[secPeriod];
-  $("secUpdated").textContent = "Updated " + new Date(secData.updated).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) +
-    " · S&P 500 " + fmtPct(secData.benchmark?.[0]?.[secPeriod]) + " (" + PERIOD_LBL[secPeriod].toLowerCase() + ")";
+  const bm = secData.benchmark?.[0]?.[secPeriod];
+  $("secUpdated").innerHTML = "Updated " + new Date(secData.updated).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) +
+    ' · <span class="refKey"></span>S&amp;P 500 ' + fmtPct(bm) + " (" + PERIOD_LBL[secPeriod].toLowerCase() + ")";
   const ck = MKT?.checks, ce = $("mktChecks");
   if (ce) {
     if (!ck) ce.textContent = "";
@@ -1375,19 +1409,23 @@ function renderSectors() {
   // one bar scale for both columns, so a sector and a theme compare at a glance
   const abs = groups.flatMap(([rows]) => rows.map((r) => Math.abs(r[secPeriod]))).sort((a, b) => a - b);
   const med = abs[Math.floor(abs.length / 2)] || 1, max = Math.max(Math.min(abs[abs.length - 1] || 1, med * 4), 0.01);  // one outlier doesn't flatten the rest
+  // the S&P 500 line on every bar (when it is up: bars grow from the left by size, so a negative line would mislead)
+  const refW = bm != null && bm > 0 ? Math.min(1, bm / max) * 74 : null;
   for (const [rows, id] of groups) {
     const box = $(id); box.textContent = "";
-    for (const r of rows) {
+    rows.forEach((r, i) => {
       const v = r[secPeriod], over = Math.abs(v) > max, w = Math.max(0.4, Math.min(1, Math.abs(v) / max) * 74);
+      // colour only the 3 strongest and 3 weakest; the middle stays grey
+      const col = i < 3 && v > 0 ? "var(--good)" : i >= rows.length - 3 ? (v < 0 ? "var(--bad)" : "var(--warn)") : v < 0 ? "var(--bad)" : "color-mix(in srgb,var(--muted) 45%,transparent)";
       const row = document.createElement("div"); row.className = "bRow" + (qStale(r.q) ? " stale" : "");
       row.title = `${r.name} (${r.symbol})${r.stage ? " · " + (STAGE_NAME_ALL[r.stage] || r.stage) : ""}${r.rot ? " · rotation " + (r.rot > 0 ? "▲ " : "▼ ") + Math.abs(r.rot) + " (1M rank vs 3M)" : ""}\n` + qInfo(r.q) + "\nClick for chart";
       row.onclick = () => openChart(r.chart || r.symbol, r.name);
       const rot = !r.rot ? "" : r.rot > 0 ? `<span class="pos">▲${r.rot}</span>` : `<span class="neg">▼${-r.rot}</span>`;
       row.innerHTML = `<span class="nm">${esc(r.name)}</span>` +
-        `<span class="bw"><span class="bb" style="width:${w}%;background:var(${v >= 0 ? "--good" : "--bad"})"></span><span class="bv">${fmtPct(v)}${over ? " »" : ""}</span></span>` +
-        `<span class="ex">${rot}${r.stage ? `<span class="st">${esc(r.stage)}</span>` : ""}</span>`;
+        `<span class="bw"><span class="bb" style="width:${w}%;background:${col}"></span><span class="bv">${fmtPct(v)}${over ? " »" : ""}</span>${refW != null ? `<i class="ref" style="left:${refW}%"></i>` : ""}</span>` +
+        `<span class="ex">${rot}${r.stage ? `<span class="stg${r.stage === "S2" ? " s2" : ""}">${esc(r.stage)}</span>` : ""}</span>`;
       box.append(row);
-    }
+    });
   }
 }
 // rows for the bar card, straight from the snapshot (no maths here)
