@@ -1,5 +1,5 @@
 // Trading OS live prices — Cloudflare Worker.
-// GET /quotes -> current price for every ticker on the page, from Yahoo Finance, with the SAME rules as scripts/quotes.py:
+// GET /quotes -> current price for every ticker on the page (GET /ext -> stock rows, see extRoute), from Yahoo Finance, with the SAME rules as scripts/quotes.py:
 //   1D = price / prevClose - 1 | 1W/1M/3M/6M = price / close 5/21/63/126 sessions back | YTD = vs last close of the previous year
 //   21ema dot, VIX dot, |1D| limit, stale > 30 min while open, QQQ pre/after-hours, NQ/ES move since the 16:00 ET cash close.
 // Daily history comes from live_base.json (written by quotes.py on each site build), topped up with Yahoo's last 5 daily bars here.
@@ -19,7 +19,8 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     const url = new URL(request.url);
-    if (url.pathname !== "/quotes") return new Response("Trading OS live prices: GET /quotes", { status: 404, headers: CORS });
+    if (url.pathname === "/ext") return extRoute(url, ctx);
+    if (url.pathname !== "/quotes") return new Response("Trading OS live prices: GET /quotes, GET /ext?s=AAPL,MSFT", { status: 404, headers: CORS });
     const cache = caches.default, key = new Request(url.origin + "/quotes");
     const hit = await cache.match(key);
     if (hit) return hit;
@@ -97,6 +98,36 @@ async function liveQuote(key, t, base, cash, nowS) {
     try { rec.eth = await sinceCashClose(t.symbol, dec, cash, nowS); } catch (e) { /* keep the settlement view */ }
   }
   return rec;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// GET /ext?s=AAPL,MSFT,... (max 40: the free plan allows 50 subrequests per call) -> stock rows on the Assets / Leaders tabs:
+// latest regular-session price, 1D vs the previous close, and the pre-market / after-hours trade (same extQuote as QQQ).
+// 15-minute bars: the last bar's close is the latest trade, and the response stays small (~4 KB a stock).
+const EXT_MAX = 40;
+async function extRoute(url, ctx) {
+  const syms = [...new Set((url.searchParams.get("s") || "").toUpperCase().split(","))]
+    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,9}$/.test(x)).sort().slice(0, EXT_MAX);
+  if (!syms.length) return new Response(JSON.stringify({ error: "no symbols" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
+  const cache = caches.default, key = new Request(url.origin + "/ext?s=" + syms.join(","));
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  const quotes = {}, failed = [];
+  await Promise.all(syms.map(async (k) => {
+    try {
+      const r = await chart(k.replace(/\./g, "-"), "range=1d&interval=15m&includePrePost=true");
+      const m = r.meta || {}, price = num(m.regularMarketPrice), prev = num(m.chartPreviousClose);
+      if (!(price > 0 && prev > 0)) throw new Error(`bad price ${price} / prev ${prev}`);
+      const reg = (m.currentTradingPeriod || {}).regular || {}, now = Date.now() / 1000;
+      quotes[k] = { price: rnd(price, 2), prev: rnd(prev, 2), chg: pct(price, prev), asOf: m.regularMarketTime ? iso(m.regularMarketTime, "seconds") : null,
+        open: !!(reg.start && reg.end && reg.start <= now && now < reg.end), ext: extQuote(r, price, reg, 2) };
+    } catch (e) { failed.push(`${k}: ${e.message || e}`); }
+  }));
+  const ok = Object.keys(quotes).length > 0;
+  const res = new Response(JSON.stringify({ version: 1, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", quotes, failed }),
+    { status: ok ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": `public, max-age=${ok ? CACHE_SECONDS : 15}` } });
+  if (ok) ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
 }
 
 // latest pre-market / after-hours trade vs the regular-session price (null inside regular hours)

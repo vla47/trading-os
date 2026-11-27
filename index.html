@@ -219,11 +219,12 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
 .ldList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
-.lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
+.lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 116px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
 .lsRow:hover{background:var(--panel2)}.lsRow .r{text-align:right}
 .lsRow .tk{font-size:21px;font-weight:800;line-height:1.1;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
 .lsRow .n{display:block;color:var(--muted);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .lsRow .px{font-weight:700}
+.lsRow .cx{white-space:nowrap;font-size:13px}.lsRow .cx .xs{font-size:10.5px;font-weight:700;color:var(--muted);margin-right:4px}
 .lsRow.h{min-height:22px;font-size:11.5px;color:var(--muted);border:0;cursor:default}.lsRow.h:hover{background:none}
 .tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
 .bigCard{margin-bottom:12px}
@@ -234,7 +235,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 @media(max-width:700px){.bigCard{height:auto;min-height:0}.bigCard>#bigList{overflow:visible}}
 .ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
 @media(max-width:1200px){.ldList{grid-template-columns:1fr}}
-@media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m{display:none}.lsRow .tk{font-size:19px}}
+@media(max-width:640px){.lsRow{grid-template-columns:minmax(0,1fr) 60px 54px 60px 34px 9px;gap:6px;padding:4px 2px}.lsRow .c1m,.lsRow .c6m,.lsRow .cx{display:none}.lsRow .tk{font-size:19px}}
 .ldRules{margin:6px 0 0;padding-left:18px}.ldRules li{margin:2px 0}
 </style>
 </head>
@@ -1232,6 +1233,7 @@ function showView(v) {
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
+  if (v !== "journal") loadExt();
 }
 
 // ---- big-ticker stock list (Leaders tab, Biggest S&P 500 card): click = candle chart, same chart as the top bar ----
@@ -1240,11 +1242,15 @@ const pctS = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ?
 const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
 function stockList(el, rows, tip, sub) {
   const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const row = (r) => `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}\nClick for the chart">` +
+  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Pre-market / after-hours: latest trade and % vs the regular-session price">Ext hours</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
+  const row = (r) => { const L = EXT.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
+    const xt = x ? `\n${x.session === "pre" ? "Pre-market" : "After-hours"} ${x.price.toFixed(2)} (${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}% vs ${x.session === "pre" ? "previous close" : "close"}) · ${new Date(x.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
+    const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M and RS from the scan` : "";
+    return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
     `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
-    `<span class="r px">${r.price != null ? r.price.toFixed(2) : "—"}</span><span class="r">${pctS(r.d1)}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
-    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`;
+    `<span class="r px">${px != null ? px.toFixed(2) : "—"}</span><span class="r">${pctS(d1)}</span>` +
+    `<span class="r cx">${x ? `<span class="xs">${x.session === "pre" ? "PM" : "AH"}</span>${x.price.toFixed(2)} ${pctS(x.chg)}` : '<span class="muted">—</span>'}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
+    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`; };
   const half = Math.ceil(rows.length / 2);
   el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
     [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + head + cr.map(row).join("") + "</div>").join("");
@@ -1253,10 +1259,29 @@ function stockList(el, rows, tip, sub) {
 function renderBig() {
   const rows = LD?.big || [];
   const d = LD?.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "";
-  $("bigSub").textContent = rows.length ? d + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
+  $("bigSub").textContent = rows.length ? (EXT.at ? "Price, 1D and ext hours live · 1M–6M and RS from " + d : d) + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
   stockList($("bigList"), rows, (r) => `Market cap $${r.mcapB ?? "—"}B · ${r.offhi ?? "—"}% vs 52w high`,
     (r) => shortName(r.name) + (r.mcapB ? ` · $${r.mcapB >= 1000 ? (r.mcapB / 1000).toFixed(2) + "T" : r.mcapB + "B"}` : ""));
 }
+// ---- live price + pre-market / after-hours for the stock rows: Worker /ext (Yahoo, 40 stocks a call), every 60 s while shown ----
+const EXT = { q: {}, at: 0, busy: false };
+async function loadExt() {
+  if (!LIVE_URL || !LD || EXT.busy) return;
+  const vis = ["sectorsView", "leadersView"].some((id) => !$(id).classList.contains("hidden"));
+  if (!vis || document.hidden) return;
+  const syms = [...new Set([...(LD.big || []), ...(LD.rows || [])].map((r) => r.t))].sort();
+  if (!syms.length) return;
+  EXT.busy = true;
+  try {
+    const url = LIVE_URL.replace(/\/quotes$/, "/ext?s=");
+    const parts = []; for (let i = 0; i < syms.length; i += 40) parts.push(syms.slice(i, i + 40));
+    const res = await Promise.all(parts.map((p) => fetch(url + p.map(encodeURIComponent).join(","), { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null)));
+    let n = 0; res.forEach((j) => { if (j && j.quotes) { Object.assign(EXT.q, j.quotes); n++; } });
+    if (n) { EXT.at = Date.now(); renderLeaders(); }
+  } finally { EXT.busy = false; }
+}
+setInterval(loadExt, 60000);
+
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
 async function loadLeaders() {
@@ -1264,7 +1289,7 @@ async function loadLeaders() {
   try {
     const r = await fetch(DATA_BASE + "leaders.json?t=" + Date.now(), { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
-    LD = await r.json(); ldAt = Date.now();
+    LD = await r.json(); ldAt = Date.now(); loadExt();
   } catch (e) { if (!LD) { $("ldUpdated").textContent = "Leaders list not published yet (runs overnight after the US close)."; return; } }
   renderLeaders();
 }
