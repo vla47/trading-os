@@ -69,10 +69,15 @@ button:hover{border-color:var(--accent)}
 .rule{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--panel2);color:var(--muted);float:right}
 .rule.bad{color:var(--bad)}.rule.good{color:var(--good)}
 .section{margin-top:10px}
-:root,[data-theme="light"]{--pfSwing:#3b73d1;--pfLong:#f47230;--pfCash:#c3cad3}[data-theme="dark"]{--pfSwing:#338ced;--pfLong:#e76624;--pfCash:#3a4656}
+:root,[data-theme="light"]{--pf1:#257de0;--pf2:#f47230;--pf3:#00b894;--pf4:#f2a600;--pf5:#ee7fac;--pf6:#6a4ce2;--pfOther:#8b95a3;--pfCash:#c3cad3}
+[data-theme="dark"]{--pf1:#338ced;--pf2:#e76624;--pf3:#00a888;--pf4:#d28e05;--pf5:#e24d8b;--pf6:#9887ef;--pfOther:#6b7686;--pfCash:#3a4656}
+.pfSec{margin-top:10px}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
+.pfPie{display:flex;flex-direction:column;align-items:center;gap:10px}.pfGrid.one .pfPie{flex-direction:row;align-items:center;gap:22px}.pfPie svg{width:200px;height:200px;flex:0 0 auto}.pfPie path{stroke:var(--panel);stroke-width:2;stroke-linejoin:round}.pfPie path:hover{opacity:.85}
+.pfPie .pc{font-size:17px;font-weight:700;fill:var(--text)}.pfPie .ps{font-size:11px;fill:var(--muted)}
+.pfLegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;width:100%;font-size:13px}.pfGrid.one .pfLegend{grid-template-columns:1fr;width:auto;min-width:180px}.pfLegend .pl{display:flex;align-items:center;min-width:0}.pfLegend .pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfLegend b{font-weight:600;margin-left:8px}
+@media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
 .pfStats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.pfStat{background:var(--panel2);border-radius:12px;padding:8px 10px;min-width:0}.pfStat .label{font-size:12px}.pfStat .v{font-size:19px;font-weight:700;margin-top:2px;white-space:nowrap}.pfStat .hint{margin-top:2px}
-.pfBar{display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;margin:2px 0 6px}.pfBar span{display:block;height:100%;min-width:2px}
-.pfLeg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}.pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+.pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 .pfT td{padding:6px 6px}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
 @media (max-width:760px){.pfStats{grid-template-columns:repeat(2,minmax(0,1fr))}.pfT .wb{width:30%}.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -354,8 +359,16 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 
  <section id="portfolioView" class="hidden" aria-label="Portfolio">
   <div class="panel assetCard hidden" id="pfPanel">
-    <div class="assetHead"><div><h2 class="secTitle2">Portfolio</h2><div class="muted small" id="pfSub">Allocation of the account as of the last IBKR sync</div></div></div>
+    <div class="assetHead"><div><h2 class="secTitle2">Stocks &amp; ETFs</h2><div class="muted small" id="pfSub">Allocation of the account as of the last IBKR sync</div></div></div>
     <div id="pfBody"></div>
+  </div>
+  <div class="panel assetCard hidden pfSec" id="pfCrypto">
+    <div class="assetHead"><div><h2 class="secTitle2">Crypto</h2><div class="muted small" id="pfCryptoSub"></div></div></div>
+    <div id="pfCryptoBody"></div>
+  </div>
+  <div class="panel assetCard hidden pfSec" id="pfTotal">
+    <div class="assetHead"><div><h2 class="secTitle2">Total</h2><div class="muted small">Stocks, ETFs, cash and crypto together · % of IBKR NLV + crypto</div></div></div>
+    <div id="pfTotalBody"></div>
   </div>
   <div id="pfEmpty" class="empty">Unlock the journal to see your portfolio. <button type="button" id="pfGoJournal">Go to Journal</button></div>
  </section>
@@ -457,15 +470,24 @@ function parseJournal(text) {
   if (nlvE) out.nlvEur = num(nlvE[1]);
   const syncM = text.match(/Last sync:\s*(\d{4}-\d{2}-\d{2})/);
   if (syncM) out.sync = syncM[1];
-  let section = "swing", cols = null, group = null;
+  out.crypto = [];
+  let section = "swing", cols = null, group = null, ccols = null;
   const close = () => { if (group && group.rows.length) out.trades.push(group); group = null; };
   for (const line of text.split(/\r?\n/)) {
     const t = line.trim();
-    if (t.startsWith("## ")) { close(); section = /account history/i.test(t) ? "acct" : /etf|long/i.test(t) ? "etf" : "swing"; cols = null; continue; }
+    if (t.startsWith("## ")) { close(); section = /account history/i.test(t) ? "acct" : /crypto/i.test(t) ? "crypto" : /etf|long/i.test(t) ? "etf" : "swing"; cols = null; ccols = null; continue; }
     if (!t.startsWith("|")) continue;
     if (section === "acct") { // | Date | NAV | Day return |  (daily IBKR NAV, deposit-free time-weighted return)
       const c = t.replace(/^\|/, "").replace(/\|$/, "").split("|").map((x) => x.trim());
       if (/^\d{4}-\d{2}-\d{2}$/.test(c[0]) && Number.isFinite(num(c[2]))) out.acct.push({ date: c[0], nav: num(c[1]), r: num(c[2]) / 100 });
+      continue;
+    }
+    if (section === "crypto") { // | Coin | Amount | Avg cost | Notes |
+      const c = t.replace(/^\|/, "").replace(/\|$/, "").split("|").map((x) => x.trim()), lc = c.map((x) => x.toLowerCase());
+      if (lc.some((x) => /^(coin|asset|ticker|symbol)$/.test(x))) { ccols = { coin: lc.findIndex((x) => /^(coin|asset|ticker|symbol)$/.test(x)), qty: lc.findIndex((x) => /amount|qty|quantity|units|holding/.test(x)), cost: lc.findIndex((x) => /cost|avg|buy/.test(x)), note: lc.findIndex((x) => /note/.test(x)) }; continue; }
+      if (!ccols || /^[\s|:\-]+$/.test(t)) continue;
+      const coin = (c[ccols.coin] || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase(), qty = num(c[ccols.qty]);
+      if (coin && qty) out.crypto.push({ coin, qty, cost: ccols.cost >= 0 ? num(c[ccols.cost]) : null, note: ccols.note >= 0 ? c[ccols.note] : "" });
       continue;
     }
     const cells = t.replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
@@ -803,53 +825,139 @@ function render(j, sourceName) {
 }
 
 // ---- PORTFOLIO ---------------------------------------------------
-// Each open position at its last synced price (EUR ETFs converted with the NLV's own $/€ ratio),
-// cash = NLV − positions. Weights are % of NLV. Swing vs long-term follows the journal sections.
+// Stocks & ETFs: each open IBKR position at its last synced price (EUR ETFs converted with the NLV's own $/€ ratio),
+// cash = NLV − positions; weights are % of NLV. Crypto: "## Crypto" table in the journal (Coin | Amount | Avg cost),
+// live USD price from the Worker (Yahoo <COIN>-USD), avg cost as fallback. Total = NLV + crypto.
+const PFQ = { q: {}, at: 0, busy: false };
+const PF_N = 6;   // categorical slots; smaller holdings fold into "Other"
 function portfolio(m, j) {
-  const nlv = j.nlv; if (!nlv) return null;
-  const fx = j.nlvEur ? nlv / j.nlvEur : null;
+  const nlv = j.nlv, fx = nlv && j.nlvEur ? nlv / j.nlvEur : null;
   const pos = [], skipped = [];
-  for (const t of m.all.filter((x) => x.open)) {
+  if (nlv) for (const t of m.all.filter((x) => x.open)) {
     const px = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
     if (px == null || rate == null) { skipped.push(t.sym); continue; }
     const usd = t.dir * px * t.openShares * rate;
-    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, w: usd / nlv, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
+    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
   }
-  pos.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
-  const gross = sum(pos.map((p) => Math.abs(p.usd))), net = sum(pos.map((p) => p.usd)), cash = nlv - net;
-  const swing = pos.filter((p) => p.grp === "swing"), long = pos.filter((p) => p.grp === "long");
-  return { nlv, fx, pos, skipped, gross, cash, swing, long, swingW: sum(swing.map((p) => p.w)), longW: sum(long.map((p) => p.w)) };
+  const net = sum(pos.map((p) => p.usd)), cash = nlv ? nlv - net : null;
+  const crypto = (j.crypto || []).map((c) => {
+    const q = PFQ.q[c.coin + "-USD"], price = q ? q.price : c.cost;
+    const usd = price != null ? c.qty * price : null;
+    return { sym: c.coin, grp: "crypto", qty: c.qty, cost: c.cost, price, chg: q ? q.chg : null, usd, live: !!q,
+      unreal: q && c.cost != null ? (q.price - c.cost) * c.qty : null, note: c.note };
+  });
+  const cTot = sum(crypto.filter((c) => c.usd != null).map((c) => c.usd));
+  // one colour per holding, shared by all three pies: biggest holdings overall take the slots
+  const color = {};
+  [...pos, ...crypto].filter((x) => x.usd != null).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd)).slice(0, PF_N)
+    .forEach((x, i) => { color[x.sym] = `var(--pf${i + 1})`; });
+  return { nlv, fx, pos, skipped, cash, gross: sum(pos.map((p) => Math.abs(p.usd))), crypto, cTot, total: (nlv || 0) + cTot, color };
 }
+function pfColor(P, x) { return x.grp === "cash" ? "var(--pfCash)" : P.color[x.sym] || "var(--pfOther)"; }
+// donut: slices largest first, uncoloured holdings folded into "Other", 2px surface gap between slices
+function donut(P, items, centre, sub, legend = false) {
+  const lst = items.filter((x) => x.usd > 0), tot = sum(lst.map((x) => x.usd));
+  if (!tot) return `<div class="pfPie empty small">Nothing to chart</div>`;
+  const named = lst.filter((x) => x.grp === "cash" || P.color[x.sym]).sort((a, b) => b.usd - a.usd);
+  const other = lst.filter((x) => !(x.grp === "cash" || P.color[x.sym]));
+  const sl = [...named.filter((x) => x.grp !== "cash"), ...(other.length ? [{ sym: `Other (${other.length})`, grp: "other", usd: sum(other.map((x) => x.usd)), list: other.map((x) => x.sym).join(", ") }] : []), ...named.filter((x) => x.grp === "cash")];
+  const R = 70, r = 46, C = 80; let a = -Math.PI / 2;
+  const pt = (rad, ang) => `${(C + rad * Math.cos(ang)).toFixed(2)},${(C + rad * Math.sin(ang)).toFixed(2)}`;
+  const paths = sl.map((x) => {
+    const w = x.usd / tot, a2 = a + w * 2 * Math.PI, big = a2 - a > Math.PI ? 1 : 0, f = x.grp === "other" ? "var(--pfOther)" : pfColor(P, x);
+    const tip = `${x.sym} · ${pct(w, 1)} · ${money(x.usd)}${x.list ? " · " + x.list : ""}`;
+    const d = w >= 0.9999 ? `M${pt(R, a)} A${R},${R} 0 1 1 ${pt(R, a + Math.PI)} A${R},${R} 0 1 1 ${pt(R, a)} M${pt(r, a)} A${r},${r} 0 1 0 ${pt(r, a + Math.PI)} A${r},${r} 0 1 0 ${pt(r, a)}Z`
+      : `M${pt(R, a)} A${R},${R} 0 ${big} 1 ${pt(R, a2)} L${pt(r, a2)} A${r},${r} 0 ${big} 0 ${pt(r, a)}Z`;
+    a = a2; return `<path d="${d}" fill="${f}" fill-rule="evenodd"><title>${esc(tip)}</title></path>`;
+  }).join("");
+  const leg = sl.map((x) => `<div class="pl"><span class="pfDot" style="background:${x.grp === "other" ? "var(--pfOther)" : pfColor(P, x)}"></span><span class="pn"${x.list ? ` title="${esc(x.list)}"` : ""}>${esc(x.sym)}</span><b>${pct(x.usd / tot, 1)}</b></div>`).join("");
+  return `<div class="pfPie"><svg viewBox="0 0 160 160" role="img" aria-label="${esc(sl.map((x) => `${x.sym} ${pct(x.usd / tot, 1)}`).join(", "))}">${paths}
+    <text x="80" y="78" text-anchor="middle" class="pc">${centre}</text><text x="80" y="96" text-anchor="middle" class="ps">${esc(sub)}</text></svg>${legend ? `<div class="pfLegend">${leg}</div>` : ""}</div>`;
+}
+const pfStat = (l, v, h, c = "") => `<div class="pfStat"><div class="label">${esc(l)}</div><div class="v ${c}">${v}</div><div class="hint">${h}</div></div>`;
+const kmoney = (x) => (Math.abs(x) >= 1e6 ? money(x / 1e6, "USD", 2) + "M" : Math.abs(x) >= 1e4 ? money(x / 1e3, "USD", 1) + "k" : money(x));
+function weightCell(P, x, w, mx) { return `<td class="l wb"><div><span style="width:${(Math.abs(w) / mx * 100).toFixed(1)}%;background:${pfColor(P, x)}"></span><b>${pct(w, 2)}</b></div></td>`; }
+
 function renderPortfolio(m, j) {
-  const P = portfolio(m, j);
-  $("pfPanel").classList.toggle("hidden", !P); $("pfEmpty").classList.toggle("hidden", !!P);
-  if (!P) return;
-  const col = { swing: "var(--pfSwing)", long: "var(--pfLong)", cash: "var(--pfCash)" }, lbl = { swing: "Swing", long: "Long-term", cash: "Cash" };
-  const big = P.pos[0], avgSw = P.swing.length ? avg(P.swing.map((p) => p.w)) : NaN, inv = P.gross / P.nlv;
-  const stat = (l, v, h, c = "") => `<div class="pfStat"><div class="label">${esc(l)}</div><div class="v ${c}">${v}</div><div class="hint">${h}</div></div>`;
-  const stats = [
-    stat("Invested", pct(inv, 1), `${money(P.gross)} of ${money(P.nlv)} NLV`, inv > 1 ? "warn" : ""),
-    stat("Cash", pct(P.cash / P.nlv, 1), P.cash < 0 ? "on margin" : money(P.cash), P.cash < 0 ? "bad" : ""),
-    stat("Positions", String(P.pos.length), `${P.swing.length} swing · ${P.long.length} long-term`),
-    stat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.w), 1)}` : "—", big ? lbl[big.grp] : "no open positions"),
-    stat("Avg swing size", Number.isFinite(avgSw) ? pct(avgSw, 1) : "—", `rule ${pct(RULES.positionPct)} per position`, Number.isFinite(avgSw) && avgSw > RULES.positionPct * 1.1 ? "bad" : ""),
-  ].join("");
-  // one 100% bar: each position a segment (largest first), cash last
-  const segs = [...P.pos.map((p) => ({ k: p.sym, g: p.grp, w: Math.abs(p.w) })), ...(P.cash > 0 ? [{ k: "Cash", g: "cash", w: P.cash / P.nlv }] : [])];
-  const tw = sum(segs.map((x) => x.w)) || 1;
-  const bar = `<div class="pfBar" role="img" aria-label="Allocation: ${esc(segs.map((x) => `${x.k} ${pct(x.w, 1)}`).join(", "))}">${segs.map((x) => `<span style="flex:${(x.w / tw).toFixed(5)};background:${col[x.g]}" title="${esc(x.k)} · ${pct(x.w, 2)}"></span>`).join("")}</div>`;
-  const leg = `<div class="pfLeg">${["swing", "long", "cash"].map((g) => { const w = g === "swing" ? P.swingW : g === "long" ? P.longW : P.cash / P.nlv;
-    return `<span><span class="pfDot" style="background:${col[g]}"></span>${lbl[g]} <b style="color:var(--text)">${pct(w, 1)}</b></span>`; }).join("")}</div>`;
-  // ranked list, same weight scale for every row
-  const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, w: P.cash / P.nlv, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
-  const mx = Math.max(...rows.map((r) => Math.abs(r.w)), 1e-9);
-  const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-    rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${col[r.grp]}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
-      <td class="l muted hideS">${lbl[r.grp]}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>
-      <td class="l wb"><div><span style="width:${(Math.abs(r.w) / mx * 100).toFixed(1)}%;background:${col[r.grp]}"></span><b>${pct(r.w, 2)}</b></div></td></tr>`).join("") + `</table>`;
-  $("pfBody").innerHTML = `<div class="pfStats">${stats}</div>${bar}${leg}${tbl}` +
-    (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
-  $("pfSub").textContent = `% of ${money(P.nlv)} NLV · last IBKR sync ${j.sync || "—"}${P.long.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
+  const P = portfolio(m, j), has = !!(P.nlv || P.crypto.length);
+  $("pfEmpty").classList.toggle("hidden", has);
+  ["pfPanel", "pfCrypto", "pfTotal"].forEach((id) => $(id).classList.add("hidden"));
+  if (!has) return;
+  const lbl = { swing: "Swing", long: "Long-term", cash: "Cash", crypto: "Crypto" };
+
+  // 1 · stocks & ETFs (IBKR)
+  if (P.nlv) {
+    $("pfPanel").classList.remove("hidden");
+    const sw = P.pos.filter((p) => p.grp === "swing"), lg = P.pos.filter((p) => p.grp === "long");
+    const big = [...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd))[0], avgSw = sw.length ? avg(sw.map((p) => p.usd / P.nlv)) : NaN, inv = P.gross / P.nlv;
+    const stats = [
+      pfStat("Invested", pct(inv, 1), `${money(P.gross)} of ${money(P.nlv)} NLV`, inv > 1 ? "warn" : ""),
+      pfStat("Cash", pct(P.cash / P.nlv, 1), P.cash < 0 ? "on margin" : money(P.cash), P.cash < 0 ? "bad" : ""),
+      pfStat("Positions", String(P.pos.length), `${sw.length} swing · ${lg.length} long-term`),
+      pfStat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.usd) / P.nlv, 1)}` : "—", big ? lbl[big.grp] : "no open positions"),
+      pfStat("Avg swing size", Number.isFinite(avgSw) ? pct(avgSw, 1) : "—", `rule ${pct(RULES.positionPct)} per position`, Number.isFinite(avgSw) && avgSw > RULES.positionPct * 1.1 ? "bad" : ""),
+    ].join("");
+    const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
+    const mx = Math.max(...rows.map((r) => Math.abs(r.usd) / P.nlv), 1e-9);
+    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
+        <td class="l muted hideS">${lbl[r.grp]}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
+    $("pfBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid">${donut(P, rows, kmoney(P.nlv), "NLV")}<div class="pfTW">${tbl}</div></div>` +
+      (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
+    $("pfSub").textContent = `IBKR · % of ${money(P.nlv)} NLV · last sync ${j.sync || "—"}${lg.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
+  }
+
+  // 2 · crypto
+  $("pfCrypto").classList.remove("hidden");
+  if (!P.crypto.length) {
+    $("pfCryptoBody").innerHTML = `<div class="sub">Add a <b>## Crypto</b> section to Trades journal.md with a table <code>| Coin | Amount | Avg cost | Notes |</code> (e.g. <code>| BTC | 0.25 | $60,000 | Ledger |</code>). Avg cost is optional.</div>`;
+    $("pfCryptoSub").textContent = "No crypto in the journal yet";
+  } else {
+    const C = P.crypto, priced = C.filter((c) => c.usd != null), cb = priced.filter((c) => c.cost != null);
+    const un = cb.length ? sum(cb.map((c) => (c.price - c.cost) * c.qty)) : null, costT = cb.length ? sum(cb.map((c) => c.cost * c.qty)) : null;
+    const big = [...priced].sort((a, b) => b.usd - a.usd)[0];
+    const day = priced.filter((c) => c.live && c.chg != null), dayUsd = day.length ? sum(day.map((c) => c.usd - c.usd / (1 + c.chg / 100))) : null;
+    const stats = [
+      pfStat("Value", money(P.cTot), `${priced.filter((c) => c.live).length} of ${C.length} live prices`),
+      pfStat("Unrealized", un != null ? money(un) : "—", costT ? spct(un / costT) + " on cost" : "needs Avg cost", cls(un)),
+      pfStat("Today", dayUsd != null ? money(dayUsd) : "—", "since 00:00 UTC", cls(dayUsd)),
+      pfStat("Coins", String(C.length), C.map((c) => c.sym).join(" · ")),
+      pfStat("Largest", big ? `${esc(big.sym)} ${pct(big.usd / P.cTot, 1)}` : "—", big ? money(big.usd) : ""),
+    ].join("");
+    const rows = [...C].sort((a, b) => (b.usd ?? -1) - (a.usd ?? -1)), mx = Math.max(...rows.map((r) => (r.usd || 0) / (P.cTot || 1)), 1e-9);
+    const tbl = `<table class="pfT"><tr><th class="l">Coin</th><th class="hideS">Amount</th><th>Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.price != null && !r.live ? " <span class='muted' title='No live price; valued at avg cost'>at cost</span>" : ""}</td>
+        <td class="hideS">${r.qty.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td><td>${r.price != null ? money(r.price, "USD", r.price < 10 ? 4 : 2) : "—"}${r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : ""}</td>
+        <td>${r.usd != null ? money(r.usd) : "<span class='muted'>no price</span>"}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, (r.usd || 0) / (P.cTot || 1), mx)}</tr>`).join("") + `</table>`;
+    $("pfCryptoBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid">${donut(P, priced, kmoney(P.cTot), "crypto")}<div class="pfTW">${tbl}</div></div>`;
+    $("pfCryptoSub").textContent = `% of crypto value · prices ${PFQ.at ? "live " + new Date(PFQ.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
+  }
+
+  // 3 · everything together
+  if (P.nlv && P.crypto.length) {
+    $("pfTotal").classList.remove("hidden");
+    const T = P.total, sw = sum(P.pos.filter((p) => p.grp === "swing").map((p) => p.usd)), lg = sum(P.pos.filter((p) => p.grp === "long").map((p) => p.usd));
+    const stats = [
+      pfStat("Total", money(T), "IBKR NLV + crypto"),
+      pfStat("Swing stocks", pct(sw / T, 1), money(sw)),
+      pfStat("Long-term ETFs", pct(lg / T, 1), money(lg)),
+      pfStat("Cash", pct(P.cash / T, 1), money(P.cash), P.cash < 0 ? "bad" : ""),
+      pfStat("Crypto", pct(P.cTot / T, 1), money(P.cTot)),
+    ].join("");
+    const all = [{ sym: "Cash", grp: "cash", usd: P.cash }, ...P.pos, ...P.crypto.filter((c) => c.usd != null)];
+    $("pfTotalBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid one">${donut(P, all, kmoney(T), "total", true)}</div>`;
+  }
+}
+// live crypto prices while the Portfolio tab is shown (Worker /ext, Yahoo <COIN>-USD, cached 60 s)
+async function loadCrypto(force) {
+  const syms = lastText ? [...new Set((parseJournal(lastText).crypto || []).map((c) => c.coin + "-USD"))] : [];
+  if (!LIVE_URL || !syms.length || PFQ.busy || $("portfolioView").classList.contains("hidden") || document.hidden) return;
+  if (!force && Date.now() - PFQ.at < 55000) return;
+  PFQ.busy = true;
+  try {
+    const r = await fetch(LIVE_URL.replace(/\/quotes$/, "/ext?s=") + syms.map(encodeURIComponent).join(","), { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    if (r && r.quotes) { Object.assign(PFQ.q, r.quotes); PFQ.at = Date.now(); renderPortfolio(metrics(parseJournal(lastText)), parseJournal(lastText)); }
+  } finally { PFQ.busy = false; }
 }
 
 function drawCharts(m) {
@@ -941,7 +1049,7 @@ function initUI() {
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
   const closeJournal = () => {
     lastText = null; $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("pkOffer").classList.add("hidden");
-    $("pfPanel").classList.add("hidden"); $("pfBody").innerHTML = ""; $("pfEmpty").classList.remove("hidden");
+    ["pfPanel", "pfCrypto", "pfTotal"].forEach((id) => $(id).classList.add("hidden")); $("pfBody").innerHTML = $("pfCryptoBody").innerHTML = $("pfTotalBody").innerHTML = ""; $("pfEmpty").classList.remove("hidden");
     $("status").textContent = "No journal loaded"; $("userMenu").classList.add("hidden");
   };
   // Lock: hide the journal now; Touch ID and "remember this device" stay set up.
@@ -1303,6 +1411,7 @@ function showView(v) {
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
+  if (v === "portfolio") loadCrypto();
   if (v !== "journal") loadExt();
 }
 
@@ -1668,6 +1777,7 @@ function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) {
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
   $("pfGoJournal").onclick = () => showView("journal");
+  setInterval(() => loadCrypto(), 60000); document.addEventListener("visibilitychange", () => loadCrypto());
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
