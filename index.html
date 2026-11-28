@@ -68,7 +68,7 @@ button:hover{border-color:var(--accent)}
 .hint{font-size:12px;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rule{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--panel2);color:var(--muted);float:right}
 .rule.bad{color:var(--bad)}.rule.good{color:var(--good)}
-.section{margin-top:10px}
+.section{margin-top:10px}.jRow{margin-top:22px}.section.two{margin-top:0}.jRow+.four{margin-top:0}
 :root,[data-theme="light"]{--pf1:#257de0;--pf2:#f47230;--pf3:#00b894;--pf4:#f2a600;--pf5:#ee7fac;--pf6:#6a4ce2;--pfOther:#8b95a3;--pfCash:#c3cad3}
 [data-theme="dark"]{--pf1:#338ced;--pf2:#e76624;--pf3:#00a888;--pf4:#d28e05;--pf5:#e24d8b;--pf6:#9887ef;--pfOther:#6b7686;--pfCash:#3a4656}
 .pfSec{margin-top:10px}.pfHero{margin:0 0 10px}#pfOut2,#pfOut3{margin-top:22px}#pfOut2+.pfSec,#pfOut3+.pfSec{margin-top:0}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
@@ -78,7 +78,7 @@ button:hover{border-color:var(--accent)}
 @media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
 .pfGrid{margin-top:12px}
 .pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
-.pfT td{padding:6px 6px}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
+.pfT td{padding:6px 6px;white-space:nowrap}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
 @media (max-width:760px){.pfT .wb{width:30%}.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
@@ -317,28 +317,18 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="hero" id="hero"></div>
     <div class="alerts" id="alerts"></div>
 
-    <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
-
-    <details class="more" id="moreStats">
-      <summary><span>All stats &amp; breakdowns</span><span class="muted small">Performance · R · rules · edge · drawdown · monthly · per trade · quality · setups · symbols · trade list</span></summary>
-    <div class="groupTitle">PERFORMANCE · closed swing trades</div>
-    <div class="metricGroup" id="kpiPerf"></div>
-    <div class="groupTitle" id="kpiRTitle">RISK UNITS (R) · needs Stop on the entry row</div>
-    <div class="metricGroup" id="kpiR"></div>
-    <div class="groupTitle">RULES &amp; RISK · checked against Trading plan §7</div>
-    <div class="metricGroup" id="kpiRules"></div>
-    <div class="groupTitle">EDGE &amp; CONSISTENCY · closed swing trades</div>
-    <div class="metricGroup" id="kpiEdge"></div>
+    <div class="hero pfHero jRow" id="jRow1"></div>
       <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub" id="ddSub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
       </div>
+    <div class="hero pfHero jRow" id="jRow2"></div>
     <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win% · account return</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>P/L per trade</h2><span class="sub">Each closed trade in exit order · green win, red loss</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="tradeBars"></canvas></div></div>
     </div>
 
-    <div class="groupTitle">TRADE QUALITY</div>
+    <div class="hero pfHero jRow" id="jRow3"></div>
     <div class="four">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Consistency</h2><span class="sub">By day of exit · profitable-day rate is in the cards</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="consTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Risk &amp; Reward</h2><span class="sub">% of position · win rate you need to break even</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="rrTbl"></div></div>
@@ -346,6 +336,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Fees &amp; activity</h2><span class="sub">Executions and pace</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="feeTbl"></div></div>
     </div>
 
+    <div class="hero pfHero jRow" id="jRow4"></div>
     <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>By setup / tag</h2><span class="sub">#tags from Setup / Notes</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="tagTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Stocks &amp; P/L</h2><span class="sub">Realized by symbol · best → worst</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="symTbl"></div></div>
@@ -647,7 +638,7 @@ function metrics(j) {
 // ---- RENDER ------------------------------------------------------
 function card(label, value, c = "", hint = "", rule = null) {
   const ruleHtml = rule ? `<span class="rule ${rule[1]}">${esc(rule[0])}</span>` : "";
-  return `<div class="card">${ruleHtml}<div class="label">${esc(label)}</div><div class="value ${c}">${value}</div><div class="hint">${esc(hint)}</div></div>`;
+  return `<div class="heroCard">${ruleHtml}<div class="hl">${esc(label)}</div><div class="hv ${c}">${value}</div><div class="hh">${esc(hint)}</div></div>`;
 }
 const flagsHtml = (f) => f.map(([t, c]) => `<span class="flag ${c === "warn" ? "warn" : ""}">${esc(t)}</span>`).join("");
 const tagsHtml = (tags) => tags.map((x) => `<span class="tag">${esc(x)}</span>`).join("");
@@ -703,30 +694,28 @@ function render(j, sourceName) {
     $("alerts").innerHTML = (al.length ? al : [["ok", "All risk rules respected"]]).map(([c, t]) => `<span class="alert ${c}">${c === "ok" ? "✓" : c === "bad" ? "⚠" : "•"} ${esc(t)}</span>`).join("");
   }
   const avgHold = avg(m.closed.map((t) => t.hold).filter(Number.isFinite));
-  $("kpiPerf").innerHTML = [
+  const cPerf = [
     card("Net realized P/L", money(m.net), cls(m.net), `${n} closed trades`),
-    m.acct ? card("Account drawdown", spct(m.acct.mdd), m.acct.mdd < -0.05 ? "bad" : "", `Daily NAV incl. open · ${m.acct.from} → ${m.acct.to}${m.acct.mddEur != null ? " · ≈ " + money(m.acct.mddEur, "EUR") : ""}`) : "",
     m.acct ? card("Max drawdown (realized)", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "Closed trades only, peak → trough") : "",
     card("Profit factor", m.pf?.toFixed(2) ?? "—", m.pf >= 1.5 ? "good" : m.pf >= 1 ? "warn" : "bad", "Gross profit ÷ gross loss"),
     card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
-  ].join("");
+  ];
 
   const hasR = m.withR.length > 0;
-  $("kpiRTitle").classList.toggle("hidden", !hasR); $("kpiR").classList.toggle("hidden", !hasR);
-  $("kpiR").innerHTML = [
+  const cR = [
     card("Stop coverage", pct(cov), cov >= 0.9 ? "good" : "warn", `${m.withR.length} of ${n} closed trades have a stop`),
-    card("Expectancy (R)", fmtR(m.expR), cls(m.expR), `Total ${fmtR(m.totR)}`),
+    card("Total R", fmtR(m.totR), cls(m.totR), `${m.withR.length} trades with a stop`),
     card("Avg win / avg loss", `${fmtR(m.awR)} <span class="muted">/</span> ${fmtR(m.alR)}`, "", "Target: losses ≈ −1R, winners 3R+"),
     card("Stop breaches", m.withR.length ? String(m.breaches) : "—", m.breaches ? "bad" : "good", `Losses worse than ${RULES.stopBreachR}R`, ["Never moved down", m.breaches ? "bad" : "good"]),
-  ].join("");
+  ];
 
   const orPct = m.openRisk != null && nlv ? m.openRisk / nlv : null;
-  $("kpiRules").innerHTML = [
+  const cRules = [
     card("Averaging down", String(m.avgDownTrades), m.avgDownTrades ? "bad" : "good", "Trades with an add below cost", ["Rule: never", m.avgDownTrades ? "bad" : "good"]),
     card("Open risk to stops", orPct != null ? pct(orPct, 2) : "—", orPct == null ? "warn" : orPct > RULES.maxOpenRiskPct ? "bad" : "good",
       orPct != null ? `${money(m.openRisk)} of ${money(nlv)} NLV` : `${m.openT.filter((t) => t.curStop == null).length} open trade(s) without a stop`, ["Max 2%", orPct != null && orPct <= RULES.maxOpenRiskPct ? "good" : "bad"]),
     card("Loss streaks", `${m.maxStreak}`, m.breakers ? "warn" : "good", `Longest run · ${m.breakers}× hit ${RULES.lossStreak} in a row`, [`Breaker: ${RULES.lossStreak}`, m.breakers ? "bad" : "good"]),
-  ].join("");
+  ];
 
   // edge & consistency
   const payoff = m.al ? m.aw / Math.abs(m.al) : null;
@@ -739,17 +728,25 @@ function render(j, sourceName) {
   const symAll = Object.entries(symP).sort((a, b) => b[1] - a[1]);
   const allBuys = sum(m.swing.map((t) => t.entries)), adBuys = sum(m.swing.map((t) => t.addsToLoser)), adRate = allBuys ? adBuys / allBuys : 0;
   const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
-  $("kpiEdge").innerHTML = [
+  const cEdge = [
     card("Profit concentration", conc != null ? pct(conc) : "—", conc == null ? "" : conc > 0.5 ? "warn" : "good",
       (conc != null ? "Top 5 trades · " : "") + topSyms.map(([k, v]) => `${k} ${m.net > 0 ? pct(v / m.net) : money(v)}`).join(" · ")),
-    card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
+    card("Hold W / L", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
       holdBad ? "Losers held longer than winners" : "Winners held at least as long as losers", ["Cut losers fast", holdBad ? "bad" : "good"]),
     card("Profitable days", dayV.length ? pct(profDays / dayV.length) : "—", profDays / dayV.length >= 0.5 ? "good" : "warn", `${profDays} of ${dayV.length} days with a closed trade`),
     card("Averaging-down rate", pct(adRate), adRate > 0.15 ? "bad" : adRate > 0 ? "warn" : "good", `${adBuys} of ${allBuys} buys below average cost`),
     card("Best symbol", symAll[0] ? esc(symAll[0][0]) : "—", "good", symAll[0] ? money(symAll[0][1]) + " realized" : ""),
     card("Worst symbol", symAll.length ? esc(symAll[symAll.length - 1][0]) : "—", symAll.length && symAll[symAll.length - 1][1] < 0 ? "bad" : "warn", symAll.length ? money(symAll[symAll.length - 1][1]) + " realized" : ""),
     card("Win / loss streak", `${m.maxWStreak} <span class="muted">/</span> ${m.maxStreak}`, "", "Longest run of winners / losers"),
-  ].join("");
+  ];
+
+  // rows of 5 equal cards (same ratio as the Portfolio tab), each above its section
+  {
+    const f0 = m.closed[0]?.entryDate, f1 = m.closed[m.closed.length - 1]?.exitDate, wk = f0 && f1 ? Math.max(1, days(f0, f1) / 7) : NaN;
+    const cards = [...cPerf, ...(hasR ? cR : []), ...cRules, ...cEdge,
+      card("Trades / week", Number.isFinite(wk) ? (m.closed.length / wk).toFixed(1) : "—", "", `${m.closed.length} closed trades`)].filter(Boolean);
+    ["jRow1", "jRow2", "jRow3", "jRow4"].forEach((id, k) => { const part = cards.slice(k * 5, k * 5 + 5); $(id).innerHTML = part.join(""); $(id).classList.toggle("hidden", !part.length); });
+  }
 
   // trade quality panels
   const kv = (rows) => `<table class="kv">${rows.map(([k, v, c = ""]) => `<tr><td>${k}</td><td class="${c}">${v}</td></tr>`).join("")}</table>`;
@@ -773,8 +770,7 @@ function render(j, sourceName) {
     ["Trades > +1% / < −1%", `${rAll.filter((x) => x > 0.01).length} <span class="muted">/</span> ${rAll.filter((x) => x < -0.01).length}`]]);
   const firstD = m.closed[0]?.entryDate, lastD = m.closed[m.closed.length - 1]?.exitDate, weeks = firstD && lastD ? Math.max(1, days(firstD, lastD) / 7) : NaN;
   const execs = sum(m.swing.map((t) => t.rows.length));
-  $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Trades / week", Number.isFinite(weeks) ? (m.closed.length / weeks).toFixed(1) : "—"],
-    ["Avg position size", money(avg(m.closed.map((t) => t.maxCost)))], ["Commissions", "<span class='muted'>in IBKR P/L</span>"], ["Fees as separate line", "<span class='muted'>not synced</span>"]]);
+  $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Avg position size", money(avg(m.closed.map((t) => t.maxCost)))], ["Commissions", "<span class='muted'>in IBKR P/L</span>"], ["Fees as separate line", "<span class='muted'>not synced</span>"]]);
 
   // monthly
   const byMon = {}; for (const t of m.closed) (byMon[t.exitDate.slice(0, 7)] ??= []).push(t);
@@ -784,12 +780,6 @@ function render(j, sourceName) {
     mons.map(([k, ts]) => { const p = sum(ts.map((t) => t.realized));
       const lbl = new Date(k + "-01T00:00:00").toLocaleDateString(undefined, { month: "short", year: "numeric" });
       return `<tr><td class="l">${esc(lbl)}</td><td class="l bars"><div class="mbar"><span class="${p >= 0 ? "pos" : "neg"}" style="width:${(Math.abs(p) / mMax * 100).toFixed(1)}%"></span><b class="${cls(p)}">${money(p)}</b></div></td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td>${m.acct ? `<td class="${cls(m.acct.mon[k])}">${spct(m.acct.mon[k])}</td>` : ""}</tr>`; }).join("") + `</table>` : `<div class="empty">No closed trades.</div>`;
-
-  // open positions
-  $("openTbl").innerHTML = m.openT.length ? `<table><tr><th>Ticker</th><th>Shares</th><th>Avg cost</th><th>Last</th><th>Stop</th><th>Unrealized</th><th>Risk to stop</th><th>% of NLV</th><th class="l">Flags</th></tr>` +
-    m.openT.map((t) => `<tr><td><b>${esc(t.sym)}</b>${t.dir < 0 ? " <span class='muted'>short</span>" : ""}</td><td>${t.openShares}</td><td>${money(t.cost, t.cur, 2)}</td><td>${money(t.last, t.cur, 2)}</td>
-      <td>${t.curStop != null ? money(t.curStop, t.cur, 2) : "<span class='bad'>none</span>"}</td><td class="${cls(t.unrealized)}">${money(t.unrealized, t.cur)}</td>
-      <td>${money(t.riskToStop, t.cur)}</td><td>${pct(t.posPct, 1)}</td><td class="l">${flagsHtml(t.flags)}</td></tr>`).join("") + `</table>` : `<div class="empty">No open positions.</div>`;
 
   // tags
   const byTag = {};
@@ -842,7 +832,7 @@ function portfolio(m, j) {
     const px = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
     if (px == null || rate == null) { skipped.push(t.sym); continue; }
     const usd = t.dir * px * t.openShares * rate;
-    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, qty: t.openShares, px, cur: t.cur, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
+    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, qty: t.openShares, px, cur: t.cur, stop: t.curStop, risk: t.riskToStop != null ? t.riskToStop * rate : null, flags: t.flags, swing: t.section !== "etf", unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
   }
   const net = sum(pos.map((p) => p.usd)), cash = nlv ? nlv - net : null;
   const crypto = (j.crypto || []).map((c) => {
@@ -911,9 +901,9 @@ function renderPortfolio(m, j) {
     ];
     const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
     const mx = Math.max(...rows.map((r) => Math.abs(r.usd) / P.nlv), 1e-9);
-    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Shares</th><th class="hideS">Last</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
-        <td class="l muted hideS">${lbl[r.grp]}</td><td>${r.qty != null ? r.qty.toLocaleString() : ""}</td><td class="hideS">${r.px != null ? money(r.px, r.cur, 2) : ""}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
+    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Shares</th><th class="hideS">Last</th><th class="hideS">Stop</th><th>Value</th><th class="hideS">Unrealized</th><th class="hideS">Risk to stop</th><th class="l wb">Weight</th></tr>` +
+      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.swing && r.flags && r.flags.length ? " " + flagsHtml(r.flags) : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
+        <td class="l muted hideS">${lbl[r.grp]}</td><td>${r.qty != null ? r.qty.toLocaleString() : ""}</td><td class="hideS">${r.px != null ? money(r.px, r.cur, 2) : ""}</td><td class="hideS">${r.grp === "cash" ? "" : r.stop != null ? money(r.stop, r.cur, 2) : r.swing ? "<span class='bad'>none</span>" : "—"}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td><td class="hideS">${r.risk != null ? money(r.risk) : ""}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
     $("pfBody").innerHTML = `${pfStatsTo("pfBody", "pfOut1", stats)}<div class="pfGrid">${donut(P, rows, kmoney(P.nlv), "NLV")}<div class="pfTW">${tbl}</div></div>` +
       (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
     $("pfSub").textContent = `IBKR · % of ${money(P.nlv)} NLV · last sync ${j.sync || "—"}${lg.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
@@ -1116,8 +1106,6 @@ function initUI() {
   document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { $("theme").value = b.dataset.theme; $("theme").onchange({ target: $("theme") }); markSw(); });
   markSw();
   $("theme").onchange = (e) => { document.documentElement.dataset.theme = e.target.value; try { localStorage.setItem("theme", e.target.value); } catch (err) {} if (lastText) render(parseJournal(lastText), lastName); };
-  $("moreStats").addEventListener("toggle", () => { try { localStorage.setItem("tradingOS.moreOpen", $("moreStats").open ? "1" : "0"); } catch (e) {} if ($("moreStats").open && lastText) drawCharts(metrics(parseJournal(lastText))); });
-  try { if (localStorage.getItem("tradingOS.moreOpen") === "1") $("moreStats").open = true; } catch (e) {}
   let rzT; addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(() => { if (lastText) drawCharts(metrics(parseJournal(lastText))); }, 150); });
   // clock + weather (Sofia)
   // one item, macOS menu-bar style: "Sat 21 Nov  22:42"
