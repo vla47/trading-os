@@ -68,7 +68,7 @@ button:hover{border-color:var(--accent)}
 .hint{font-size:12px;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rule{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--panel2);color:var(--muted);float:right}
 .rule.bad{color:var(--bad)}.rule.good{color:var(--good)}
-.section{margin-top:10px}
+.section{margin-top:10px}.jRow{margin-top:22px}.section.two{margin-top:0}.jRow+.four{margin-top:0}
 :root,[data-theme="light"]{--pf1:#257de0;--pf2:#f47230;--pf3:#00b894;--pf4:#f2a600;--pf5:#ee7fac;--pf6:#6a4ce2;--pfOther:#8b95a3;--pfCash:#c3cad3}
 [data-theme="dark"]{--pf1:#338ced;--pf2:#e76624;--pf3:#00a888;--pf4:#d28e05;--pf5:#e24d8b;--pf6:#9887ef;--pfOther:#6b7686;--pfCash:#3a4656}
 .pfSec{margin-top:10px}.pfHero{margin:0 0 10px}#pfOut2,#pfOut3{margin-top:22px}#pfOut2+.pfSec,#pfOut3+.pfSec{margin-top:0}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
@@ -78,8 +78,8 @@ button:hover{border-color:var(--accent)}
 @media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
 .pfGrid{margin-top:12px}
 .pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
-.pfT td{padding:6px 6px}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
-@media (max-width:760px){.pfT .wb{width:30%}.pfT .hideS{display:none}}
+.pfT td{padding:6px 6px;white-space:nowrap}.pfT{table-layout:fixed;width:100%}.pfT th:nth-child(1){width:15%}.pfT th:nth-child(2){width:10%}.pfT th:nth-child(3){width:18%}.pfT th:nth-child(4){width:12%}.pfT th:nth-child(5){width:12%}.pfT th:nth-child(6){width:33%}.pfT td{overflow:hidden;text-overflow:ellipsis}@media (max-width:760px){.pfT th:nth-child(1){width:26%}.pfT th:nth-child(2){width:20%}.pfT th:nth-child(4){width:22%}.pfT th:nth-child(6){width:32%}}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
+@media (max-width:760px){.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
 .metricGroup .card{min-width:0}
@@ -317,28 +317,18 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="hero" id="hero"></div>
     <div class="alerts" id="alerts"></div>
 
-    <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
-
-    <details class="more" id="moreStats">
-      <summary><span>All stats &amp; breakdowns</span><span class="muted small">Performance · R · rules · edge · drawdown · monthly · per trade · quality · setups · symbols · trade list</span></summary>
-    <div class="groupTitle">PERFORMANCE · closed swing trades</div>
-    <div class="metricGroup" id="kpiPerf"></div>
-    <div class="groupTitle" id="kpiRTitle">RISK UNITS (R) · needs Stop on the entry row</div>
-    <div class="metricGroup" id="kpiR"></div>
-    <div class="groupTitle">RULES &amp; RISK · checked against Trading plan §7</div>
-    <div class="metricGroup" id="kpiRules"></div>
-    <div class="groupTitle">EDGE &amp; CONSISTENCY · closed swing trades</div>
-    <div class="metricGroup" id="kpiEdge"></div>
+    <div class="hero pfHero jRow" id="jRow1"></div>
       <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Equity curve</h2><span class="sub">Cumulative realized P/L per closed trade</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="equity"></canvas></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Drawdown</h2><span class="sub" id="ddSub">Distance below the equity peak</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="drawdown"></canvas></div></div>
       </div>
+    <div class="hero pfHero jRow" id="jRow2"></div>
     <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Monthly P/L</h2><span class="sub">Realized by exit month · trades · win% · account return</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="monthTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>P/L per trade</h2><span class="sub">Each closed trade in exit order · green win, red loss</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody"><canvas id="tradeBars"></canvas></div></div>
     </div>
 
-    <div class="groupTitle">TRADE QUALITY</div>
+    <div class="hero pfHero jRow" id="jRow3"></div>
     <div class="four">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Consistency</h2><span class="sub">By day of exit · profitable-day rate is in the cards</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="consTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Risk &amp; Reward</h2><span class="sub">% of position · win rate you need to break even</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="rrTbl"></div></div>
@@ -346,6 +336,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Fees &amp; activity</h2><span class="sub">Executions and pace</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="feeTbl"></div></div>
     </div>
 
+    <div class="hero pfHero jRow" id="jRow4"></div>
     <div class="section two">
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>By setup / tag</h2><span class="sub">#tags from Setup / Notes</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="tagTbl"></div></div>
       <div class="panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Stocks &amp; P/L</h2><span class="sub">Realized by symbol · best → worst</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="symTbl"></div></div>
@@ -647,7 +638,7 @@ function metrics(j) {
 // ---- RENDER ------------------------------------------------------
 function card(label, value, c = "", hint = "", rule = null) {
   const ruleHtml = rule ? `<span class="rule ${rule[1]}">${esc(rule[0])}</span>` : "";
-  return `<div class="card">${ruleHtml}<div class="label">${esc(label)}</div><div class="value ${c}">${value}</div><div class="hint">${esc(hint)}</div></div>`;
+  return `<div class="heroCard">${ruleHtml}<div class="hl">${esc(label)}</div><div class="hv ${c}">${value}</div><div class="hh">${esc(hint)}</div></div>`;
 }
 const flagsHtml = (f) => f.map(([t, c]) => `<span class="flag ${c === "warn" ? "warn" : ""}">${esc(t)}</span>`).join("");
 const tagsHtml = (tags) => tags.map((x) => `<span class="tag">${esc(x)}</span>`).join("");
@@ -703,30 +694,28 @@ function render(j, sourceName) {
     $("alerts").innerHTML = (al.length ? al : [["ok", "All risk rules respected"]]).map(([c, t]) => `<span class="alert ${c}">${c === "ok" ? "✓" : c === "bad" ? "⚠" : "•"} ${esc(t)}</span>`).join("");
   }
   const avgHold = avg(m.closed.map((t) => t.hold).filter(Number.isFinite));
-  $("kpiPerf").innerHTML = [
+  const cPerf = [
     card("Net realized P/L", money(m.net), cls(m.net), `${n} closed trades`),
-    m.acct ? card("Account drawdown", spct(m.acct.mdd), m.acct.mdd < -0.05 ? "bad" : "", `Daily NAV incl. open · ${m.acct.from} → ${m.acct.to}${m.acct.mddEur != null ? " · ≈ " + money(m.acct.mddEur, "EUR") : ""}`) : "",
     m.acct ? card("Max drawdown (realized)", money(m.maxDD), m.maxDD < 0 ? "bad" : "", "Closed trades only, peak → trough") : "",
     card("Profit factor", m.pf?.toFixed(2) ?? "—", m.pf >= 1.5 ? "good" : m.pf >= 1 ? "warn" : "bad", "Gross profit ÷ gross loss"),
     card("Avg holding time", Number.isFinite(avgHold) ? avgHold.toFixed(1) + "d" : "—", "", "First entry → last exit"),
-  ].join("");
+  ];
 
   const hasR = m.withR.length > 0;
-  $("kpiRTitle").classList.toggle("hidden", !hasR); $("kpiR").classList.toggle("hidden", !hasR);
-  $("kpiR").innerHTML = [
+  const cR = [
     card("Stop coverage", pct(cov), cov >= 0.9 ? "good" : "warn", `${m.withR.length} of ${n} closed trades have a stop`),
-    card("Expectancy (R)", fmtR(m.expR), cls(m.expR), `Total ${fmtR(m.totR)}`),
+    card("Total R", fmtR(m.totR), cls(m.totR), `${m.withR.length} trades with a stop`),
     card("Avg win / avg loss", `${fmtR(m.awR)} <span class="muted">/</span> ${fmtR(m.alR)}`, "", "Target: losses ≈ −1R, winners 3R+"),
     card("Stop breaches", m.withR.length ? String(m.breaches) : "—", m.breaches ? "bad" : "good", `Losses worse than ${RULES.stopBreachR}R`, ["Never moved down", m.breaches ? "bad" : "good"]),
-  ].join("");
+  ];
 
   const orPct = m.openRisk != null && nlv ? m.openRisk / nlv : null;
-  $("kpiRules").innerHTML = [
+  const cRules = [
     card("Averaging down", String(m.avgDownTrades), m.avgDownTrades ? "bad" : "good", "Trades with an add below cost", ["Rule: never", m.avgDownTrades ? "bad" : "good"]),
     card("Open risk to stops", orPct != null ? pct(orPct, 2) : "—", orPct == null ? "warn" : orPct > RULES.maxOpenRiskPct ? "bad" : "good",
       orPct != null ? `${money(m.openRisk)} of ${money(nlv)} NLV` : `${m.openT.filter((t) => t.curStop == null).length} open trade(s) without a stop`, ["Max 2%", orPct != null && orPct <= RULES.maxOpenRiskPct ? "good" : "bad"]),
     card("Loss streaks", `${m.maxStreak}`, m.breakers ? "warn" : "good", `Longest run · ${m.breakers}× hit ${RULES.lossStreak} in a row`, [`Breaker: ${RULES.lossStreak}`, m.breakers ? "bad" : "good"]),
-  ].join("");
+  ];
 
   // edge & consistency
   const payoff = m.al ? m.aw / Math.abs(m.al) : null;
@@ -739,17 +728,25 @@ function render(j, sourceName) {
   const symAll = Object.entries(symP).sort((a, b) => b[1] - a[1]);
   const allBuys = sum(m.swing.map((t) => t.entries)), adBuys = sum(m.swing.map((t) => t.addsToLoser)), adRate = allBuys ? adBuys / allBuys : 0;
   const holdBad = Number.isFinite(m.holdL) && Number.isFinite(m.holdW) && m.holdL > m.holdW;
-  $("kpiEdge").innerHTML = [
+  const cEdge = [
     card("Profit concentration", conc != null ? pct(conc) : "—", conc == null ? "" : conc > 0.5 ? "warn" : "good",
       (conc != null ? "Top 5 trades · " : "") + topSyms.map(([k, v]) => `${k} ${m.net > 0 ? pct(v / m.net) : money(v)}`).join(" · ")),
-    card("Hold: winners / losers", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
+    card("Hold W / L", `${Number.isFinite(m.holdW) ? m.holdW.toFixed(1) : "—"}d <span class="muted">/</span> ${Number.isFinite(m.holdL) ? m.holdL.toFixed(1) : "—"}d`, holdBad ? "bad" : "good",
       holdBad ? "Losers held longer than winners" : "Winners held at least as long as losers", ["Cut losers fast", holdBad ? "bad" : "good"]),
     card("Profitable days", dayV.length ? pct(profDays / dayV.length) : "—", profDays / dayV.length >= 0.5 ? "good" : "warn", `${profDays} of ${dayV.length} days with a closed trade`),
     card("Averaging-down rate", pct(adRate), adRate > 0.15 ? "bad" : adRate > 0 ? "warn" : "good", `${adBuys} of ${allBuys} buys below average cost`),
     card("Best symbol", symAll[0] ? esc(symAll[0][0]) : "—", "good", symAll[0] ? money(symAll[0][1]) + " realized" : ""),
     card("Worst symbol", symAll.length ? esc(symAll[symAll.length - 1][0]) : "—", symAll.length && symAll[symAll.length - 1][1] < 0 ? "bad" : "warn", symAll.length ? money(symAll[symAll.length - 1][1]) + " realized" : ""),
     card("Win / loss streak", `${m.maxWStreak} <span class="muted">/</span> ${m.maxStreak}`, "", "Longest run of winners / losers"),
-  ].join("");
+  ];
+
+  // rows of 5 equal cards (same ratio as the Portfolio tab), each above its section
+  {
+    const f0 = m.closed[0]?.entryDate, f1 = m.closed[m.closed.length - 1]?.exitDate, wk = f0 && f1 ? Math.max(1, days(f0, f1) / 7) : NaN;
+    const cards = [...cPerf, ...(hasR ? cR : []), ...cRules, ...cEdge,
+      card("Trades / week", Number.isFinite(wk) ? (m.closed.length / wk).toFixed(1) : "—", "", `${m.closed.length} closed trades`)].filter(Boolean);
+    ["jRow1", "jRow2", "jRow3", "jRow4"].forEach((id, k) => { const part = cards.slice(k * 5, k * 5 + 5); $(id).innerHTML = part.join(""); $(id).classList.toggle("hidden", !part.length); });
+  }
 
   // trade quality panels
   const kv = (rows) => `<table class="kv">${rows.map(([k, v, c = ""]) => `<tr><td>${k}</td><td class="${c}">${v}</td></tr>`).join("")}</table>`;
@@ -773,8 +770,7 @@ function render(j, sourceName) {
     ["Trades > +1% / < −1%", `${rAll.filter((x) => x > 0.01).length} <span class="muted">/</span> ${rAll.filter((x) => x < -0.01).length}`]]);
   const firstD = m.closed[0]?.entryDate, lastD = m.closed[m.closed.length - 1]?.exitDate, weeks = firstD && lastD ? Math.max(1, days(firstD, lastD) / 7) : NaN;
   const execs = sum(m.swing.map((t) => t.rows.length));
-  $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Trades / week", Number.isFinite(weeks) ? (m.closed.length / weeks).toFixed(1) : "—"],
-    ["Avg position size", money(avg(m.closed.map((t) => t.maxCost)))], ["Commissions", "<span class='muted'>in IBKR P/L</span>"], ["Fees as separate line", "<span class='muted'>not synced</span>"]]);
+  $("feeTbl").innerHTML = kv([["Executions (orders)", execs], ["Closed trades", m.closed.length], ["Avg position size", money(avg(m.closed.map((t) => t.maxCost)))], ["Commissions", "<span class='muted'>in IBKR P/L</span>"], ["Fees as separate line", "<span class='muted'>not synced</span>"]]);
 
   // monthly
   const byMon = {}; for (const t of m.closed) (byMon[t.exitDate.slice(0, 7)] ??= []).push(t);
@@ -784,12 +780,6 @@ function render(j, sourceName) {
     mons.map(([k, ts]) => { const p = sum(ts.map((t) => t.realized));
       const lbl = new Date(k + "-01T00:00:00").toLocaleDateString(undefined, { month: "short", year: "numeric" });
       return `<tr><td class="l">${esc(lbl)}</td><td class="l bars"><div class="mbar"><span class="${p >= 0 ? "pos" : "neg"}" style="width:${(Math.abs(p) / mMax * 100).toFixed(1)}%"></span><b class="${cls(p)}">${money(p)}</b></div></td><td>${ts.length}</td><td>${pct(ts.filter((t) => t.realized > 0).length / ts.length)}</td>${m.acct ? `<td class="${cls(m.acct.mon[k])}">${spct(m.acct.mon[k])}</td>` : ""}</tr>`; }).join("") + `</table>` : `<div class="empty">No closed trades.</div>`;
-
-  // open positions
-  $("openTbl").innerHTML = m.openT.length ? `<table><tr><th>Ticker</th><th>Shares</th><th>Avg cost</th><th>Last</th><th>Stop</th><th>Unrealized</th><th>Risk to stop</th><th>% of NLV</th><th class="l">Flags</th></tr>` +
-    m.openT.map((t) => `<tr><td><b>${esc(t.sym)}</b>${t.dir < 0 ? " <span class='muted'>short</span>" : ""}</td><td>${t.openShares}</td><td>${money(t.cost, t.cur, 2)}</td><td>${money(t.last, t.cur, 2)}</td>
-      <td>${t.curStop != null ? money(t.curStop, t.cur, 2) : "<span class='bad'>none</span>"}</td><td class="${cls(t.unrealized)}">${money(t.unrealized, t.cur)}</td>
-      <td>${money(t.riskToStop, t.cur)}</td><td>${pct(t.posPct, 1)}</td><td class="l">${flagsHtml(t.flags)}</td></tr>`).join("") + `</table>` : `<div class="empty">No open positions.</div>`;
 
   // tags
   const byTag = {};
@@ -831,23 +821,30 @@ function render(j, sourceName) {
 // Stocks & ETFs: each open IBKR position at its last synced price (EUR ETFs converted with the NLV's own $/€ ratio),
 // cash = NLV − positions; weights are % of NLV. Crypto: "## Crypto" table in the journal (Coin | Amount | Avg cost),
 // live USD price from the Worker (Yahoo <COIN>-USD), avg cost as fallback. Total = NLV + crypto.
-const PFQ = { q: {}, at: 0, busy: false };
 const PF_N = 6;   // categorical slots; smaller holdings fold into "Other"
 const YH = { SUI: "SUI20947" };   // Yahoo ids where COIN-USD is taken
 const yhSym = (coin) => (YH[coin] || coin) + "-USD";
+const stockSym = (t) => (t.cur === "EUR" ? t.sym + ".DE" : t.sym);   // EUR ETFs (SXR8 …) trade on Xetra
 function portfolio(m, j) {
   const nlv = j.nlv, fx = nlv && j.nlvEur ? nlv / j.nlvEur : null;
   const pos = [], skipped = [];
+  let syncNet = 0;
   if (nlv) for (const t of m.all.filter((x) => x.open)) {
-    const px = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
-    if (px == null || rate == null) { skipped.push(t.sym); continue; }
-    const usd = t.dir * px * t.openShares * rate;
-    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, qty: t.openShares, px, cur: t.cur, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
+    const synced = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
+    if (synced == null || rate == null) { skipped.push(t.sym); continue; }
+    syncNet += t.dir * synced * t.openShares * rate;
+    // live price from the shared store when the page has one, else the last IBKR sync
+    const q = PX.q[stockSym(t)], px = q ? q.price : synced;
+    const usd = t.dir * px * t.openShares * rate, costUsd = t.cost != null ? t.dir * t.cost * t.openShares * rate : null;
+    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, qty: t.openShares, px, cur: t.cur, chg: q ? q.chg : null, live: !!q, stop: t.curStop,
+      risk: t.riskToStop != null ? t.riskToStop * rate : null, costUsd, flags: t.flags, swing: t.section !== "etf",
+      unreal: costUsd != null && (q || t.unrealized == null) ? usd - costUsd : t.unrealized != null ? t.unrealized * rate : null, atCost: !q && t.last == null, short: t.dir < 0 });
   }
-  const net = sum(pos.map((p) => p.usd)), cash = nlv ? nlv - net : null;
+  // cash is fixed between syncs; the account total moves with the live prices
+  const cash = nlv ? nlv - syncNet : null, nlvLive = nlv ? cash + sum(pos.map((p) => p.usd)) : null;
   const crypto = (j.crypto || []).map((c) => {
     // no live price -> not valued (an old avg cost can be far off for crypto)
-    const q = PFQ.q[yhSym(c.coin)], price = q ? q.price : null;
+    const q = PX.q[yhSym(c.coin)], price = q ? q.price : null;
     const usd = price != null ? c.qty * price : null;
     return { sym: c.coin, grp: "crypto", qty: c.qty, cost: c.cost, price, chg: q ? q.chg : null, usd, live: !!q,
       unreal: q && c.cost != null ? (q.price - c.cost) * c.qty : null, note: c.note };
@@ -857,7 +854,7 @@ function portfolio(m, j) {
   const color = {};
   [...pos, ...crypto].filter((x) => x.usd != null).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd)).slice(0, PF_N)
     .forEach((x, i) => { color[x.sym] = `var(--pf${i + 1})`; });
-  return { nlv, fx, pos, skipped, cash, gross: sum(pos.map((p) => Math.abs(p.usd))), crypto, cTot, total: (nlv || 0) + cTot, color };
+  return { nlv: nlvLive, nlvSync: nlv, fx, pos, skipped, cash, gross: sum(pos.map((p) => Math.abs(p.usd))), crypto, cTot, total: (nlvLive || 0) + cTot, color };
 }
 function pfColor(P, x) { return x.grp === "cash" ? "var(--pfCash)" : P.color[x.sym] || "var(--pfOther)"; }
 // donut: slices largest first, uncoloured holdings folded into "Other", 2px surface gap between slices
@@ -895,81 +892,49 @@ function renderPortfolio(m, j) {
   $("pfEmpty").classList.toggle("hidden", has);
   ["pfPanel", "pfCrypto", "pfTotal", "pfOut1", "pfOut2", "pfOut3"].forEach((id) => $(id).classList.add("hidden"));
   if (!has) return;
-  const lbl = { swing: "Swing", long: "Long-term", cash: "Cash", crypto: "Crypto" };
-
-  // 1 · stocks & ETFs (IBKR)
-  if (P.nlv) {
-    $("pfPanel").classList.remove("hidden");
-    const sw = P.pos.filter((p) => p.grp === "swing"), lg = P.pos.filter((p) => p.grp === "long");
-    const big = [...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd))[0], avgSw = sw.length ? avg(sw.map((p) => p.usd / P.nlv)) : NaN, inv = P.gross / P.nlv;
-    const stats = [
-      pfStat("Invested", pct(inv, 1), `${money(P.gross)} of ${money(P.nlv)} NLV`, inv > 1 ? "warn" : ""),
-      pfStat("Cash", pct(P.cash / P.nlv, 1), P.cash < 0 ? "on margin" : money(P.cash), P.cash < 0 ? "bad" : ""),
-      pfStat("Positions", String(P.pos.length), `${sw.length} swing · ${lg.length} long-term`),
-      pfStat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.usd) / P.nlv, 1)}` : "—", big ? lbl[big.grp] : "no open positions"),
-      pfStat("Avg swing size", Number.isFinite(avgSw) ? pct(avgSw, 1) : "—", `rule ${pct(RULES.positionPct)} per position`, Number.isFinite(avgSw) && avgSw > RULES.positionPct * 1.1 ? "bad" : ""),
-    ];
-    const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
-    const mx = Math.max(...rows.map((r) => Math.abs(r.usd) / P.nlv), 1e-9);
-    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Shares</th><th class="hideS">Last</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
-        <td class="l muted hideS">${lbl[r.grp]}</td><td>${r.qty != null ? r.qty.toLocaleString() : ""}</td><td class="hideS">${r.px != null ? money(r.px, r.cur, 2) : ""}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
-    $("pfBody").innerHTML = `${pfStatsTo("pfBody", "pfOut1", stats)}<div class="pfGrid">${donut(P, rows, kmoney(P.nlv), "NLV")}<div class="pfTW">${tbl}</div></div>` +
-      (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
-    $("pfSub").textContent = `IBKR · % of ${money(P.nlv)} NLV · last sync ${j.sync || "—"}${lg.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
+  // one layout for all three sections: 5 cards (Total · Unrealized · Largest · Assets · Cost basis), then pie + table
+  // table columns everywhere: Asset · Quantity · Price · Value · Unrealized · Weight (% of the section total)
+  const cashRow = P.nlv ? { sym: "Cash", grp: "cash", usd: P.cash } : null;
+  const stockRows = P.pos.map((p) => ({ sym: p.sym, grp: p.grp, qty: p.qty, px: p.px, cur: p.cur, chg: p.chg, usd: p.usd, unreal: p.unreal, cost: p.costUsd, flags: p.swing ? p.flags : [], short: p.short, atCost: p.atCost }));
+  const coinRows = P.crypto.map((c) => ({ sym: c.sym, grp: "crypto", qty: c.qty, px: c.price, cur: "USD", usd: c.usd, unreal: c.unreal, cost: c.cost != null ? c.cost * c.qty : null, chg: c.chg, noPrice: c.usd == null }));
+  const qtyFmt = (r) => r.qty == null ? "" : r.qty.toLocaleString(undefined, { maximumFractionDigits: r.grp === "crypto" ? 8 : 4 });
+  const pxFmt = (r) => r.px == null ? (r.grp === "cash" ? "" : "—") : money(r.px, r.cur, r.px < 10 ? 4 : 2) + (r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : "");
+  function section(outId, bodyId, panelId, rows, total, centre, sub, totalHint, legendOnly = false) {
+    $(panelId).classList.remove("hidden");
+    const held = rows.filter((r) => r.grp !== "cash"), valued = held.filter((r) => r.usd != null);
+    const withCost = valued.filter((r) => r.cost != null && r.unreal != null);
+    const un = withCost.length ? sum(withCost.map((r) => r.unreal)) : null, cost = withCost.length ? sum(withCost.map((r) => r.cost)) : null;
+    const big = [...valued].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd))[0];
+    const kinds = [["swing", "stock"], ["long", "ETF"], ["crypto", "coin"]].map(([g, n]) => { const k = held.filter((r) => r.grp === g).length; return k ? `${k} ${n}${k > 1 ? "s" : ""}` : ""; }).filter(Boolean).join(" · ");
+    pfStatsTo(bodyId, outId, [
+      pfStat("Total", money(total), totalHint),
+      pfStat("Unrealized", un != null ? money(un) : "—", cost ? spct(un / cost) + " on cost" : "needs avg cost", cls(un)),
+      pfStat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.usd) / total, 1)}` : "—", big ? money(big.usd) : "nothing held"),
+      pfStat("Assets", String(held.length), kinds || "—"),
+      pfStat("Cost basis", cost != null ? money(cost) : "—", "what you paid for what you hold"),
+    ]);
+    const sorted = [...rows].sort((a, b) => Math.abs(b.usd ?? -1) - Math.abs(a.usd ?? -1));
+    const mx = Math.max(...sorted.filter((r) => r.usd != null).map((r) => Math.abs(r.usd) / total), 1e-9);
+    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th>Quantity</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+      sorted.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.flags && r.flags.length ? " " + flagsHtml(r.flags) : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
+        <td>${qtyFmt(r)}</td><td class="hideS">${pxFmt(r)}</td>
+        <td class="${r.usd < 0 ? "bad" : ""}">${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td>
+        <td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${r.usd != null ? weightCell(P, r, r.usd / total, mx) : "<td></td>"}</tr>`).join("") + `</table>`;
+    $(bodyId).innerHTML = legendOnly ? `<div class="pfGrid one">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre, true)}</div>`
+      : `<div class="pfGrid">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre)}<div class="pfTW">${tbl}</div></div>`;
+    return sub;
   }
-
-  // 2 · crypto
+  if (P.nlv) $("pfSub").textContent = section("pfOut1", "pfBody", "pfPanel", [cashRow, ...stockRows], P.nlv, "NLV", "", "IBKR account incl. cash") ||
+    `IBKR · ${P.pos.some((p) => p.live) ? "live prices · cash as of" : "prices as of"} last sync ${j.sync || "—"}${P.pos.some((p) => p.cur === "EUR") && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}` + (P.skipped.length ? ` · not valued: ${P.skipped.join(", ")}` : "");
   $("pfCrypto").classList.remove("hidden");
   if (!P.crypto.length) {
-    $("pfCryptoBody").innerHTML = `<div class="sub">Add a <b>## Crypto</b> section to Trades journal.md with a table <code>| Coin | Amount | Avg cost | Notes |</code> (e.g. <code>| BTC | 0.25 | $60,000 | Ledger |</code>). Avg cost is optional.</div>`;
+    $("pfCryptoBody").innerHTML = `<div class="sub">Add a <b>## Crypto</b> section to Trades journal.md with a table <code>| Coin | Amount | Avg cost | Notes |</code>.</div>`;
     $("pfCryptoSub").textContent = "No crypto in the journal yet";
   } else {
-    const C = P.crypto, priced = C.filter((c) => c.usd != null), cb = priced.filter((c) => c.cost != null);
-    const un = cb.length ? sum(cb.map((c) => (c.price - c.cost) * c.qty)) : null, costT = cb.length ? sum(cb.map((c) => c.cost * c.qty)) : null;
-    const big = [...priced].sort((a, b) => b.usd - a.usd)[0];
-    const day = priced.filter((c) => c.live && c.chg != null), dayUsd = day.length ? sum(day.map((c) => c.usd - c.usd / (1 + c.chg / 100))) : null;
-    const stats = [
-      pfStat("Value", money(P.cTot), `${priced.filter((c) => c.live).length} of ${C.length} live prices`),
-      pfStat("Unrealized", un != null ? money(un) : "—", costT ? spct(un / costT) + " on cost" : "needs Avg cost", cls(un)),
-      pfStat("Today", dayUsd != null ? money(dayUsd) : "—", "since 00:00 UTC", cls(dayUsd)),
-      pfStat("Coins", String(C.length), C.map((c) => c.sym).join(" · ")),
-      pfStat("Largest", big ? `${esc(big.sym)} ${pct(big.usd / P.cTot, 1)}` : "—", big ? money(big.usd) : ""),
-    ];
-    const rows = [...C].sort((a, b) => (b.usd ?? -1) - (a.usd ?? -1)), mx = Math.max(...rows.map((r) => (r.usd || 0) / (P.cTot || 1)), 1e-9);
-    const tbl = `<table class="pfT"><tr><th class="l">Coin</th><th>Amount</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b></td>
-        <td>${r.qty.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td><td class="hideS">${r.price != null ? money(r.price, "USD", r.price < 10 ? 4 : 2) : "—"}${r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : ""}</td>
-        <td>${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, (r.usd || 0) / (P.cTot || 1), mx)}</tr>`).join("") + `</table>`;
-    $("pfCryptoBody").innerHTML = `${pfStatsTo("pfCryptoBody", "pfOut2", stats)}<div class="pfGrid">${donut(P, priced, kmoney(P.cTot), "crypto")}<div class="pfTW">${tbl}</div></div>`;
-    $("pfCryptoSub").textContent = `% of crypto value · prices ${PFQ.at ? "live " + new Date(PFQ.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
+    section("pfOut2", "pfCryptoBody", "pfCrypto", coinRows, P.cTot, "crypto", "", `${coinRows.filter((r) => !r.noPrice).length} of ${coinRows.length} live prices`);
+    $("pfCryptoSub").textContent = `Prices ${PX.at ? "live " + new Date(PX.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
   }
-
-  // 3 · everything together
-  if (P.nlv && P.crypto.length) {
-    $("pfTotal").classList.remove("hidden");
-    const T = P.total, sw = sum(P.pos.filter((p) => p.grp === "swing").map((p) => p.usd)), lg = sum(P.pos.filter((p) => p.grp === "long").map((p) => p.usd));
-    const stats = [
-      pfStat("Total", money(T), "IBKR NLV + crypto"),
-      pfStat("Swing stocks", pct(sw / T, 1), money(sw)),
-      pfStat("Long-term ETFs", pct(lg / T, 1), money(lg)),
-      pfStat("Cash", pct(P.cash / T, 1), money(P.cash), P.cash < 0 ? "bad" : ""),
-      pfStat("Crypto", pct(P.cTot / T, 1), money(P.cTot)),
-    ];
-    const all = [{ sym: "Cash", grp: "cash", usd: P.cash }, ...P.pos, ...P.crypto.filter((c) => c.usd != null)];
-    $("pfTotalBody").innerHTML = `${pfStatsTo("pfTotalBody", "pfOut3", stats)}<div class="pfGrid one">${donut(P, all, kmoney(T), "total", true)}</div>`;
-  }
-}
-// live crypto prices while the Portfolio tab is shown (Worker /ext, Yahoo <COIN>-USD, cached 60 s)
-async function loadCrypto(force) {
-  const syms = lastText ? [...new Set((parseJournal(lastText).crypto || []).map((c) => yhSym(c.coin)))] : [];
-  if (!LIVE_URL || !syms.length || PFQ.busy || $("portfolioView").classList.contains("hidden") || document.hidden) return;
-  if (!force && Date.now() - PFQ.at < 55000) return;
-  PFQ.busy = true;
-  try {
-    const r = await fetch(LIVE_URL.replace(/\/quotes$/, "/ext?s=") + syms.map(encodeURIComponent).join(","), { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
-    if (r && r.quotes) { Object.assign(PFQ.q, r.quotes); PFQ.at = Date.now(); renderPortfolio(metrics(parseJournal(lastText)), parseJournal(lastText)); }
-  } finally { PFQ.busy = false; }
+  if (P.nlv && P.crypto.length) section("pfOut3", "pfTotalBody", "pfTotal", [cashRow, ...stockRows, ...coinRows], P.total, "total", "", "IBKR account + crypto", true);
 }
 
 function drawCharts(m) {
@@ -1116,8 +1081,6 @@ function initUI() {
   document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { $("theme").value = b.dataset.theme; $("theme").onchange({ target: $("theme") }); markSw(); });
   markSw();
   $("theme").onchange = (e) => { document.documentElement.dataset.theme = e.target.value; try { localStorage.setItem("theme", e.target.value); } catch (err) {} if (lastText) render(parseJournal(lastText), lastName); };
-  $("moreStats").addEventListener("toggle", () => { try { localStorage.setItem("tradingOS.moreOpen", $("moreStats").open ? "1" : "0"); } catch (e) {} if ($("moreStats").open && lastText) drawCharts(metrics(parseJournal(lastText))); });
-  try { if (localStorage.getItem("tradingOS.moreOpen") === "1") $("moreStats").open = true; } catch (e) {}
   let rzT; addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(() => { if (lastText) drawCharts(metrics(parseJournal(lastText))); }, 150); });
   // clock + weather (Sofia)
   // one item, macOS menu-bar style: "Sat 21 Nov  22:42"
@@ -1241,7 +1204,7 @@ let encCache = null, updatedAt = null;
 const fmtWhen = (d) => d.toLocaleDateString([], { day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 async function fetchEnc() {
   try {
-    const r = await fetch(ENC_URL + "?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) return null;
+    const r = await fetch(ENC_URL, { cache: "no-cache" }); if (!r.ok) return null;
     const enc = await r.json();
     // When the synced file was published: explicit timestamp if the sync wrote one, else the server's Last-Modified.
     const t = Date.parse(enc.synced_at || r.headers.get("last-modified") || "");
@@ -1375,7 +1338,7 @@ function qInfo(r) {
 }
 async function loadMarket() {
   try {
-    const j = await (await fetch(DATA_BASE + "market.json?t=" + Date.now())).json();
+    const j = await (await fetch(DATA_BASE + "market.json", { cache: "no-cache" })).json();
     if (!j || !j.quotes) throw new Error("bad snapshot");
     const changed = !MKT || MKT.updated !== j.updated; MKT = j;
     if (LIVE && LIVE.updated > MKT.updated) applyLive();
@@ -1423,8 +1386,7 @@ function showView(v) {
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
-  if (v === "portfolio") loadCrypto();
-  if (v !== "journal") loadExt();
+  pxTick(true);
 }
 
 // ---- big-ticker stock list (Leaders tab, Biggest S&P 500 card): click = candle chart, same chart as the top bar ----
@@ -1434,7 +1396,7 @@ const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(
 function stockList(el, rows, tip, sub) {
   const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
   const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Pre-market / after-hours: latest trade and % vs the regular-session price">Ext hours</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const row = (r) => { const L = EXT.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
+  const row = (r) => { const L = PX.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
     const xt = x ? `\n${x.session === "pre" ? "Pre-market" : "After-hours"} ${x.price.toFixed(2)} (${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}% vs ${x.session === "pre" ? "previous close" : "close"}) · ${new Date(x.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
     const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M and RS from the scan` : "";
     return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
@@ -1450,37 +1412,61 @@ function stockList(el, rows, tip, sub) {
 function renderBig() {
   const rows = LD?.big || [];
   const d = LD?.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "";
-  $("bigSub").textContent = rows.length ? (EXT.at ? "Price, 1D and ext hours live · 1M–6M and RS from " + d : d) + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
+  $("bigSub").textContent = rows.length ? (PX.at ? "Price, 1D and ext hours live · 1M–6M and RS from " + d : d) + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
   stockList($("bigList"), rows, (r) => `Market cap $${r.mcapB ?? "—"}B · ${r.offhi ?? "—"}% vs 52w high`,
     (r) => shortName(r.name) + (r.mcapB ? ` · $${r.mcapB >= 1000 ? (r.mcapB / 1000).toFixed(2) + "T" : r.mcapB + "B"}` : ""));
 }
 // ---- live price + pre-market / after-hours for the stock rows: Worker /ext (Yahoo, 40 stocks a call), every 60 s while shown ----
-const EXT = { q: {}, at: 0, busy: false };
-async function loadExt() {
-  if (!LIVE_URL || !LD || EXT.busy) return;
-  const vis = ["sectorsView", "leadersView"].some((id) => !$(id).classList.contains("hidden"));
-  if (!vis || document.hidden) return;
-  const syms = [...new Set([...(LD.big || []), ...(LD.rows || [])].map((r) => r.t))].sort();
-  if (!syms.length) return;
-  EXT.busy = true;
-  try {
-    const url = LIVE_URL.replace(/\/quotes$/, "/ext?s=");
-    const parts = []; for (let i = 0; i < syms.length; i += 40) parts.push(syms.slice(i, i + 40));
-    const res = await Promise.all(parts.map((p) => fetch(url + p.map(encodeURIComponent).join(","), { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null)));
-    let n = 0; res.forEach((j) => { if (j && j.quotes) { Object.assign(EXT.q, j.quotes); n++; } });
-    if (n) { EXT.at = Date.now(); renderLeaders(); }
-  } finally { EXT.busy = false; }
+// ---- one shared price store for every tab (Worker /ext → Yahoo) ----------------------------
+// Each ticker is fetched at most once a minute, whichever tab needs it; one timer asks only for what the open tab
+// is missing, in one request (40 a call). Stocks are not refetched while the US market is closed (weekends, nights).
+const PX = { q: {}, t: {}, at: 0, busy: false };
+const PX_TTL = 55e3, PX_TTL_CLOSED = 30 * 60e3;
+function usActive(now = new Date()) {   // US pre-market → after-hours, Mon–Fri 4:00–20:00 New York
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", hour12: false }).formatToParts(now).map((x) => [x.type, x.value]));
+  const h = +p.hour % 24; return !["Sat", "Sun"].includes(p.weekday) && h >= 4 && h < 20;
 }
-setInterval(loadExt, 60000);
+function pxNeeded() {
+  const vis = (id) => !$(id).classList.contains("hidden"), need = new Set();
+  if (LD && vis("sectorsView")) (LD.big || []).forEach((r) => need.add(r.t));
+  if (LD && vis("leadersView")) (LD.rows || []).forEach((r) => need.add(r.t));
+  if (lastText && vis("portfolioView")) {
+    const j = parseJournal(lastText);
+    metrics(j).all.filter((t) => t.open).forEach((t) => need.add(stockSym(t)));
+    (j.crypto || []).forEach((c) => need.add(yhSym(c.coin)));
+  }
+  return [...need];
+}
+async function pxTick(force) {
+  if (!LIVE_URL || PX.busy || document.hidden) return;
+  const now = Date.now(), open = usActive();
+  const stale = pxNeeded().filter((k) => { const age = now - (PX.t[k] || 0); return age > (k.endsWith("-USD") || open ? PX_TTL : PX_TTL_CLOSED) || (force && !PX.t[k]); }).sort();
+  if (!stale.length) return;
+  PX.busy = true;
+  try {
+    const url = LIVE_URL.replace(/\/quotes$/, "/ext?s="), parts = [];
+    for (let i = 0; i < stale.length; i += 40) parts.push(stale.slice(i, i + 40));
+    const res = await Promise.all(parts.map((p) => fetch(url + p.map(encodeURIComponent).join(","), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+    let n = 0;
+    res.forEach((j) => { if (j && j.quotes) { for (const [k, v] of Object.entries(j.quotes)) { PX.q[k] = v; PX.t[k] = now; } n++; } });
+    stale.forEach((k) => { if (!PX.t[k]) PX.t[k] = now - PX_TTL + 5 * 60e3; });   // unknown symbol: retry in ~5 min, not every minute
+    if (n) {
+      PX.at = now;
+      if (!$("sectorsView").classList.contains("hidden") || !$("leadersView").classList.contains("hidden")) renderLeaders();
+      if (!$("portfolioView").classList.contains("hidden") && lastText) { const j = parseJournal(lastText); renderPortfolio(metrics(j), j); }
+    }
+  } finally { PX.busy = false; }
+}
+setInterval(() => pxTick(), 60000);
 
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
 async function loadLeaders() {
   if (LD && Date.now() - ldAt < 10 * 60000) return renderLeaders();
   try {
-    const r = await fetch(DATA_BASE + "leaders.json?t=" + Date.now(), { cache: "no-store" });
+    const r = await fetch(DATA_BASE + "leaders.json", { cache: "no-cache" });
     if (!r.ok) throw new Error(r.status);
-    LD = await r.json(); ldAt = Date.now(); loadExt();
+    LD = await r.json(); ldAt = Date.now(); pxTick(true);
   } catch (e) { if (!LD) { $("ldUpdated").textContent = "Leaders list not published yet (runs overnight after the US close)."; return; } }
   renderLeaders();
 }
@@ -1789,7 +1775,7 @@ function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) {
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
   $("pfGoJournal").onclick = () => showView("journal");
-  setInterval(() => loadCrypto(), 60000); document.addEventListener("visibilitychange", () => loadCrypto());
+  document.addEventListener("visibilitychange", () => pxTick());
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
