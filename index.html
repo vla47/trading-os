@@ -71,11 +71,11 @@ button:hover{border-color:var(--accent)}
 .section{margin-top:10px}.jRow{margin-top:22px}.section.two{margin-top:0}.jRow+.four{margin-top:0}
 :root,[data-theme="light"]{--pf1:#257de0;--pf2:#f47230;--pf3:#00b894;--pf4:#f2a600;--pf5:#ee7fac;--pf6:#6a4ce2;--pfOther:#8b95a3;--pfCash:#c3cad3}
 [data-theme="dark"]{--pf1:#338ced;--pf2:#e76624;--pf3:#00a888;--pf4:#d28e05;--pf5:#e24d8b;--pf6:#9887ef;--pfOther:#6b7686;--pfCash:#3a4656}
-.pfSec{margin-top:10px}.pfHero{margin:0 0 10px}#pfOut2,#pfOut3{margin-top:22px}#pfOut2+.pfSec,#pfOut3+.pfSec{margin-top:0}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
+.pfSec{margin-top:10px}.pfHero{margin:0 0 10px}#pfOut2,#pfOut3{margin-top:22px}#pfOut2+.pfSec,#pfOut3+.pfSec{margin-top:0}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,1fr)}.pfTW{min-width:0;overflow-x:auto}
 .pfPie{display:flex;flex-direction:column;align-items:center;gap:10px}.pfGrid.one .pfPie{flex-direction:row;align-items:center;gap:22px}.pfPie svg{width:200px;height:200px;flex:0 0 auto}.pfPie path{stroke:var(--panel);stroke-width:2;stroke-linejoin:round}.pfPie path:hover{opacity:.85}
 .pfPie .pc{font-size:17px;font-weight:700;fill:var(--text)}.pfPie .ps{font-size:11px;fill:var(--muted)}
-.pfLegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;width:100%;font-size:13px}.pfGrid.one .pfLegend{grid-template-columns:1fr;width:auto;min-width:180px}.pfLegend .pl{display:flex;align-items:center;min-width:0}.pfLegend .pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfLegend b{font-weight:600;margin-left:8px}
-@media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
+.pfLegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;width:100%;font-size:13px}.pfGrid.one .pfLegend{grid-template-columns:1fr;width:auto;min-width:180px;flex:1;max-width:760px}.pfLegend .lbar{flex:1;height:8px;margin:0 12px;display:flex;align-items:center}.pfLegend .lbar span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfLegend b{min-width:52px;text-align:right}.pfLegend .pl{display:flex;align-items:center;min-width:0}.pfLegend .pn{flex:0 0 90px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfLegend b{font-weight:600;margin-left:8px}
+@media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:1fr;width:100%}}
 .pfGrid{margin-top:12px}
 .pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 .pfT td{padding:6px 6px;white-space:nowrap}.pfT{table-layout:fixed;width:100%}.pfT th:nth-child(1){width:15%}.pfT th:nth-child(2){width:10%}.pfT th:nth-child(3){width:18%}.pfT th:nth-child(4){width:12%}.pfT th:nth-child(5){width:12%}.pfT th:nth-child(6){width:33%}.pfT td{overflow:hidden;text-overflow:ellipsis}@media (max-width:760px){.pfT th:nth-child(1){width:26%}.pfT th:nth-child(2){width:20%}.pfT th:nth-child(4){width:22%}.pfT th:nth-child(6){width:32%}}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
@@ -873,7 +873,9 @@ function donut(P, items, centre, sub, legend = false) {
       : `M${pt(R, a)} A${R},${R} 0 ${big} 1 ${pt(R, a2)} L${pt(r, a2)} A${r},${r} 0 ${big} 0 ${pt(r, a)}Z`;
     a = a2; return `<path d="${d}" fill="${f}" fill-rule="evenodd"><title>${esc(tip)}</title></path>`;
   }).join("");
-  const leg = sl.map((x) => `<div class="pl"><span class="pfDot" style="background:${x.grp === "other" ? "var(--pfOther)" : pfColor(P, x)}"></span><span class="pn"${x.list ? ` title="${esc(x.list)}"` : ""}>${esc(x.sym)}</span><b>${pct(x.usd / tot, 1)}</b></div>`).join("");
+  const lmx = Math.max(...sl.map((x) => x.usd / tot), 1e-9);
+  const leg = sl.map((x) => { const c = x.grp === "other" ? "var(--pfOther)" : pfColor(P, x);
+    return `<div class="pl"><span class="pfDot" style="background:${c}"></span><span class="pn"${x.list ? ` title="${esc(x.list)}"` : ""}>${esc(x.sym)}</span><span class="lbar"><span style="width:${(x.usd / tot / lmx * 100).toFixed(1)}%;background:${c}"></span></span><b>${pct(x.usd / tot, 1)}</b></div>`; }).join("");
   return `<div class="pfPie"><svg viewBox="0 0 160 160" role="img" aria-label="${esc(sl.map((x) => `${x.sym} ${pct(x.usd / tot, 1)}`).join(", "))}">${paths}
     <text x="80" y="78" text-anchor="middle" class="pc">${centre}</text><text x="80" y="96" text-anchor="middle" class="ps">${esc(sub)}</text></svg>${legend ? `<div class="pfLegend">${leg}</div>` : ""}</div>`;
 }
