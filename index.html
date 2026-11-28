@@ -71,15 +71,15 @@ button:hover{border-color:var(--accent)}
 .section{margin-top:10px}
 :root,[data-theme="light"]{--pf1:#257de0;--pf2:#f47230;--pf3:#00b894;--pf4:#f2a600;--pf5:#ee7fac;--pf6:#6a4ce2;--pfOther:#8b95a3;--pfCash:#c3cad3}
 [data-theme="dark"]{--pf1:#338ced;--pf2:#e76624;--pf3:#00a888;--pf4:#d28e05;--pf5:#e24d8b;--pf6:#9887ef;--pfOther:#6b7686;--pfCash:#3a4656}
-.pfSec{margin-top:10px}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
+.pfSec{margin-top:10px}.pfHero{margin:0 0 10px}#pfOut2,#pfOut3{margin-top:22px}#pfOut2+.pfSec,#pfOut3+.pfSec{margin-top:0}.pfGrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}.pfGrid.one{grid-template-columns:minmax(0,520px)}.pfTW{min-width:0;overflow-x:auto}
 .pfPie{display:flex;flex-direction:column;align-items:center;gap:10px}.pfGrid.one .pfPie{flex-direction:row;align-items:center;gap:22px}.pfPie svg{width:200px;height:200px;flex:0 0 auto}.pfPie path{stroke:var(--panel);stroke-width:2;stroke-linejoin:round}.pfPie path:hover{opacity:.85}
 .pfPie .pc{font-size:17px;font-weight:700;fill:var(--text)}.pfPie .ps{font-size:11px;fill:var(--muted)}
 .pfLegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;width:100%;font-size:13px}.pfGrid.one .pfLegend{grid-template-columns:1fr;width:auto;min-width:180px}.pfLegend .pl{display:flex;align-items:center;min-width:0}.pfLegend .pn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfLegend b{font-weight:600;margin-left:8px}
 @media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
-.pfStats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.pfStat{background:var(--panel2);border-radius:12px;padding:8px 10px;min-width:0}.pfStat .label{font-size:12px}.pfStat .v{font-size:19px;font-weight:700;margin-top:2px;white-space:nowrap}.pfStat .hint{margin-top:2px}
+.pfGrid{margin-top:12px}
 .pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 .pfT td{padding:6px 6px}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
-@media (max-width:760px){.pfStats{grid-template-columns:repeat(2,minmax(0,1fr))}.pfT .wb{width:30%}.pfT .hideS{display:none}}
+@media (max-width:760px){.pfT .wb{width:30%}.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
 .metricGroup .card{min-width:0}
@@ -358,14 +358,17 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
  </div>
 
  <section id="portfolioView" class="hidden" aria-label="Portfolio">
+  <div id="pfOut1" class="hidden"></div>
   <div class="panel assetCard hidden" id="pfPanel">
     <div class="assetHead"><div><h2 class="secTitle2">Stocks &amp; ETFs</h2><div class="muted small" id="pfSub">Allocation of the account as of the last IBKR sync</div></div></div>
     <div id="pfBody"></div>
   </div>
+  <div id="pfOut2" class="hidden pfSec"></div>
   <div class="panel assetCard hidden pfSec" id="pfCrypto">
     <div class="assetHead"><div><h2 class="secTitle2">Crypto</h2><div class="muted small" id="pfCryptoSub"></div></div></div>
     <div id="pfCryptoBody"></div>
   </div>
+  <div id="pfOut3" class="hidden pfSec"></div>
   <div class="panel assetCard hidden pfSec" id="pfTotal">
     <div class="assetHead"><div><h2 class="secTitle2">Total</h2><div class="muted small">Stocks, ETFs, cash and crypto together · % of IBKR NLV + crypto</div></div></div>
     <div id="pfTotalBody"></div>
@@ -839,7 +842,7 @@ function portfolio(m, j) {
     const px = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
     if (px == null || rate == null) { skipped.push(t.sym); continue; }
     const usd = t.dir * px * t.openShares * rate;
-    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
+    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, qty: t.openShares, px, cur: t.cur, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
   }
   const net = sum(pos.map((p) => p.usd)), cash = nlv ? nlv - net : null;
   const crypto = (j.crypto || []).map((c) => {
@@ -877,14 +880,20 @@ function donut(P, items, centre, sub, legend = false) {
   return `<div class="pfPie"><svg viewBox="0 0 160 160" role="img" aria-label="${esc(sl.map((x) => `${x.sym} ${pct(x.usd / tot, 1)}`).join(", "))}">${paths}
     <text x="80" y="78" text-anchor="middle" class="pc">${centre}</text><text x="80" y="96" text-anchor="middle" class="ps">${esc(sub)}</text></svg>${legend ? `<div class="pfLegend">${leg}</div>` : ""}</div>`;
 }
-const pfStat = (l, v, h, c = "") => `<div class="pfStat"><div class="label">${esc(l)}</div><div class="v ${c}">${v}</div><div class="hint">${h}</div></div>`;
+const pfStat = (l, v, h, c = "") => ({ l, v, h, c });
+// stat row = separate cards above each section, same look as the Journal hero row
+function pfStatsTo(bodyId, outId, stats) {
+  $(outId).innerHTML = `<div class="hero pfHero">${stats.map((x) => `<div class="heroCard"><div class="hl">${esc(x.l)}</div><div class="hv ${x.c}">${x.v}</div><div class="hh">${x.h}</div></div>`).join("")}</div>`;
+  $(outId).classList.remove("hidden");
+  return "";
+}
 const kmoney = (x) => (Math.abs(x) >= 1e6 ? money(x / 1e6, "USD", 2) + "M" : Math.abs(x) >= 1e4 ? money(x / 1e3, "USD", 1) + "k" : money(x));
 function weightCell(P, x, w, mx) { return `<td class="l wb"><div><span style="width:${(Math.abs(w) / mx * 100).toFixed(1)}%;background:${pfColor(P, x)}"></span><b>${pct(w, 2)}</b></div></td>`; }
 
 function renderPortfolio(m, j) {
   const P = portfolio(m, j), has = !!(P.nlv || P.crypto.length);
   $("pfEmpty").classList.toggle("hidden", has);
-  ["pfPanel", "pfCrypto", "pfTotal"].forEach((id) => $(id).classList.add("hidden"));
+  ["pfPanel", "pfCrypto", "pfTotal", "pfOut1", "pfOut2", "pfOut3"].forEach((id) => $(id).classList.add("hidden"));
   if (!has) return;
   const lbl = { swing: "Swing", long: "Long-term", cash: "Cash", crypto: "Crypto" };
 
@@ -899,13 +908,13 @@ function renderPortfolio(m, j) {
       pfStat("Positions", String(P.pos.length), `${sw.length} swing · ${lg.length} long-term`),
       pfStat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.usd) / P.nlv, 1)}` : "—", big ? lbl[big.grp] : "no open positions"),
       pfStat("Avg swing size", Number.isFinite(avgSw) ? pct(avgSw, 1) : "—", `rule ${pct(RULES.positionPct)} per position`, Number.isFinite(avgSw) && avgSw > RULES.positionPct * 1.1 ? "bad" : ""),
-    ].join("");
+    ];
     const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
     const mx = Math.max(...rows.map((r) => Math.abs(r.usd) / P.nlv), 1e-9);
-    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Shares</th><th class="hideS">Last</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
       rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
-        <td class="l muted hideS">${lbl[r.grp]}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
-    $("pfBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid">${donut(P, rows, kmoney(P.nlv), "NLV")}<div class="pfTW">${tbl}</div></div>` +
+        <td class="l muted hideS">${lbl[r.grp]}</td><td>${r.qty != null ? r.qty.toLocaleString() : ""}</td><td class="hideS">${r.px != null ? money(r.px, r.cur, 2) : ""}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, r.usd / P.nlv, mx)}</tr>`).join("") + `</table>`;
+    $("pfBody").innerHTML = `${pfStatsTo("pfBody", "pfOut1", stats)}<div class="pfGrid">${donut(P, rows, kmoney(P.nlv), "NLV")}<div class="pfTW">${tbl}</div></div>` +
       (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
     $("pfSub").textContent = `IBKR · % of ${money(P.nlv)} NLV · last sync ${j.sync || "—"}${lg.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
   }
@@ -926,13 +935,13 @@ function renderPortfolio(m, j) {
       pfStat("Today", dayUsd != null ? money(dayUsd) : "—", "since 00:00 UTC", cls(dayUsd)),
       pfStat("Coins", String(C.length), C.map((c) => c.sym).join(" · ")),
       pfStat("Largest", big ? `${esc(big.sym)} ${pct(big.usd / P.cTot, 1)}` : "—", big ? money(big.usd) : ""),
-    ].join("");
+    ];
     const rows = [...C].sort((a, b) => (b.usd ?? -1) - (a.usd ?? -1)), mx = Math.max(...rows.map((r) => (r.usd || 0) / (P.cTot || 1)), 1e-9);
-    const tbl = `<table class="pfT"><tr><th class="l">Coin</th><th class="hideS">Amount</th><th>Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+    const tbl = `<table class="pfT"><tr><th class="l">Coin</th><th>Amount</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
       rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b></td>
-        <td class="hideS">${r.qty.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td><td>${r.price != null ? money(r.price, "USD", r.price < 10 ? 4 : 2) : "—"}${r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : ""}</td>
+        <td>${r.qty.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td><td class="hideS">${r.price != null ? money(r.price, "USD", r.price < 10 ? 4 : 2) : "—"}${r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : ""}</td>
         <td>${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, (r.usd || 0) / (P.cTot || 1), mx)}</tr>`).join("") + `</table>`;
-    $("pfCryptoBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid">${donut(P, priced, kmoney(P.cTot), "crypto")}<div class="pfTW">${tbl}</div></div>`;
+    $("pfCryptoBody").innerHTML = `${pfStatsTo("pfCryptoBody", "pfOut2", stats)}<div class="pfGrid">${donut(P, priced, kmoney(P.cTot), "crypto")}<div class="pfTW">${tbl}</div></div>`;
     $("pfCryptoSub").textContent = `% of crypto value · prices ${PFQ.at ? "live " + new Date(PFQ.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
   }
 
@@ -946,9 +955,9 @@ function renderPortfolio(m, j) {
       pfStat("Long-term ETFs", pct(lg / T, 1), money(lg)),
       pfStat("Cash", pct(P.cash / T, 1), money(P.cash), P.cash < 0 ? "bad" : ""),
       pfStat("Crypto", pct(P.cTot / T, 1), money(P.cTot)),
-    ].join("");
+    ];
     const all = [{ sym: "Cash", grp: "cash", usd: P.cash }, ...P.pos, ...P.crypto.filter((c) => c.usd != null)];
-    $("pfTotalBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid one">${donut(P, all, kmoney(T), "total", true)}</div>`;
+    $("pfTotalBody").innerHTML = `${pfStatsTo("pfTotalBody", "pfOut3", stats)}<div class="pfGrid one">${donut(P, all, kmoney(T), "total", true)}</div>`;
   }
 }
 // live crypto prices while the Portfolio tab is shown (Worker /ext, Yahoo <COIN>-USD, cached 60 s)
@@ -1052,7 +1061,7 @@ function initUI() {
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
   const closeJournal = () => {
     lastText = null; $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("pkOffer").classList.add("hidden");
-    ["pfPanel", "pfCrypto", "pfTotal"].forEach((id) => $(id).classList.add("hidden")); $("pfBody").innerHTML = $("pfCryptoBody").innerHTML = $("pfTotalBody").innerHTML = ""; $("pfEmpty").classList.remove("hidden");
+    ["pfPanel", "pfCrypto", "pfTotal", "pfOut1", "pfOut2", "pfOut3"].forEach((id) => $(id).classList.add("hidden")); $("pfBody").innerHTML = $("pfCryptoBody").innerHTML = $("pfTotalBody").innerHTML = ""; $("pfEmpty").classList.remove("hidden");
     $("status").textContent = "No journal loaded"; $("userMenu").classList.add("hidden");
   };
   // Lock: hide the journal now; Touch ID and "remember this device" stay set up.
