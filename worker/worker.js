@@ -107,27 +107,30 @@ async function liveQuote(key, t, base, cash, nowS) {
 const EXT_MAX = 40;
 async function extRoute(url, ctx) {
   const syms = [...new Set((url.searchParams.get("s") || "").toUpperCase().split(","))]
-    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(x))   // 16 chars: crypto ids like SUI20947-USD.sort().slice(0, EXT_MAX);
+    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(x)).sort().slice(0, EXT_MAX);   // 16 chars: crypto ids like SUI20947-USD
   if (!syms.length) return new Response(JSON.stringify({ error: "no symbols" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
-  const cache = caches.default, key = new Request(url.origin + "/ext?s=" + syms.join(","));
-  const hit = await cache.match(key);
-  if (hit) return hit;
-  const quotes = {}, failed = [];
+  // cache per ticker (not per list), so overlapping lists from different tabs share one Yahoo call per minute
+  const cache = caches.default, quotes = {}, failed = [];
   await Promise.all(syms.map(async (k) => {
+    const key = new Request(url.origin + "/ext1/" + encodeURIComponent(k));
+    const hit = await cache.match(key);
+    if (hit) { quotes[k] = await hit.json(); return; }
     try {
-      const r = await chart(k.replace(/\./g, "-"), "range=1d&interval=15m&includePrePost=true");
+      // BRK.B -> BRK-B (share class); keep exchange suffixes such as SXR8.DE
+      const r = await chart(/\.[A-Z]$/.test(k) && !/\.(DE|L|PA|AS|MI|SW|TO|HK)$/.test(k) ? k.replace(/\./g, "-") : k, "range=1d&interval=15m&includePrePost=true");
       const m = r.meta || {}, price = num(m.regularMarketPrice), prev = num(m.chartPreviousClose);
       if (!(price > 0 && prev > 0)) throw new Error(`bad price ${price} / prev ${prev}`);
       const reg = (m.currentTradingPeriod || {}).regular || {}, now = Date.now() / 1000;
-      quotes[k] = { price: rnd(price, 2), prev: rnd(prev, 2), chg: pct(price, prev), asOf: m.regularMarketTime ? iso(m.regularMarketTime, "seconds") : null,
+      const q = { price: rnd(price, price < 10 ? 4 : 2), prev: rnd(prev, prev < 10 ? 4 : 2), chg: pct(price, prev), cur: m.currency || null,
+        asOf: m.regularMarketTime ? iso(m.regularMarketTime, "seconds") : null,
         open: !!(reg.start && reg.end && reg.start <= now && now < reg.end), ext: extQuote(r, price, reg, 2) };
+      quotes[k] = q;
+      ctx.waitUntil(cache.put(key, new Response(JSON.stringify(q), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${CACHE_SECONDS}` } })));
     } catch (e) { failed.push(`${k}: ${e.message || e}`); }
   }));
   const ok = Object.keys(quotes).length > 0;
-  const res = new Response(JSON.stringify({ version: 1, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", quotes, failed }),
-    { status: ok ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": `public, max-age=${ok ? CACHE_SECONDS : 15}` } });
-  if (ok) ctx.waitUntil(cache.put(key, res.clone()));
-  return res;
+  return new Response(JSON.stringify({ version: 2, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", quotes, failed }),
+    { status: ok ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
 }
 
 // latest pre-market / after-hours trade vs the regular-session price (null inside regular hours)
