@@ -230,7 +230,14 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.ldList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+.ldList{display:block}
+.stGrid{margin:4px 0 0}.stCard{cursor:pointer;padding:12px 14px}.stCard:hover{border-color:var(--accent)}.stCard:hover .tk{color:var(--accent)}
+.stTop{display:flex;align-items:center;justify-content:space-between;gap:6px}.stCard .tk{font-size:22px;font-weight:800;letter-spacing:.2px}
+.stRs{display:flex;align-items:center;gap:6px}.stCard .tdot{width:9px;height:9px}
+.stName{margin-top:2px}.stPx{margin-top:8px;font-size:15px;white-space:nowrap}.stPx b{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-right:4px}
+.stX{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;min-height:16px}.stX .xs{font-size:10.5px;font-weight:700}
+.stPerf{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;font-variant-numeric:tabular-nums}
+.stPerf i{display:block;font-style:normal;font-size:10.5px;color:var(--muted);font-weight:600}
 .lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 116px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
 .lsRow:hover{background:var(--panel2)}.lsRow .r{text-align:right}
 .lsRow .tk{font-size:21px;font-weight:800;line-height:1.1;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
@@ -243,7 +250,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 /* Assets tab: Biggest S&P 500 card = half the viewport, scrolls inside, so Sectors/Themes show below without page scroll (full HD) */
 .bigCard{height:50vh;min-height:320px;display:flex;flex-direction:column;box-sizing:border-box}
 .bigCard>#bigList{flex:1;min-height:0;overflow-y:auto;align-items:start;overscroll-behavior:contain}
-.bigCard .lsRow.h{position:sticky;top:0;z-index:1;background:var(--panel)}
+
 @media(max-width:700px){.bigCard{height:auto;min-height:0}.bigCard>#bigList{overflow:visible}}
 .ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
 @media(max-width:1200px){.ldList{grid-template-columns:1fr}}
@@ -1410,21 +1417,20 @@ function showView(v) {
 const shortName = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary Shares.*)$/i, "").replace(/,?\s*Inc\.?$/i, "").trim();
 const pctS = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
+// one card per stock (same look as the Journal / Portfolio cards): ticker + RS, name, price + 1D, ext hours, 1M · 3M · 6M
 function stockList(el, rows, tip, sub) {
   const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Pre-market / after-hours: latest trade and % vs the regular-session price">Ext hours</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const row = (r) => { const L = PX.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
+  const card = (r) => { const L = PX.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
     const xt = x ? `\n${x.session === "pre" ? "Pre-market" : "After-hours"} ${x.price.toFixed(2)} (${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}% vs ${x.session === "pre" ? "previous close" : "close"}) · ${new Date(x.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
     const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M and RS from the scan` : "";
-    return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
-    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
-    `<span class="r px">${px != null ? px.toFixed(2) : "—"}</span><span class="r">${pctS(d1)}</span>` +
-    `<span class="r cx">${x ? `<span class="xs">${x.session === "pre" ? "PM" : "AH"}</span>${x.price.toFixed(2)} ${pctS(x.chg)}` : '<span class="muted">—</span>'}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
-    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`; };
-  const half = Math.ceil(rows.length / 2);
-  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
-    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + head + cr.map(row).join("") + "</div>").join("");
-  el.querySelectorAll(".lsRow[data-t]").forEach((x) => x.onclick = () => openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"));
+    return `<div class="heroCard stCard" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
+      `<div class="stTop"><span class="tk">${esc(r.t)}</span><span class="stRs">${r.tier ? `<span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier)}"></span>` : ""}${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}" title="RS Rating">${r.rsr}</span>` : ""}</span></div>` +
+      `<div class="hh stName">${esc(sub ? sub(r) : shortName(r.name))}</div>` +
+      `<div class="stPx"><b>${px != null ? px.toFixed(2) : "—"}</b> ${pctS(d1)}</div>` +
+      `<div class="stX">${x ? `<span class="xs">${x.session === "pre" ? "PM" : "AH"}</span> ${x.price.toFixed(2)} ${pctS(x.chg)}` : "&nbsp;"}</div>` +
+      `<div class="stPerf"><span><i>1M</i>${pctS(r.p1)}</span><span><i>3M</i>${pctS(r.p3)}</span><span><i>6M</i>${pctS(r.p6)}</span></div></div>`; };
+  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' : `<div class="hero stGrid">${rows.map(card).join("")}</div>`;
+  el.querySelectorAll(".stCard[data-t]").forEach((x) => x.onclick = () => openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"));
 }
 function renderBig() {
   const rows = LD?.big || [];
