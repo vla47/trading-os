@@ -78,8 +78,8 @@ button:hover{border-color:var(--accent)}
 @media (max-width:760px){.pfGrid{grid-template-columns:1fr}.pfGrid.one .pfPie{flex-direction:column}.pfGrid.one .pfLegend{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
 .pfGrid{margin-top:12px}
 .pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
-.pfT td{padding:6px 6px;white-space:nowrap}.pfT{table-layout:fixed;width:100%}.pfT th:nth-child(1){width:24%}.pfT th:nth-child(2){width:13%}.pfT th:nth-child(3){width:22%}.pfT th:nth-child(4){width:15%}.pfT th:nth-child(5){width:15%}.pfT th:nth-child(6){width:11%}.pfT td{overflow:hidden;text-overflow:ellipsis}@media (max-width:760px){.pfT th:nth-child(1){width:34%}.pfT th:nth-child(2){width:24%}.pfT th:nth-child(4){width:24%}.pfT th:nth-child(6){width:18%}}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
-@media (max-width:760px){.pfT .wb{width:30%}.pfT .hideS{display:none}}
+.pfT td{padding:6px 6px;white-space:nowrap}.pfT{table-layout:fixed;width:100%}.pfT th:nth-child(1){width:15%}.pfT th:nth-child(2){width:10%}.pfT th:nth-child(3){width:18%}.pfT th:nth-child(4){width:12%}.pfT th:nth-child(5){width:12%}.pfT th:nth-child(6){width:33%}.pfT td{overflow:hidden;text-overflow:ellipsis}@media (max-width:760px){.pfT th:nth-child(1){width:26%}.pfT th:nth-child(2){width:20%}.pfT th:nth-child(4){width:22%}.pfT th:nth-child(6){width:32%}}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
+@media (max-width:760px){.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
 .metricGroup .card{min-width:0}
@@ -914,11 +914,12 @@ function renderPortfolio(m, j) {
       pfStat("Cost basis", cost != null ? money(cost) : "—", "what you paid for what you hold"),
     ]);
     const sorted = [...rows].sort((a, b) => Math.abs(b.usd ?? -1) - Math.abs(a.usd ?? -1));
-    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th>Quantity</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th>Weight</th></tr>` +
+    const mx = Math.max(...sorted.filter((r) => r.usd != null).map((r) => Math.abs(r.usd) / total), 1e-9);
+    const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th>Quantity</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
       sorted.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.flags && r.flags.length ? " " + flagsHtml(r.flags) : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
         <td>${qtyFmt(r)}</td><td class="hideS">${pxFmt(r)}</td>
         <td class="${r.usd < 0 ? "bad" : ""}">${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td>
-        <td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td><td><b>${r.usd != null ? pct(r.usd / total, 1) : "—"}</b></td></tr>`).join("") + `</table>`;
+        <td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${r.usd != null ? weightCell(P, r, r.usd / total, mx) : "<td></td>"}</tr>`).join("") + `</table>`;
     $(bodyId).innerHTML = legendOnly ? `<div class="pfGrid one">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre, true)}</div>`
       : `<div class="pfGrid">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre)}<div class="pfTW">${tbl}</div></div>`;
     return sub;
