@@ -69,6 +69,12 @@ button:hover{border-color:var(--accent)}
 .rule{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--panel2);color:var(--muted);float:right}
 .rule.bad{color:var(--bad)}.rule.good{color:var(--good)}
 .section{margin-top:10px}
+:root,[data-theme="light"]{--pfSwing:#3b73d1;--pfLong:#f47230;--pfCash:#c3cad3}[data-theme="dark"]{--pfSwing:#338ced;--pfLong:#e76624;--pfCash:#3a4656}
+.pfStats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 12px}.pfStat{background:var(--panel2);border-radius:12px;padding:8px 10px;min-width:0}.pfStat .label{font-size:12px}.pfStat .v{font-size:19px;font-weight:700;margin-top:2px;white-space:nowrap}.pfStat .hint{margin-top:2px}
+.pfBar{display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;margin:2px 0 6px}.pfBar span{display:block;height:100%;min-width:2px}
+.pfLeg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}.pfDot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+.pfT td{padding:6px 6px}.pfT td.l,.pfT th.l{text-align:left}.pfT .wb{width:40%}.pfT .wb div{display:flex;align-items:center;gap:8px}.pfT .wb span{display:block;height:8px;border-radius:0 4px 4px 0;min-width:2px}.pfT .wb b{font-weight:600;min-width:52px;text-align:right}.pfT tr:hover td{background:var(--panel2)}
+@media (max-width:760px){.pfStats{grid-template-columns:repeat(2,minmax(0,1fr))}.pfT .wb{width:30%}.pfT .hideS{display:none}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.four .panel,.two .panel{min-width:0}.two .collapseBody,.four .collapseBody{overflow-x:auto}.kv{width:100%}.kv td{padding:6px 2px}.kv td:last-child{text-align:right;font-weight:600}
 .metricGroup .card{min-width:0}
@@ -305,6 +311,8 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="hero" id="hero"></div>
     <div class="alerts" id="alerts"></div>
 
+    <div class="section panel collapsible open" id="pfPanel"><button class="collapseHeader" type="button"><span><h2>Portfolio</h2><span class="sub" id="pfSub">Allocation of the account as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="pfBody"></div></div>
+
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
 
     <details class="more" id="moreStats">
@@ -438,6 +446,8 @@ function parseJournal(text) {
   const out = { trades: [], nlv: null, nlvCur: "USD", sync: null, rows: 0, acct: [] };
   const nlvM = text.match(/Account NLV:\s*\$([\d,.]+)/);
   if (nlvM) out.nlv = num(nlvM[1]);
+  const nlvE = text.match(/Account NLV:[^\n(]*\(€([\d,.]+)\)/);
+  if (nlvE) out.nlvEur = num(nlvE[1]);
   const syncM = text.match(/Last sync:\s*(\d{4}-\d{2}-\d{2})/);
   if (syncM) out.sync = syncM[1];
   let section = "swing", cols = null, group = null;
@@ -776,12 +786,63 @@ function render(j, sourceName) {
     ETF / long-term realized: <b class="${cls(m.etfRealized)}">${money(m.etfRealized, m.etfCur, 2)}</b> (kept out of the swing stats; different currency)<br>
     Account NLV: <b>${nlv ? money(nlv) : "not in journal"}</b> · Last IBKR sync: <b>${esc(j.sync || "—")}</b>${m.all.some((t) => t.orphan) ? " · Sells whose buy predates history are excluded." : ""}`;
 
+  renderPortfolio(m, j);
   drawCharts(m);
   $("app").classList.remove("hidden");
   $("empty").classList.add("hidden");
   $("status").textContent = updatedAt
     ? `Updated ${fmtWhen(updatedAt)} · ${j.trades.length} trades`
     : `${sourceName || "Trades.md"} · ${j.trades.length} trades · last sync ${j.sync || "—"} · loaded ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+// ---- PORTFOLIO ---------------------------------------------------
+// Each open position at its last synced price (EUR ETFs converted with the NLV's own $/€ ratio),
+// cash = NLV − positions. Weights are % of NLV. Swing vs long-term follows the journal sections.
+function portfolio(m, j) {
+  const nlv = j.nlv; if (!nlv) return null;
+  const fx = j.nlvEur ? nlv / j.nlvEur : null;
+  const pos = [], skipped = [];
+  for (const t of m.all.filter((x) => x.open)) {
+    const px = t.last ?? t.cost, rate = t.cur === "EUR" ? fx : 1;
+    if (px == null || rate == null) { skipped.push(t.sym); continue; }
+    const usd = t.dir * px * t.openShares * rate;
+    pos.push({ sym: t.sym, grp: t.section === "etf" ? "long" : "swing", usd, w: usd / nlv, unreal: t.unrealized != null ? t.unrealized * rate : null, atCost: t.last == null, short: t.dir < 0 });
+  }
+  pos.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
+  const gross = sum(pos.map((p) => Math.abs(p.usd))), net = sum(pos.map((p) => p.usd)), cash = nlv - net;
+  const swing = pos.filter((p) => p.grp === "swing"), long = pos.filter((p) => p.grp === "long");
+  return { nlv, fx, pos, skipped, gross, cash, swing, long, swingW: sum(swing.map((p) => p.w)), longW: sum(long.map((p) => p.w)) };
+}
+function renderPortfolio(m, j) {
+  const P = portfolio(m, j);
+  $("pfPanel").classList.toggle("hidden", !P);
+  if (!P) return;
+  const col = { swing: "var(--pfSwing)", long: "var(--pfLong)", cash: "var(--pfCash)" }, lbl = { swing: "Swing", long: "Long-term", cash: "Cash" };
+  const big = P.pos[0], avgSw = P.swing.length ? avg(P.swing.map((p) => p.w)) : NaN, inv = P.gross / P.nlv;
+  const stat = (l, v, h, c = "") => `<div class="pfStat"><div class="label">${esc(l)}</div><div class="v ${c}">${v}</div><div class="hint">${h}</div></div>`;
+  const stats = [
+    stat("Invested", pct(inv, 1), `${money(P.gross)} of ${money(P.nlv)} NLV`, inv > 1 ? "warn" : ""),
+    stat("Cash", pct(P.cash / P.nlv, 1), P.cash < 0 ? "on margin" : money(P.cash), P.cash < 0 ? "bad" : ""),
+    stat("Positions", String(P.pos.length), `${P.swing.length} swing · ${P.long.length} long-term`),
+    stat("Largest", big ? `${esc(big.sym)} ${pct(Math.abs(big.w), 1)}` : "—", big ? lbl[big.grp] : "no open positions"),
+    stat("Avg swing size", Number.isFinite(avgSw) ? pct(avgSw, 1) : "—", `rule ${pct(RULES.positionPct)} per position`, Number.isFinite(avgSw) && avgSw > RULES.positionPct * 1.1 ? "bad" : ""),
+  ].join("");
+  // one 100% bar: each position a segment (largest first), cash last
+  const segs = [...P.pos.map((p) => ({ k: p.sym, g: p.grp, w: Math.abs(p.w) })), ...(P.cash > 0 ? [{ k: "Cash", g: "cash", w: P.cash / P.nlv }] : [])];
+  const tw = sum(segs.map((x) => x.w)) || 1;
+  const bar = `<div class="pfBar" role="img" aria-label="Allocation: ${esc(segs.map((x) => `${x.k} ${pct(x.w, 1)}`).join(", "))}">${segs.map((x) => `<span style="flex:${(x.w / tw).toFixed(5)};background:${col[x.g]}" title="${esc(x.k)} · ${pct(x.w, 2)}"></span>`).join("")}</div>`;
+  const leg = `<div class="pfLeg">${["swing", "long", "cash"].map((g) => { const w = g === "swing" ? P.swingW : g === "long" ? P.longW : P.cash / P.nlv;
+    return `<span><span class="pfDot" style="background:${col[g]}"></span>${lbl[g]} <b style="color:var(--text)">${pct(w, 1)}</b></span>`; }).join("")}</div>`;
+  // ranked list, same weight scale for every row
+  const rows = [{ sym: "Cash", grp: "cash", usd: P.cash, w: P.cash / P.nlv, unreal: null }, ...P.pos].sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
+  const mx = Math.max(...rows.map((r) => Math.abs(r.w)), 1e-9);
+  const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th class="l hideS">Type</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
+    rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${col[r.grp]}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
+      <td class="l muted hideS">${lbl[r.grp]}</td><td class="${r.usd < 0 ? "bad" : ""}">${money(r.usd)}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>
+      <td class="l wb"><div><span style="width:${(Math.abs(r.w) / mx * 100).toFixed(1)}%;background:${col[r.grp]}"></span><b>${pct(r.w, 2)}</b></div></td></tr>`).join("") + `</table>`;
+  $("pfBody").innerHTML = `<div class="pfStats">${stats}</div>${bar}${leg}${tbl}` +
+    (P.skipped.length ? `<div class="sub" style="margin-top:6px">Not valued (no price or no $/€ rate in the journal): ${esc(P.skipped.join(", "))}</div>` : "");
+  $("pfSub").textContent = `% of ${money(P.nlv)} NLV · last IBKR sync ${j.sync || "—"}${P.long.length && P.fx ? ` · € at ${P.fx.toFixed(4)}` : ""}`;
 }
 
 function drawCharts(m) {
