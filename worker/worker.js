@@ -107,7 +107,7 @@ async function liveQuote(key, t, base, cash, nowS) {
 const EXT_MAX = 40;
 async function extRoute(url, ctx) {
   const syms = [...new Set((url.searchParams.get("s") || "").toUpperCase().split(","))]
-    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,9}$/.test(x)).sort().slice(0, EXT_MAX);
+    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(x))   // 16 chars: crypto ids like SUI20947-USD.sort().slice(0, EXT_MAX);
   if (!syms.length) return new Response(JSON.stringify({ error: "no symbols" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
   const cache = caches.default, key = new Request(url.origin + "/ext?s=" + syms.join(","));
   const hit = await cache.match(key);
