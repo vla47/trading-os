@@ -830,6 +830,8 @@ function render(j, sourceName) {
 // live USD price from the Worker (Yahoo <COIN>-USD), avg cost as fallback. Total = NLV + crypto.
 const PFQ = { q: {}, at: 0, busy: false };
 const PF_N = 6;   // categorical slots; smaller holdings fold into "Other"
+const YH = { SUI: "SUI20947" };   // Yahoo ids where COIN-USD is taken
+const yhSym = (coin) => (YH[coin] || coin) + "-USD";
 function portfolio(m, j) {
   const nlv = j.nlv, fx = nlv && j.nlvEur ? nlv / j.nlvEur : null;
   const pos = [], skipped = [];
@@ -841,7 +843,8 @@ function portfolio(m, j) {
   }
   const net = sum(pos.map((p) => p.usd)), cash = nlv ? nlv - net : null;
   const crypto = (j.crypto || []).map((c) => {
-    const q = PFQ.q[c.coin + "-USD"], price = q ? q.price : c.cost;
+    // no live price -> not valued (an old avg cost can be far off for crypto)
+    const q = PFQ.q[yhSym(c.coin)], price = q ? q.price : null;
     const usd = price != null ? c.qty * price : null;
     return { sym: c.coin, grp: "crypto", qty: c.qty, cost: c.cost, price, chg: q ? q.chg : null, usd, live: !!q,
       unreal: q && c.cost != null ? (q.price - c.cost) * c.qty : null, note: c.note };
@@ -926,9 +929,9 @@ function renderPortfolio(m, j) {
     ].join("");
     const rows = [...C].sort((a, b) => (b.usd ?? -1) - (a.usd ?? -1)), mx = Math.max(...rows.map((r) => (r.usd || 0) / (P.cTot || 1)), 1e-9);
     const tbl = `<table class="pfT"><tr><th class="l">Coin</th><th class="hideS">Amount</th><th>Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.price != null && !r.live ? " <span class='muted' title='No live price; valued at avg cost'>at cost</span>" : ""}</td>
+      rows.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b></td>
         <td class="hideS">${r.qty.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td><td>${r.price != null ? money(r.price, "USD", r.price < 10 ? 4 : 2) : "—"}${r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : ""}</td>
-        <td>${r.usd != null ? money(r.usd) : "<span class='muted'>no price</span>"}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, (r.usd || 0) / (P.cTot || 1), mx)}</tr>`).join("") + `</table>`;
+        <td>${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td><td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${weightCell(P, r, (r.usd || 0) / (P.cTot || 1), mx)}</tr>`).join("") + `</table>`;
     $("pfCryptoBody").innerHTML = `<div class="pfStats">${stats}</div><div class="pfGrid">${donut(P, priced, kmoney(P.cTot), "crypto")}<div class="pfTW">${tbl}</div></div>`;
     $("pfCryptoSub").textContent = `% of crypto value · prices ${PFQ.at ? "live " + new Date(PFQ.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
   }
@@ -950,7 +953,7 @@ function renderPortfolio(m, j) {
 }
 // live crypto prices while the Portfolio tab is shown (Worker /ext, Yahoo <COIN>-USD, cached 60 s)
 async function loadCrypto(force) {
-  const syms = lastText ? [...new Set((parseJournal(lastText).crypto || []).map((c) => c.coin + "-USD"))] : [];
+  const syms = lastText ? [...new Set((parseJournal(lastText).crypto || []).map((c) => yhSym(c.coin)))] : [];
   if (!LIVE_URL || !syms.length || PFQ.busy || $("portfolioView").classList.contains("hidden") || document.hidden) return;
   if (!force && Date.now() - PFQ.at < 55000) return;
   PFQ.busy = true;
