@@ -809,6 +809,7 @@ function render(j, sourceName) {
     Account NLV: <b>${nlv ? money(nlv) : "not in journal"}</b> · Last IBKR sync: <b>${esc(j.sync || "—")}</b>${m.all.some((t) => t.orphan) ? " · Sells whose buy predates history are excluded." : ""}`;
 
   renderPortfolio(m, j);
+  setTimeout(() => pxTick(true), 0);   // journal just (re)loaded: fetch prices for any new holdings
   drawCharts(m);
   $("app").classList.remove("hidden");
   $("empty").classList.add("hidden");
@@ -1343,7 +1344,7 @@ async function loadMarket() {
     const j = await (await fetch(DATA_BASE + "market.json", { cache: "no-cache" })).json();
     if (!j || !j.quotes) throw new Error("bad snapshot");
     const changed = !MKT || MKT.updated !== j.updated; MKT = j;
-    if (LIVE && LIVE.updated > MKT.updated) applyLive();
+    if (LIVE && LIVE.updated > MKT.updated) applyLive(); else pxFromMkt(false);
     mktListeners.forEach((f) => f(changed));
   } catch (e) { mktListeners.forEach((f) => f(false, e)); }
 }
@@ -1370,6 +1371,19 @@ function applyLive() {
     MKT.quotes[k] = r;
   }
   MKT.liveAt = LIVE.updated;
+  pxFromMkt(true);
+}
+// market.json / live /quotes rows -> shared store, keyed by Yahoo symbol (BTC-USD, SXR8.DE, QQQ …)
+function pxFromMkt(live) {
+  if (!MKT || !MKT.quotes) return;
+  const now = Date.now();
+  for (const q of Object.values(MKT.quotes)) {
+    if (!q.symbol || !(q.price > 0)) continue;
+    if (!live && PX.q[q.symbol]) continue;   // the daily snapshot never overwrites a fresher price
+    PX.q[q.symbol] = { price: q.price, prev: q.prevClose, chg: q.chg, open: q.open, ext: q.ext || null, asOf: q.asOf };
+    if (live) PX.t[q.symbol] = now;
+  }
+  pxChanged();
 }
 async function loadLive() {
   if (!LIVE_URL || !MKT) return;
@@ -1378,6 +1392,7 @@ async function loadLive() {
     if (!j || !j.quotes || (LIVE && LIVE.updated === j.updated)) return;
     LIVE = j; applyLive(); mktListeners.forEach((f) => f(true));
   } catch (e) { /* keep the snapshot */ }
+  finally { if (!PX.ready) { PX.ready = true; pxTick(true); } }   // first strip load done: now ask /ext only for what it didn't cover
 }
 function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
@@ -1388,6 +1403,7 @@ function showView(v) {
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
   if (v === "leaders") loadLeaders();
+  if (v === "portfolio" && lastText) { const j = parseJournal(lastText); renderPortfolio(metrics(j), j); }
   pxTick(true);
 }
 
@@ -1422,8 +1438,11 @@ function renderBig() {
 // ---- one shared price store for every tab (Worker /ext → Yahoo) ----------------------------
 // Each ticker is fetched at most once a minute, whichever tab needs it; one timer asks only for what the open tab
 // is missing, in one request (40 a call). Stocks are not refetched while the US market is closed (weekends, nights).
-const PX = { q: {}, t: {}, at: 0, busy: false };
-const PX_TTL = 55e3, PX_TTL_CLOSED = 30 * 60e3;
+const PX = { q: {}, t: {}, at: 0, busy: false, ready: false };
+const PX_TTL = 55e3, PX_TTL_CLOSED = 30 * 60e3, PX_KEY = "tradingOS.px";
+// start from the last prices this browser saw (kept a day), so a reload shows values at once instead of blanks
+try { const c = JSON.parse(localStorage.getItem(PX_KEY) || "null"); if (c && c.q) { const old = Date.now() - 864e5;
+  for (const [k, v] of Object.entries(c.q)) if ((c.t[k] || 0) > old) { PX.q[k] = v; PX.t[k] = c.t[k]; } PX.at = c.at || 0; } } catch (e) {}
 function usActive(now = new Date()) {   // US pre-market → after-hours, Mon–Fri 4:00–20:00 New York
   const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", hour12: false }).formatToParts(now).map((x) => [x.type, x.value]));
   const h = +p.hour % 24; return !["Sat", "Sun"].includes(p.weekday) && h >= 4 && h < 20;
@@ -1440,7 +1459,7 @@ function pxNeeded() {
   return [...need];
 }
 async function pxTick(force) {
-  if (!LIVE_URL || PX.busy || document.hidden) return;
+  if (!LIVE_URL || PX.busy || document.hidden || !PX.ready) return;
   const now = Date.now(), open = usActive();
   const stale = pxNeeded().filter((k) => { const age = now - (PX.t[k] || 0); return age > (k.endsWith("-USD") || open ? PX_TTL : PX_TTL_CLOSED) || (force && !PX.t[k]); }).sort();
   if (!stale.length) return;
@@ -1452,14 +1471,17 @@ async function pxTick(force) {
     let n = 0;
     res.forEach((j) => { if (j && j.quotes) { for (const [k, v] of Object.entries(j.quotes)) { PX.q[k] = v; PX.t[k] = now; } n++; } });
     stale.forEach((k) => { if (!PX.t[k]) PX.t[k] = now - PX_TTL + 5 * 60e3; });   // unknown symbol: retry in ~5 min, not every minute
-    if (n) {
-      PX.at = now;
-      if (!$("sectorsView").classList.contains("hidden") || !$("leadersView").classList.contains("hidden")) renderLeaders();
-      if (!$("portfolioView").classList.contains("hidden") && lastText) { const j = parseJournal(lastText); renderPortfolio(metrics(j), j); }
-    }
+    if (n) { PX.at = now; pxChanged(); }
   } finally { PX.busy = false; }
 }
 setInterval(() => pxTick(), 60000);
+// every price update redraws whatever is on screen from the one store; hidden tabs redraw from it when opened
+function pxChanged() {
+  try { localStorage.setItem(PX_KEY, JSON.stringify({ q: PX.q, t: PX.t, at: PX.at })); } catch (e) {}
+  const vis = (id) => $(id) && !$(id).classList.contains("hidden");
+  if (LD && (vis("sectorsView") || vis("leadersView"))) renderLeaders();
+  if (vis("portfolioView") && lastText) { const j = parseJournal(lastText); renderPortfolio(metrics(j), j); }
+}
 
 // ---- Leaders (leaders.json from the Leaders scan workflow; the page only displays) ----
 let LD = null, ldSort = "rsr", ldTier = "all", ldAt = 0;
@@ -1790,6 +1812,7 @@ function initViews() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeChart(); });
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
+  setTimeout(() => { if (!PX.ready) { PX.ready = true; pxTick(true); } }, 6000);   // strip unreachable: don't wait forever
   loadMarket().then(loadLive); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
   setInterval(() => { if (!document.hidden) loadLive(); liveTagUpdate(); }, 60000);
   $("liveTag").onclick = () => { const t = $("liveTag"); t.classList.add("peek"); clearTimeout(t._pk); t._pk = setTimeout(() => t.classList.remove("peek"), 4000); };
