@@ -361,7 +361,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
   </div>
   <div id="pfOut3" class="hidden pfSec"></div>
   <div class="panel assetCard hidden pfSec" id="pfTotal">
-    <div class="assetHead"><div><h2 class="secTitle2">Total</h2><div class="muted small">Stocks, ETFs, cash and crypto together</div></div></div>
+    <div class="assetHead"><div><h2 class="secTitle2">Total</h2><div class="muted small">Stocks, ETFs, cash and crypto together · % of IBKR NLV + crypto</div></div></div>
     <div id="pfTotalBody"></div>
   </div>
   <div id="pfEmpty" class="empty">Unlock the journal to see your portfolio. <button type="button" id="pfGoJournal">Go to Journal</button></div>
@@ -892,7 +892,7 @@ function renderPortfolio(m, j) {
   const coinRows = P.crypto.map((c) => ({ sym: c.sym, grp: "crypto", qty: c.qty, px: c.price, cur: "USD", usd: c.usd, unreal: c.unreal, cost: c.cost != null ? c.cost * c.qty : null, chg: c.chg, noPrice: c.usd == null }));
   const qtyFmt = (r) => r.qty == null ? "" : r.qty.toLocaleString(undefined, { maximumFractionDigits: r.grp === "crypto" ? 8 : 4 });
   const pxFmt = (r) => r.px == null ? (r.grp === "cash" ? "" : "—") : money(r.px, r.cur, r.px < 10 ? 4 : 2) + (r.chg != null ? ` <span class="${cls(r.chg)} small">${spct(r.chg / 100)}</span>` : "");
-  function section(outId, bodyId, panelId, rows, total, centre, sub, totalHint) {
+  function section(outId, bodyId, panelId, rows, total, centre, sub, totalHint, legendOnly = false) {
     $(panelId).classList.remove("hidden");
     const held = rows.filter((r) => r.grp !== "cash"), valued = held.filter((r) => r.usd != null);
     const withCost = valued.filter((r) => r.cost != null && r.unreal != null);
@@ -912,7 +912,8 @@ function renderPortfolio(m, j) {
         <td>${qtyFmt(r)}</td><td class="hideS">${pxFmt(r)}</td>
         <td class="${r.usd < 0 ? "bad" : ""}">${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td>
         <td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td><td><b>${r.usd != null ? pct(r.usd / total, 1) : "—"}</b></td></tr>`).join("") + `</table>`;
-    $(bodyId).innerHTML = `<div class="pfGrid">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre)}<div class="pfTW">${tbl}</div></div>`;
+    $(bodyId).innerHTML = legendOnly ? `<div class="pfGrid one">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre, true)}</div>`
+      : `<div class="pfGrid">${donut(P, sorted.filter((r) => r.usd != null), kmoney(total), centre)}<div class="pfTW">${tbl}</div></div>`;
     return sub;
   }
   if (P.nlv) $("pfSub").textContent = section("pfOut1", "pfBody", "pfPanel", [cashRow, ...stockRows], P.nlv, "NLV", "", "IBKR account incl. cash") ||
@@ -925,7 +926,7 @@ function renderPortfolio(m, j) {
     section("pfOut2", "pfCryptoBody", "pfCrypto", coinRows, P.cTot, "crypto", "", `${coinRows.filter((r) => !r.noPrice).length} of ${coinRows.length} live prices`);
     $("pfCryptoSub").textContent = `Prices ${PFQ.at ? "live " + new Date(PFQ.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (Yahoo)" : "loading…"}`;
   }
-  if (P.nlv && P.crypto.length) section("pfOut3", "pfTotalBody", "pfTotal", [cashRow, ...stockRows, ...coinRows], P.total, "total", "", "IBKR account + crypto");
+  if (P.nlv && P.crypto.length) section("pfOut3", "pfTotalBody", "pfTotal", [cashRow, ...stockRows, ...coinRows], P.total, "total", "", "IBKR account + crypto", true);
 }
 // live crypto prices while the Portfolio tab is shown (Worker /ext, Yahoo <COIN>-USD, cached 60 s)
 async function loadCrypto(force) {
