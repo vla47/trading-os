@@ -207,6 +207,7 @@ details.more[open]>summary{margin-bottom:6px}
 .secCols .bRow{grid-template-columns:150px minmax(0,1fr) 64px}
 @media(max-width:1000px){.secCols{grid-template-columns:1fr}}
 .topbar .seg{padding:2px}.topbar .seg button{padding:3px 12px;font-size:13px;border-radius:7px}
+@media(max-width:520px){.pageTitle>b{display:none}.pageTitle .seg{margin-left:2px}.topbar .seg button{padding:3px 8px}.topbar{gap:8px}}
 .userMenuBtn svg{width:17px;height:17px}
 /* colorblind-safe up/down (Okabe-Ito blue / vermillion) - Settings > Colors */
 html[data-cb="1"]{--good:#0072b2;--bad:#d55e00}
@@ -249,7 +250,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 <div class="topWrap">
 <header class="topbar">
   <div class="pageTitle"><svg class="appLogo" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--text)"/><polyline points="6,25 12,19 17,22 27,10" fill="none" stroke="var(--panel)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="10" r="3.2" fill="var(--good)"/></svg><b>Trading OS</b>
-  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="sectors">Assets</button><button type="button" data-view="leaders">Leaders</button></nav></div>
+  <nav class="seg" aria-label="Views"><button type="button" data-view="journal" class="on">Journal</button><button type="button" data-view="portfolio">Portfolio</button><button type="button" data-view="sectors">Assets</button><button type="button" data-view="leaders">Leaders</button></nav></div>
   <div class="topRight">
     <div class="marketStat">☀ <b id="weatherTemp">--°C</b></div>
     <div class="marketStat"><b id="clock">--- -- ---  --:--</b></div>
@@ -311,8 +312,6 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="hero" id="hero"></div>
     <div class="alerts" id="alerts"></div>
 
-    <div class="section panel collapsible open" id="pfPanel"><button class="collapseHeader" type="button"><span><h2>Portfolio</h2><span class="sub" id="pfSub">Allocation of the account as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="pfBody"></div></div>
-
     <div class="section panel collapsible open"><button class="collapseHeader" type="button"><span><h2>Open positions</h2><span class="sub">Last price and unrealized P/L as of the last IBKR sync</span></span><span class="collapseIcon">⌃</span></button><div class="collapseBody" id="openTbl"></div></div>
 
     <details class="more" id="moreStats">
@@ -352,6 +351,14 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
     <div class="section panel collapsible"><button class="collapseHeader" type="button"><span><h2>Data quality</h2><span class="sub">What the journal is missing</span></span><span class="collapseIcon">⌄</span></button><div class="collapseBody hidden dq" id="dataQuality"></div></div>
   </div>
  </div>
+
+ <section id="portfolioView" class="hidden" aria-label="Portfolio">
+  <div class="panel assetCard hidden" id="pfPanel">
+    <div class="assetHead"><div><h2 class="secTitle2">Portfolio</h2><div class="muted small" id="pfSub">Allocation of the account as of the last IBKR sync</div></div></div>
+    <div id="pfBody"></div>
+  </div>
+  <div id="pfEmpty" class="empty">Unlock the journal to see your portfolio. <button type="button" id="pfGoJournal">Go to Journal</button></div>
+ </section>
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
   <div class="panel assetCard bigCard">
@@ -815,7 +822,7 @@ function portfolio(m, j) {
 }
 function renderPortfolio(m, j) {
   const P = portfolio(m, j);
-  $("pfPanel").classList.toggle("hidden", !P);
+  $("pfPanel").classList.toggle("hidden", !P); $("pfEmpty").classList.toggle("hidden", !!P);
   if (!P) return;
   const col = { swing: "var(--pfSwing)", long: "var(--pfLong)", cash: "var(--pfCash)" }, lbl = { swing: "Swing", long: "Long-term", cash: "Cash" };
   const big = P.pos[0], avgSw = P.swing.length ? avg(P.swing.map((p) => p.w)) : NaN, inv = P.gross / P.nlv;
@@ -934,6 +941,7 @@ function initUI() {
   $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) load(await f.text(), f.name); e.target.value = ""; };
   const closeJournal = () => {
     lastText = null; $("app").classList.add("hidden"); $("empty").classList.remove("hidden"); $("pkOffer").classList.add("hidden");
+    $("pfPanel").classList.add("hidden"); $("pfBody").innerHTML = ""; $("pfEmpty").classList.remove("hidden");
     $("status").textContent = "No journal loaded"; $("userMenu").classList.add("hidden");
   };
   // Lock: hide the journal now; Touch ID and "remember this device" stay set up.
@@ -1290,6 +1298,7 @@ function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
   $("journalView").classList.toggle("hidden", v !== "journal");
   $("sectorsView").classList.toggle("hidden", v !== "sectors");
+  $("portfolioView").classList.toggle("hidden", v !== "portfolio");
   $("leadersView").classList.toggle("hidden", v !== "leaders");
   try { localStorage.setItem("tradingOS.view", v); } catch (e) {}
   if (v === "sectors") { loadSectors(); drawInline(); loadLeaders(); }
@@ -1658,6 +1667,7 @@ new MutationObserver(() => { drawInline(); if (secGroup === "heatmap") renderHea
 function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) { chartObj.remove(); chartObj = null; } }
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
+  $("pfGoJournal").onclick = () => showView("journal");
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
     secGroup = b.dataset.g; document.querySelectorAll("#secGroup button").forEach((x) => x.classList.toggle("on", x === b)); renderSectors();
