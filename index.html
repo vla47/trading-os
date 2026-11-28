@@ -1392,7 +1392,6 @@ async function loadLive() {
     if (!j || !j.quotes || (LIVE && LIVE.updated === j.updated)) return;
     LIVE = j; applyLive(); mktListeners.forEach((f) => f(true));
   } catch (e) { /* keep the snapshot */ }
-  finally { if (!PX.ready) { PX.ready = true; pxTick(true); } }   // first strip load done: now ask /ext only for what it didn't cover
 }
 function showView(v) {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.classList.toggle("on", b.dataset.view === v));
@@ -1438,7 +1437,7 @@ function renderBig() {
 // ---- one shared price store for every tab (Worker /ext → Yahoo) ----------------------------
 // Each ticker is fetched at most once a minute, whichever tab needs it; one timer asks only for what the open tab
 // is missing, in one request (40 a call). Stocks are not refetched while the US market is closed (weekends, nights).
-const PX = { q: {}, t: {}, at: 0, busy: false, ready: false };
+const PX = { q: {}, t: {}, at: 0, mkAt: 0, busy: false };
 const PX_TTL = 55e3, PX_TTL_CLOSED = 30 * 60e3, PX_KEY = "tradingOS.px";
 // start from the last prices this browser saw (kept a day), so a reload shows values at once instead of blanks
 try { const c = JSON.parse(localStorage.getItem(PX_KEY) || "null"); if (c && c.q) { const old = Date.now() - 864e5;
@@ -1458,21 +1457,36 @@ function pxNeeded() {
   }
   return [...need];
 }
+// ONE call a minute (Worker /live): the strip + sector quotes and, in the same response, whatever else the open tab needs
+// that isn't fresh. Symbols the strip already carries (BTC-USD, SXR8.DE, QQQ …) are never asked for separately.
+const LIVE_BASE = LIVE_URL.replace(/\/quotes$/, "");
 async function pxTick(force) {
-  if (!LIVE_URL || PX.busy || document.hidden || !PX.ready) return;
+  if (!LIVE_URL || document.hidden) return;
+  if (PX.busy) { PX.again = PX.again || (force ? "force" : true); return; }   // a call is in flight: run once more right after it
   const now = Date.now(), open = usActive();
-  const stale = pxNeeded().filter((k) => { const age = now - (PX.t[k] || 0); return age > (k.endsWith("-USD") || open ? PX_TTL : PX_TTL_CLOSED) || (force && !PX.t[k]); }).sort();
-  if (!stale.length) return;
+  const strip = new Set(Object.values((MKT && MKT.quotes) || {}).map((q) => q.symbol).filter(Boolean));
+  const stale = pxNeeded().filter((k) => !strip.has(k)).filter((k) => { const age = now - (PX.t[k] || 0); return age > (k.endsWith("-USD") || open ? PX_TTL : PX_TTL_CLOSED) || (force && !PX.t[k]); }).sort();
+  if (!stale.length && now - (PX.mkAt || 0) < PX_TTL) return;
   PX.busy = true;
   try {
-    const url = LIVE_URL.replace(/\/quotes$/, "/ext?s="), parts = [];
-    for (let i = 0; i < stale.length; i += 40) parts.push(stale.slice(i, i + 40));
-    const res = await Promise.all(parts.map((p) => fetch(url + p.map(encodeURIComponent).join(","), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
-    let n = 0;
-    res.forEach((j) => { if (j && j.quotes) { for (const [k, v] of Object.entries(j.quotes)) { PX.q[k] = v; PX.t[k] = now; } n++; } });
-    stale.forEach((k) => { if (!PX.t[k]) PX.t[k] = now - PX_TTL + 5 * 60e3; });   // unknown symbol: retry in ~5 min, not every minute
-    if (n) { PX.at = now; pxChanged(); }
-  } finally { PX.busy = false; }
+    const ask = stale.slice(0, 40), qs = ask.length ? "?s=" + ask.map(encodeURIComponent).join(",") : "";
+    let r = await fetch(LIVE_BASE + "/live" + qs, { cache: "no-store" }).then((x) => (x.ok ? x.json() : x.status === 404 ? "old" : null)).catch(() => null);
+    if (r === "old") {   // price server not redeployed yet: the two older endpoints
+      await loadLive();
+      r = ask.length ? await fetch(LIVE_BASE + "/ext" + qs, { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null) : null;
+    } else if (r && r.market && r.market.quotes && (!LIVE || LIVE.updated !== r.market.updated)) {
+      LIVE = r.market; if (MKT) applyLive(); mktListeners.forEach((f) => f(true));
+    }
+    PX.mkAt = now;
+    if (r && r.quotes) for (const [k, v] of Object.entries(r.quotes)) { PX.q[k] = v; PX.t[k] = now; }
+    const later = new Set((r && r.deferred) || []);   // over the server's per-call budget: asked again next minute
+    ask.forEach((k) => { if (!PX.t[k] && !later.has(k)) PX.t[k] = now - PX_TTL + 5 * 60e3; });   // unknown symbol: retry in ~5 min
+    if (r && r.quotes && Object.keys(r.quotes).length) { PX.at = now; pxChanged(); }
+    if (later.size) setTimeout(() => pxTick(), 2000);   // the strip is cached now, so the rest fits in a follow-up call
+  } finally {
+    PX.busy = false;
+    if (PX.again) { const f = PX.again === "force"; PX.again = false; pxTick(f); }
+  }
 }
 setInterval(() => pxTick(), 60000);
 // every price update redraws whatever is on screen from the one store; hidden tabs redraw from it when opened
@@ -1812,11 +1826,11 @@ function initViews() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeChart(); });
   let v = "journal"; try { v = localStorage.getItem("tradingOS.view") || "journal"; } catch (e) {}
   showView(v);
-  setTimeout(() => { if (!PX.ready) { PX.ready = true; pxTick(true); } }, 6000);   // strip unreachable: don't wait forever
-  loadMarket().then(loadLive); setInterval(() => { if (!document.hidden) loadMarket(); }, 5 * 60000);   // one refresh feeds strip, bars and charts
-  setInterval(() => { if (!document.hidden) loadLive(); liveTagUpdate(); }, 60000);
+  // the daily snapshot changes ~3×/day: check every 30 min (a 304 when unchanged); live prices come from pxTick, once a minute
+  loadMarket().then(() => pxTick(true)); setInterval(() => { if (!document.hidden) loadMarket(); }, 30 * 60000);
+  setInterval(liveTagUpdate, 60000);
   $("liveTag").onclick = () => { const t = $("liveTag"); t.classList.add("peek"); clearTimeout(t._pk); t._pk = setTimeout(() => t.classList.remove("peek"), 4000); };
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadLive(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadMarket(); });
 }
 
 async function boot() {
@@ -1864,7 +1878,7 @@ async function boot() {
     fileHandle = h; $("reloadBtn").classList.remove("hidden");
     try { if ((await h.queryPermission({ mode: "read" })) === "granted") await readHandle(h); } catch (e) {}
   }
-  setInterval(autoRefresh, 15 * 60 * 1000);
+  setInterval(autoRefresh, 60 * 60 * 1000);   // the journal syncs once a day: hourly check + on return to the tab
   document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
 }
 boot();
