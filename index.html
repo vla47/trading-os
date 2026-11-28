@@ -224,13 +224,25 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 /* leaders */
 .ldTbl td,.ldTbl th{font-size:13px;padding:6px 6px;font-variant-numeric:tabular-nums}
 .ldTbl th[data-s]{cursor:pointer}.ldTbl th[data-s].on{color:var(--text)}
+.ldMain{overflow-x:auto}.ldMain .ldTbl{width:100%}.ldMain .ldTbl td,.ldMain .ldTbl th{font-size:14.5px;padding:11px 8px;border-bottom:1px solid var(--line)}.ldMain .ldTbl th{font-size:12px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+.ldMain .ldTbl a{font-size:18px;font-weight:800}.ldMain .ldTbl tr:hover td{background:var(--panel2)}.ldMain .ldTbl .rsB{font-size:13.5px;min-width:32px}
 .ldTbl a{color:var(--text);font-weight:700;text-decoration:none}.ldTbl a:hover{color:var(--accent)}
 .ldTbl .nmC{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);text-align:left}
 .tier{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px;background:var(--panel2);color:var(--muted);cursor:help}
 .tier.real{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.tier.cav{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .rsB{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 4px}
 .ldStale{margin:0 0 10px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-.ldList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+.ldList{display:block}
+.stCard{position:relative}.stDel{position:absolute;top:-7px;right:-7px;width:20px;height:20px;padding:0;border-radius:50%;font-size:13px;line-height:1;display:none;background:var(--panel2);color:var(--muted);z-index:2}.stCard:hover .stDel{display:block}.stDel:hover{color:var(--bad);border-color:var(--bad)}@media(hover:none){.stDel{display:block}}
+.wlAdd{display:flex;gap:6px}.wlAdd input{font:inherit;font-size:14px;width:150px;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}.wlAdd button{padding:7px 12px;font-size:14px}
+.stGrid{margin:4px 0 0;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.stCard{cursor:pointer;padding:8px 11px;border-radius:12px}.stCard:hover{border-color:var(--accent)}.stCard:hover .tk{color:var(--accent)}
+.stTop{display:flex;align-items:center;justify-content:space-between;gap:6px}.stCard .tk{font-size:18px;font-weight:800;letter-spacing:.2px;line-height:1.15}
+.stRs{display:flex;align-items:center;gap:5px}.stCard .tdot{width:8px;height:8px}.stCard .rsB{font-size:12.5px;min-width:26px}
+.stCard .stName{margin-top:0;font-size:11.5px}.stPx{margin-top:4px;font-size:13px;white-space:nowrap;display:flex;justify-content:space-between;align-items:baseline;gap:6px}.stPx b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-right:3px}
+.stX{font-size:11.5px;color:var(--muted);white-space:nowrap}.stX .xs{font-size:10px;font-weight:700}
+.stPerf{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:5px;padding-top:5px;border-top:1px solid var(--line);font-size:11.5px;font-variant-numeric:tabular-nums}
+.stPerf span{min-width:0;overflow:hidden;white-space:nowrap}.stPerf i{display:block;font-style:normal;font-size:9.5px;line-height:1.1;color:var(--muted);font-weight:600}
+@media(max-width:1180px){.stGrid{grid-template-columns:repeat(5,minmax(0,1fr))}}@media(max-width:1000px){.stGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:820px){.stGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:640px){.stGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.stCard .stX{display:none}}
 .lsRow{display:grid;grid-template-columns:minmax(120px,1.6fr) 78px 64px 116px 64px 64px 64px 44px 14px;align-items:center;gap:8px;min-height:52px;padding:4px 8px;border-radius:8px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer}
 .lsRow:hover{background:var(--panel2)}.lsRow .r{text-align:right}
 .lsRow .tk{font-size:21px;font-weight:800;line-height:1.1;letter-spacing:.2px}.lsRow:hover .tk{color:var(--accent)}
@@ -241,9 +253,9 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 .tdot{width:9px;height:9px;border-radius:50%;background:var(--line);justify-self:center}.tdot.real{background:var(--good)}.tdot.cav{background:var(--warn)}
 .bigCard{margin-bottom:12px}
 /* Assets tab: Biggest S&P 500 card = half the viewport, scrolls inside, so Sectors/Themes show below without page scroll (full HD) */
-.bigCard{height:50vh;min-height:320px;display:flex;flex-direction:column;box-sizing:border-box}
-.bigCard>#bigList{flex:1;min-height:0;overflow-y:auto;align-items:start;overscroll-behavior:contain}
-.bigCard .lsRow.h{position:sticky;top:0;z-index:1;background:var(--panel)}
+.bigCard{max-height:50vh;display:flex;flex-direction:column;box-sizing:border-box}
+.bigCard>#bigList{flex:1;min-height:0;overflow-y:auto;align-items:start;overscroll-behavior:contain;padding:8px 8px 4px 0}
+
 @media(max-width:700px){.bigCard{height:auto;min-height:0}.bigCard>#bigList{overflow:visible}}
 .ldDet{margin-top:12px}.ldDet summary{cursor:pointer;padding:4px 6px}
 @media(max-width:1200px){.ldList{grid-template-columns:1fr}}
@@ -369,7 +381,8 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
 
  <section id="sectorsView" class="hidden" aria-label="Assets">
   <div class="panel assetCard bigCard">
-    <div class="assetHead"><div><h2 class="secTitle2">Biggest S&amp;P 500 stocks</h2><div class="muted small" id="bigSub">Loading…</div></div></div>
+    <div class="assetHead"><div><h2 class="secTitle2">Watchlist</h2><div class="muted small" id="bigSub">Loading…</div></div>
+      <form id="wlAdd" class="wlAdd" autocomplete="off"><input id="wlInput" placeholder="Ticker, e.g. PLTR" aria-label="Add a ticker" maxlength="16"><button type="submit" class="primary">+ Add</button></form></div>
     <div id="bigList" class="ldList"></div>
   </div>
   <div class="panel assetCard">
@@ -396,8 +409,7 @@ html[data-cb="1"][data-theme="dark"]{--good:#56b4e9;--bad:#e69f00}
       </div>
     </div>
     <div id="ldStale" class="ldStale hidden"></div>
-    <div id="ldList" class="ldList"></div>
-    <details class="ldDet"><summary class="muted small">Details table (ADR, $ volume, RS line, 52w high, revenue, EP)</summary><div id="ldBody"></div></details>
+    <div id="ldBody" class="ldMain"></div>
     <div class="muted small assetFoot" id="ldFoot"></div>
   </div>
  </section>
@@ -1410,28 +1422,34 @@ function showView(v) {
 const shortName = (n) => (n || "").replace(/\s*-?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary Shares.*)$/i, "").replace(/,?\s*Inc\.?$/i, "").trim();
 const pctS = (v) => v == null ? "—" : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 const rsCol = (v) => `color-mix(in srgb, var(--good) ${Math.round(10 + Math.max(0, v - 70) * 1.2)}%, transparent)`;
-function stockList(el, rows, tip, sub) {
+// one card per stock (same look as the Journal / Portfolio cards): ticker + RS, name, price + 1D, ext hours, 1M · 3M · 6M
+function stockList(el, rows, tip, sub, removable) {
   const tcls = { "Real leader": "real", "Leader w/ caveat": "cav" };
-  const head = '<div class="lsRow h"><span>Stock</span><span class="r">Price</span><span class="r">1D</span><span class="r cx" title="Pre-market / after-hours: latest trade and % vs the regular-session price">Ext hours</span><span class="r c1m">1M</span><span class="r">3M</span><span class="r c6m">6M</span><span class="r">RS</span><span></span></div>';
-  const row = (r) => { const L = PX.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
+  const card = (r) => { const L = PX.q[r.t], x = L && L.ext, px = L ? L.price : r.price, d1 = L ? L.chg : r.d1;
     const xt = x ? `\n${x.session === "pre" ? "Pre-market" : "After-hours"} ${x.price.toFixed(2)} (${x.chg > 0 ? "+" : ""}${x.chg.toFixed(2)}% vs ${x.session === "pre" ? "previous close" : "close"}) · ${new Date(x.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
     const lt = L ? `\nPrice and 1D live (Yahoo Finance), 1M–6M and RS from the scan` : "";
-    return `<div class="lsRow" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
-    `<span><span class="tk">${esc(r.t)}</span><span class="n">${esc(sub ? sub(r) : shortName(r.name))}</span></span>` +
-    `<span class="r px">${px != null ? px.toFixed(2) : "—"}</span><span class="r">${pctS(d1)}</span>` +
-    `<span class="r cx">${x ? `<span class="xs">${x.session === "pre" ? "PM" : "AH"}</span>${x.price.toFixed(2)} ${pctS(x.chg)}` : '<span class="muted">—</span>'}</span><span class="r c1m">${pctS(r.p1)}</span><span class="r">${pctS(r.p3)}</span><span class="r c6m">${pctS(r.p6)}</span>` +
-    `<span class="r">${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}">${r.rsr}</span>` : "—"}</span><span class="tdot ${tcls[r.tier] || ""}${r.tier ? "" : " hidden"}" title="${esc(r.tier || "")}"></span></div>`; };
-  const half = Math.ceil(rows.length / 2);
-  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' :
-    [rows.slice(0, half), rows.slice(half)].filter((x) => x.length).map((cr) => "<div>" + head + cr.map(row).join("") + "</div>").join("");
-  el.querySelectorAll(".lsRow[data-t]").forEach((x) => x.onclick = () => openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"));
+    return `<div class="heroCard stCard" data-t="${esc(r.t)}" data-n="${esc(r.name)}" title="${esc(r.name)}\n${tip(r)}${esc(lt + xt)}\nClick for the chart">` +
+      (removable ? `<button type="button" class="stDel" data-del="${esc(r.t)}" title="Remove ${esc(r.t)}" aria-label="Remove ${esc(r.t)}">×</button>` : "") +
+      `<div class="stTop"><span class="tk">${esc(r.t)}</span><span class="stRs">${r.tier ? `<span class="tdot ${tcls[r.tier] || ""}" title="${esc(r.tier)}"></span>` : ""}${r.rsr != null ? `<span class="rsB" style="background:${rsCol(r.rsr)}" title="RS Rating">${r.rsr}</span>` : ""}</span></div>` +
+      `<div class="hh stName">${esc(sub ? sub(r) : shortName(r.name))}</div>` +
+      `<div class="stPx"><span><b>${px != null ? px.toFixed(2) : "—"}</b> ${pctS(d1)}</span>${x ? `<span class="stX"><span class="xs">${x.session === "pre" ? "PM" : "AH"}</span> ${pctS(x.chg)}</span>` : ""}</div>` +
+      `<div class="stPerf"><span><i>1M</i>${pctS(r.p1)}</span><span><i>3M</i>${pctS(r.p3)}</span><span><i>6M</i>${pctS(r.p6)}</span></div></div>`; };
+  el.innerHTML = !rows.length ? '<div class="empty">No stock passes every filter today.</div>' : `<div class="hero stGrid">${rows.map(card).join("")}</div>`;
+  el.querySelectorAll(".stCard[data-t]").forEach((x) => x.onclick = (e) => {
+    if (e.target.closest(".stDel")) { wlSet(wlList().filter((t) => t !== x.dataset.t)); return; }
+    openChart(x.dataset.t, x.dataset.n, null, "lc/" + encodeURIComponent(x.dataset.t) + ".json"); });
 }
+// ---- Assets watchlist: your own list of stock cards, kept in this browser (starts with the 12 biggest S&P 500 stocks) ----
+const WL_KEY = "tradingOS.watch";
+function wlGet() { try { const w = JSON.parse(localStorage.getItem(WL_KEY) || "null"); if (Array.isArray(w)) return w; } catch (e) {} return null; }
+function wlList() { return wlGet() || (LD?.big || []).slice(0, 12).map((r) => r.t); }
+function wlSet(w) { try { localStorage.setItem(WL_KEY, JSON.stringify(w)); } catch (e) {} renderBig(); pxTick(true); }
 function renderBig() {
-  const rows = LD?.big || [];
-  const d = LD?.asof ? new Date(LD.asof + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " close · " : "";
-  $("bigSub").textContent = rows.length ? (PX.at ? "Price, 1D and ext hours live · 1M–6M and RS from " + d : d) + "by market cap · RS Rating vs all US stocks · click for the chart" : "Published by the next Leaders scan (overnight).";
-  stockList($("bigList"), rows, (r) => `Market cap $${r.mcapB ?? "—"}B · ${r.offhi ?? "—"}% vs 52w high`,
-    (r) => shortName(r.name) + (r.mcapB ? ` · $${r.mcapB >= 1000 ? (r.mcapB / 1000).toFixed(2) + "T" : r.mcapB + "B"}` : ""));
+  const known = new Map([...(LD?.rows || []), ...(LD?.big || [])].map((r) => [r.t, r]));
+  const rows = wlList().map((t) => known.get(t) || { t, name: t, custom: true });
+  $("bigSub").textContent = rows.length ? `${rows.length} stocks · price, 1D and ext hours live · 1M–6M and RS for S&P 500 giants and leaders · click a card for the chart, × to remove` : "Empty: add a ticker above.";
+  stockList($("bigList"), rows, (r) => r.custom ? "Added by you · 1M–6M and RS only for S&P 500 giants and leaders" : `Market cap $${r.mcapB ?? "—"}B · ${r.offhi ?? "—"}% vs 52w high`,
+    (r) => r.custom ? "Added by you" : shortName(r.name) + (r.mcapB ? ` · $${r.mcapB >= 1000 ? (r.mcapB / 1000).toFixed(2) + "T" : r.mcapB + "B"}` : ""), true);
 }
 // ---- live price + pre-market / after-hours for the stock rows: Worker /ext (Yahoo, 40 stocks a call), every 60 s while shown ----
 // ---- one shared price store for every tab (Worker /ext → Yahoo) ----------------------------
@@ -1448,8 +1466,7 @@ function usActive(now = new Date()) {   // US pre-market → after-hours, Mon–
 }
 function pxNeeded() {
   const vis = (id) => !$(id).classList.contains("hidden"), need = new Set();
-  if (LD && vis("sectorsView")) (LD.big || []).forEach((r) => need.add(r.t));
-  if (LD && vis("leadersView")) (LD.rows || []).forEach((r) => need.add(r.t));
+  if (vis("sectorsView")) wlList().forEach((t) => need.add(t));
   if (lastText && vis("portfolioView")) {
     const j = parseJournal(lastText);
     metrics(j).all.filter((t) => t.open).forEach((t) => need.add(stockSym(t)));
@@ -1535,10 +1552,9 @@ function renderLeaders() {
   });
   h += "</tbody></table>";
   $("ldBody").innerHTML = rows.length ? h : '<div class="empty">No stock passes every filter today.</div>';
-  stockList($("ldList"), rows, (r) => `${esc(r.tier || "")}${r.why ? " — " + esc(r.why) : ""}\nADR ${n1(r.adr, "%")} · $vol ${r.dv == null ? "—" : Math.round(r.dv)}M · RS line ${r.rsoff ?? "—"}% vs high`);
   $("ldBody").querySelectorAll("th[data-s]").forEach((th) => th.onclick = () => { ldSort = th.dataset.s; renderLeaders(); });
   $("ldFoot").innerHTML = "Filters (all must pass) · source:<ol class=\"ldRules\">" + (LD.rules || []).map(([r, s]) => `<li>${esc(r)} <span class="tag">${esc(s)}</span></li>`).join("") +
-    "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a stock for its candle chart; in the details table click a column header to sort. Green dot = Real leader, amber = Leader w/ caveat. " + esc(LD.source || "");
+    "</ol>EP = latest earnings-style gap ≥10% on ≥2× volume in the last 3 months (bonus, not a filter). Click a ticker to open it in TradingView; click a column header to sort. Green dot = Real leader, amber = Leader w/ caveat. " + esc(LD.source || "");
 }
 
 // ---- Sectors (Finviz-style performance bars + rotation table) ---------------
@@ -1813,6 +1829,8 @@ function closeChart() { $("chartModal").classList.add("hidden"); if (chartObj) {
 function initViews() {
   document.querySelectorAll('.seg[aria-label="Views"] button').forEach((b) => b.onclick = () => showView(b.dataset.view));
   $("pfGoJournal").onclick = () => showView("journal");
+  $("wlAdd").onsubmit = (e) => { e.preventDefault(); const t = $("wlInput").value.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, "");
+    if (t && /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(t)) { const w = wlList(); if (!w.includes(t)) wlSet([...w, t]); } $("wlInput").value = ""; };
   document.addEventListener("visibilitychange", () => pxTick());
   document.querySelectorAll("#ldTier button").forEach((b) => b.onclick = () => { ldTier = b.dataset.t; document.querySelectorAll("#ldTier button").forEach((x) => x.classList.toggle("on", x === b)); renderLeaders(); });
   document.querySelectorAll("#secGroup button").forEach((b) => b.onclick = () => {
