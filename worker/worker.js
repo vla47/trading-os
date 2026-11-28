@@ -19,29 +19,47 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     const url = new URL(request.url);
+    if (url.pathname === "/live") return liveRoute(url, ctx);
     if (url.pathname === "/ext") return extRoute(url, ctx);
-    if (url.pathname !== "/quotes") return new Response("Trading OS live prices: GET /quotes, GET /ext?s=AAPL,MSFT", { status: 404, headers: CORS });
-    const cache = caches.default, key = new Request(url.origin + "/quotes");
-    const hit = await cache.match(key);
-    if (hit) return hit;
-    let body, status = 200;
-    try { body = await buildQuotes(); }
-    catch (e) { body = { error: String(e && e.message || e) }; status = 502; }
-    const res = new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json",
-      "Cache-Control": `public, max-age=${status === 200 ? CACHE_SECONDS : 15}` } });
-    if (status === 200) ctx.waitUntil(cache.put(key, res.clone()));
-    return res;
+    if (url.pathname !== "/quotes") return new Response("Trading OS live prices: GET /live?s=AAPL,BTC-USD (strip + those), GET /quotes, GET /ext?s=AAPL,MSFT", { status: 404, headers: CORS });
+    const { body, ok } = await marketQuotes(url, ctx, { n: 0 });
+    return new Response(JSON.stringify(body), { status: ok ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
   },
 };
 
+// The free plan allows 50 external subrequests per call (Yahoo + the site); Cache API reads/writes don't count.
+// ctr.n counts the external ones so one /live call never goes over: symbols that don't fit come back as "deferred".
+const SUB_MAX = 48;
+
+// strip + sector quotes, rebuilt at most once a minute (edge cache), shared by every caller
+async function marketQuotes(url, ctx, ctr) {
+  const cache = caches.default, key = new Request(url.origin + "/quotes");
+  const hit = await cache.match(key);
+  if (hit) return { body: await hit.json(), ok: true };
+  try {
+    const body = await buildQuotes(new Date(), ctr);
+    ctx.waitUntil(cache.put(key, new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${CACHE_SECONDS}` } })));
+    return { body, ok: true };
+  } catch (e) { return { body: { error: String(e && e.message || e) }, ok: false }; }
+}
+
+// GET /live?s=... -> ONE call per minute from the page: the strip/sector quotes plus any other symbols it needs
+async function liveRoute(url, ctx) {
+  const ctr = { n: 0 };
+  const market = await marketQuotes(url, ctx, ctr);
+  const ext = await extQuotes(parseSyms(url), url, ctx, ctr);
+  return new Response(JSON.stringify({ version: 3, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", market: market.body, ...ext }),
+    { status: market.ok || Object.keys(ext.quotes).length ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+}
+
 // ---------------------------------------------------------------------------------------------------------------
-export async function buildQuotes(now = new Date()) {
-  const base = await getJson(SITE + "live_base.json", 600);
+export async function buildQuotes(now = new Date(), ctr = { n: 0 }) {
+  ctr.n++; const base = await getJson(SITE + "live_base.json", 600);
   if (!base || !base.tickers) throw new Error("live_base.json not available");
   const nowS = now.getTime() / 1000, cash = {}, quotes = {}, failed = [];
   const keys = Object.keys(base.tickers);
   const one = async (k) => {
-    try { quotes[k] = await liveQuote(k, base.tickers[k], base, cash, nowS); }
+    try { quotes[k] = await liveQuote(k, base.tickers[k], base, cash, nowS, ctr); }
     catch (e) { failed.push(`${k}: ${e.message || e}`); }
   };
   // the US cash session (from QQQ) decides NQ/ES pre-market / after-hours, so it goes first
@@ -51,11 +69,11 @@ export async function buildQuotes(now = new Date()) {
   return { version: 1, updated: iso(nowS, "seconds"), source: "Yahoo Finance", base: base.updated, quotes, failed };
 }
 
-async function liveQuote(key, t, base, cash, nowS) {
+async function liveQuote(key, t, base, cash, nowS, ctr) {
   const fut = t.symbol.endsWith("=F"), wantExt = base.ext.includes(key);
   // last 5 daily bars from Yahoo: fills any day a missed site build left out, and gives the previous close
-  const [daily, intra] = await Promise.all([chart(t.symbol, "range=5d&interval=1d"),
-    fut || wantExt ? chart(t.symbol, "range=1d&interval=1m&includePrePost=true") : null]);
+  const [daily, intra] = await Promise.all([chart(t.symbol, "range=5d&interval=1d", ctr),
+    fut || wantExt ? chart(t.symbol, "range=1d&interval=1m&includePrePost=true", ctr) : null]);
   const m = (intra || daily).meta || {}, dec = t.dec;
   const price = num(m.regularMarketPrice), asOf = m.regularMarketTime || null;
   const tz = m.exchangeTimezoneName || "UTC", reg = (m.currentTradingPeriod || {}).regular || {};
@@ -95,7 +113,7 @@ async function liveQuote(key, t, base, cash, nowS) {
   if (key === base.cash) Object.assign(cash, { open, close: asOf, start });
   if (wantExt && intra) rec.ext = extQuote(intra, price, reg, dec);
   if (base.near23h.includes(key) && cash.close && !cash.open) {
-    try { rec.eth = await sinceCashClose(t.symbol, dec, cash, nowS); } catch (e) { /* keep the settlement view */ }
+    try { rec.eth = await sinceCashClose(t.symbol, dec, cash, nowS, ctr); } catch (e) { /* keep the settlement view */ }
   }
   return rec;
 }
@@ -105,19 +123,27 @@ async function liveQuote(key, t, base, cash, nowS) {
 // latest regular-session price, 1D vs the previous close, and the pre-market / after-hours trade (same extQuote as QQQ).
 // 15-minute bars: the last bar's close is the latest trade, and the response stays small (~4 KB a stock).
 const EXT_MAX = 40;
+const parseSyms = (url) => [...new Set((url.searchParams.get("s") || "").toUpperCase().split(","))]
+  .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(x)).sort().slice(0, EXT_MAX);   // 16 chars: crypto ids like SUI20947-USD
 async function extRoute(url, ctx) {
-  const syms = [...new Set((url.searchParams.get("s") || "").toUpperCase().split(","))]
-    .filter((x) => /^[A-Z0-9][A-Z0-9.\-]{0,15}$/.test(x)).sort().slice(0, EXT_MAX);   // 16 chars: crypto ids like SUI20947-USD
+  const syms = parseSyms(url);
   if (!syms.length) return new Response(JSON.stringify({ error: "no symbols" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
-  // cache per ticker (not per list), so overlapping lists from different tabs share one Yahoo call per minute
-  const cache = caches.default, quotes = {}, failed = [];
+  const r = await extQuotes(syms, url, ctx, { n: 0 });
+  return new Response(JSON.stringify({ version: 2, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", ...r }),
+    { status: Object.keys(r.quotes).length ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+}
+// cache per ticker (not per list), so overlapping lists from different tabs share one Yahoo call per minute
+async function extQuotes(syms, url, ctx, ctr) {
+  const cache = caches.default, quotes = {}, failed = [], deferred = [], miss = [];
   await Promise.all(syms.map(async (k) => {
-    const key = new Request(url.origin + "/ext1/" + encodeURIComponent(k));
-    const hit = await cache.match(key);
-    if (hit) { quotes[k] = await hit.json(); return; }
+    const hit = await cache.match(new Request(url.origin + "/ext1/" + encodeURIComponent(k)));
+    if (hit) quotes[k] = await hit.json(); else miss.push(k);
+  }));
+  await Promise.all(miss.sort().map(async (k) => {
+    if (ctr.n >= SUB_MAX) { deferred.push(k); return; }   // over this call's budget: the page asks again next minute
     try {
       // BRK.B -> BRK-B (share class); keep exchange suffixes such as SXR8.DE
-      const r = await chart(/\.[A-Z]$/.test(k) && !/\.(DE|L|PA|AS|MI|SW|TO|HK)$/.test(k) ? k.replace(/\./g, "-") : k, "range=1d&interval=15m&includePrePost=true");
+      const r = await chart(/\.[A-Z]$/.test(k) && !/\.(DE|L|PA|AS|MI|SW|TO|HK)$/.test(k) ? k.replace(/\./g, "-") : k, "range=1d&interval=15m&includePrePost=true", ctr);
       const m = r.meta || {}, price = num(m.regularMarketPrice), prev = num(m.chartPreviousClose);
       if (!(price > 0 && prev > 0)) throw new Error(`bad price ${price} / prev ${prev}`);
       const reg = (m.currentTradingPeriod || {}).regular || {}, now = Date.now() / 1000;
@@ -125,12 +151,10 @@ async function extRoute(url, ctx) {
         asOf: m.regularMarketTime ? iso(m.regularMarketTime, "seconds") : null,
         open: !!(reg.start && reg.end && reg.start <= now && now < reg.end), ext: extQuote(r, price, reg, 2) };
       quotes[k] = q;
-      ctx.waitUntil(cache.put(key, new Response(JSON.stringify(q), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${CACHE_SECONDS}` } })));
+      ctx.waitUntil(cache.put(new Request(url.origin + "/ext1/" + encodeURIComponent(k)), new Response(JSON.stringify(q), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${CACHE_SECONDS}` } })));
     } catch (e) { failed.push(`${k}: ${e.message || e}`); }
   }));
-  const ok = Object.keys(quotes).length > 0;
-  return new Response(JSON.stringify({ version: 2, updated: iso(Date.now() / 1000, "seconds"), source: "Yahoo Finance", quotes, failed }),
-    { status: ok ? 200 : 502, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  return { quotes, failed, deferred };
 }
 
 // latest pre-market / after-hours trade vs the regular-session price (null inside regular hours)
@@ -144,10 +168,10 @@ function extQuote(r, regPrice, reg, dec) {
 }
 
 // futures move since the last US cash close (16:00 ET); the 16:59 ET bar (CME halt, settlement stamp) is dropped
-async function sinceCashClose(sym, dec, cash, nowS) {
+async function sinceCashClose(sym, dec, cash, nowS, ctr) {
   // enough 1-minute history to reach back past the last cash close: 2 days, 4 over a weekend (Sat/Sun/Mon)
   const days = (nowS - cash.close) / 86400 > 1 ? "4d" : "2d";
-  const r = await chart(sym, `range=${days}&interval=1m`);
+  const r = await chart(sym, `range=${days}&interval=1m`, ctr);
   const ts = r.timestamp || [], c = ((r.indicators || {}).quote || [{}])[0].close || [];
   let ref = null, last = null, lastT = null;
   for (let i = 0; i < ts.length; i++) {
@@ -172,7 +196,8 @@ function emaDot(series) {
 }
 
 // ---- helpers ----
-async function chart(sym, q) {
+async function chart(sym, q, ctr) {
+  if (ctr) ctr.n++;
   const res = await fetch(YAHOO + encodeURIComponent(sym) + "?" + q, { headers: UA });
   if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
   const j = await res.json(), r = j && j.chart && j.chart.result && j.chart.result[0];
