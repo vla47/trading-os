@@ -916,7 +916,7 @@ function renderPortfolio(m, j) {
     const sorted = [...rows].sort((a, b) => Math.abs(b.usd ?? -1) - Math.abs(a.usd ?? -1));
     const mx = Math.max(...sorted.filter((r) => r.usd != null).map((r) => Math.abs(r.usd) / total), 1e-9);
     const tbl = `<table class="pfT"><tr><th class="l">Asset</th><th>Quantity</th><th class="hideS">Price</th><th>Value</th><th class="hideS">Unrealized</th><th class="l wb">Weight</th></tr>` +
-      sorted.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b>${r.short ? " <span class='muted'>short</span>" : ""}${r.flags && r.flags.length ? " " + flagsHtml(r.flags) : ""}${r.atCost ? " <span class='muted' title='No synced last price; valued at cost'>at cost</span>" : ""}</td>
+      sorted.map((r) => `<tr><td class="l"><span class="pfDot" style="background:${pfColor(P, r)}"></span><b>${esc(r.sym)}</b></td>
         <td>${qtyFmt(r)}</td><td class="hideS">${pxFmt(r)}</td>
         <td class="${r.usd < 0 ? "bad" : ""}">${r.usd != null ? money(r.usd) : "<span class='warn' title='No live price yet; left out of totals'>no price</span>"}</td>
         <td class="hideS ${cls(r.unreal)}">${r.unreal != null ? money(r.unreal) : "—"}</td>${r.usd != null ? weightCell(P, r, r.usd / total, mx) : "<td></td>"}</tr>`).join("") + `</table>`;
